@@ -1,14 +1,10 @@
-# urdmi
+# Universal Relational Data Mining Interface
 
-A Clojure library designed to ... well, that part is up to you.
-
-## Usage
-
-FIXME
+This app is intended to help in using different relational data mining applications by providing a unified frontend to them.
 
 ## License
 
-Copyright © 2015 FIXME
+Copyright © 2015 Dariusz Antoniuk
 
-Distributed under the Eclipse Public License either version 1.0 or (at
+Distributed under the GNU General Public License, version 2 or (at
 your option) any later version.
