@@ -8,7 +8,9 @@
                  [clj-antlr "0.2.2"]
                  [fx-clj "0.2.0-alpha1"]
                  [com.stuartsierra/component "0.2.3"]
+                 [org.apache.directory.studio/org.apache.commons.io "2.4"]
                  ]
   :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]}}
   :plugins [[lein-midje "3.0.0"]]
-  :java-source-paths ["deps/jiprolog/src"])
+  :java-source-paths ["deps/jiprolog/src"]
+  :javac-options ["-target" "1.8" "-source" "1.8"])
