@@ -6,5 +6,5 @@ This app is intended to help in using different relational data mining applicati
 
 Copyright © 2015 Dariusz Antoniuk
 
-Distributed under the GNU General Public License, version 2 or (at
+Distributed under the GNU General Public License, version 3 or (at
 your option) any later version.
