@@ -1,0 +1,3 @@
+gfather(4, 7).
+gfather(5, 4).
+gfather(6, 5).
