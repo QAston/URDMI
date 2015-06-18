@@ -10,4 +10,5 @@
                  [com.stuartsierra/component "0.2.3"]
                  ]
   :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]}}
-  :plugins [[lein-midje "3.0.0"]])
+  :plugins [[lein-midje "3.0.0"]]
+  :java-source-paths ["deps/jiprolog/src"])

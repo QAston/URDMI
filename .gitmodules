@@ -1,0 +1,4 @@
+[submodule "jiprolog"]
+	path = deps/jiprolog
+	url = https://github.com/QAston/jiprolog.git
+	branch = master
