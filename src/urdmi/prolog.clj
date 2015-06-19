@@ -1,5 +1,5 @@
 (ns urdmi.prolog
-  (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine)
+  (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader)
            (java.io Reader)
            (org.apache.commons.io.input ReaderInputStream)
            (com.ugos.io PushbackLineNumberInputStream)
@@ -18,10 +18,11 @@
        (cons next (lazy-seq (prolog-expr-seq-impl parser)))))))
 
 (defn- create-parser[^Reader rdr]
-  (PrologParser. (PushbackLineNumberInputStream. (ReaderInputStream. rdr (Charset/forName "US-ASCII")))
+  (PrologParser. (ParserReader. (PushbackLineNumberInputStream. (ReaderInputStream. rdr (Charset/forName "US-ASCII"))))
                  (OperatorManager.)
                  (JIPEngine.)
                  "Input file"))
+
 (defn prolog-sentence-seq
   "Lazily reads prolog expr from file, one at a time."
   ([^Reader rdr]

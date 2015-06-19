@@ -13,4 +13,6 @@
   :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]}}
   :plugins [[lein-midje "3.0.0"]]
   :java-source-paths ["deps/jiprolog/src"]
-  :javac-options ["-target" "1.8" "-source" "1.8"])
+  :javac-options ["-target" "1.8" "-source" "1.8"]
+  :resource-paths ["deps/jiprolog/src" "resources"] ; for jiprolog engine
+  )

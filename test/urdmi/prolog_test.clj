@@ -9,7 +9,8 @@
       (let [empty (prolog/prolog-sentence-seq (StringReader. ""))
             single-sentence (prolog/prolog-sentence-seq (StringReader. "hello :- world."))
             two-sentences (prolog/prolog-sentence-seq (StringReader. "hello :- world. parent(a):- mother."))
-            file (prolog/prolog-sentence-seq (io/make-reader (io/resource "aleph/gfather.b") {}))]
+            ;file (prolog/prolog-sentence-seq (io/make-reader (io/resource "aleph/gfather.b") {}))
+            ]
         (count single-sentence) => 1
         (count two-sentences) => 2
         (count empty) => 0
