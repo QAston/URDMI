@@ -1,9 +1,11 @@
 (ns urdmi.prolog
-  (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader)
+  (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader JIPDebugger)
            (java.io Reader)
            (org.apache.commons.io.input ReaderInputStream)
            (com.ugos.io PushbackLineNumberInputStream)
            (java.nio.charset Charset)))
+
+(set! JIPDebugger/debug true)
 
 (defn ^:private prolog-expr-seq-impl [^PrologParser parser]
   (when-let [next (.parseNext parser)]
