@@ -1,0 +1,17 @@
+pracownik(4,sprzedawca,1,null,02,2).
+pracownik(6,sprzedawca,1,1,00,2).
+pracownik(8,robotnik,1,1,00,1).
+pracownik(9,robotnik,1,null,01,1).
+pracownik(12,ksiegowy,1,1,02,5).
+pracownik(15,ksiegowy,2,2,00,5).
+pracownik(18,kierownik,2,1,00,6).
+pracownik(19,kierownik,2,1,01,4).
+pracownik(23,informatyk,2,1,00,6).
+pracownik(30,marketingowiec,2,2,09,4).
+pracownik(32,marketingowiec,2,2,09,4).
+pracownik(35,ekspert,2,1,04,3).
+pracownik(39,robotnik,1,1,02,1).
+pracownik(40,robotnik,1,1,01,2).
+pracownik(45,robotnik,1,null,02,1).
+pracownik(49,wiceprezes,3,2,00,1).
+pracownik(50,prezes,4,2,00,1).

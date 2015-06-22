@@ -17,7 +17,7 @@
 
 % wlacza zapisywanie do pliku
 :- set(record,true).
-:- set(recordfile,'out'). 
+:- set(recordfile,'out').
 %remove trivial rules
 :- set(interactive,true).
 :- set(minpos,2).
