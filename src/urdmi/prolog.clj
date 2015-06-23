@@ -1,5 +1,5 @@
 (ns urdmi.prolog
-  (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader JIPDebugger)
+  (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader JIPDebugger PrologObject)
            (java.io Reader)
            (org.apache.commons.io.input ReaderInputStream)
            (com.ugos.io PushbackLineNumberInputStream)
@@ -17,10 +17,11 @@
 (defrecord ParserContext [^JIPEngine engine, ^OperatorManager op-manager])
 
 (defn parser-context ^ParserContext [^ISeq operators]
-  (let [op-manager (OperatorManager.)]
+  (let [jip-engine (JIPEngine.)
+        op-manager (.getOperatorManager jip-engine)]
     (doseq [^Operator op operators]
       (.put op-manager (.preference op) (.type op) (.name op)))
-    (->ParserContext (JIPEngine.) op-manager
+    (->ParserContext jip-engine op-manager
       )))
 
 (defn create-parser ^PrologParser [^ParserContext context, ^Reader rdr]
@@ -35,10 +36,15 @@
                    (->Operator 900 "xfy" "because")]))
 
 (defn ace-parser-context []
-  ;todo: unk parser operators for ace - lacks in documentation
-  (parser-context [(->Operator 500 "fy" "#")
-                   (->Operator 500 "fy" "*")
-                   (->Operator 900 "xfy" "because")]))
+  ;todo: these preferences made up
+  (parser-context [(->Operator 200 "fy" "#")
+                   (->Operator 200 "fy" "+")
+                   (->Operator 200 "fy" "-")
+                   (->Operator 200 "fy" "\\")
+                   (->Operator 200 "fy" "+\\")
+                   (->Operator 200 "fy" "-\\")
+                   (->Operator 200 "fy" "+-")
+                   (->Operator 200 "fy" "+-\\")]))
 
 (defn prolog-sentence-seq
   "Lazily reads prolog expr from file, one at a time."
