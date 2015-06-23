@@ -3,7 +3,8 @@
            (java.io Reader)
            (org.apache.commons.io.input ReaderInputStream)
            (com.ugos.io PushbackLineNumberInputStream)
-           (java.nio.charset Charset)))
+           (java.nio.charset Charset)
+           (clojure.lang ISeq)))
 
 (set! JIPDebugger/debug true)
 
@@ -11,15 +12,37 @@
   (when-let [next (.parseNext parser)]
     (cons next (lazy-seq (prolog-expr-seq-impl parser)))))
 
-(defn- create-parser[^Reader rdr]
+(defrecord Operator [^int preference ^String type ^String name])
+
+(defrecord ParserContext [^JIPEngine engine, ^OperatorManager op-manager])
+
+(defn parser-context ^ParserContext [^ISeq operators]
+  (let [op-manager (OperatorManager.)]
+    (doseq [^Operator op operators]
+      (.put op-manager (.preference op) (.type op) (.name op)))
+    (->ParserContext (JIPEngine.) op-manager
+      )))
+
+(defn create-parser ^PrologParser [^ParserContext context, ^Reader rdr]
   (PrologParser. (ParserReader. (PushbackLineNumberInputStream. (ReaderInputStream. rdr (Charset/forName "US-ASCII"))))
-                 (OperatorManager.)
-                 (JIPEngine.)
+                 (get context :op-manager)
+                 (get context :engine)
                  "Input file"))
+
+(defn aleph-parser-context []
+  (parser-context [(->Operator 500 "fy" "#")
+                   (->Operator 500 "fy" "*")
+                   (->Operator 900 "xfy" "because")]))
+
+(defn ace-parser-context []
+  ;todo: unk parser operators for ace - lacks in documentation
+  (parser-context [(->Operator 500 "fy" "#")
+                   (->Operator 500 "fy" "*")
+                   (->Operator 900 "xfy" "because")]))
 
 (defn prolog-sentence-seq
   "Lazily reads prolog expr from file, one at a time."
-  ([^Reader rdr]
-   (let [parser (create-parser rdr)]
+  ([^ParserContext context ^Reader rdr]
+   (let [parser (create-parser context rdr)]
      (when-let [next (.parseNext parser)]
        (cons next (lazy-seq (prolog-expr-seq-impl parser)))))))
