@@ -4,23 +4,23 @@ This app is intended to help in using different relational data mining applicati
 
 ## Target feature set (may be reduced in future)
 
--integration with ace
---importing aleph data
---integration with tilde engine
---integration with warmr engine
---processing ace output
--integration with aleph
---importing ace data
---integration of classifier
---integration with warmr engine
---processing alepth output
--gui interface
---plugin specific configuration
---data input forms
---extensional data shown in form of tables
---decision tree output in form of a graph
---prolog code viewer/simple editor
--plugin architecture
+*integration with ace
+**importing aleph data
+**integration with tilde engine
+**integration with warmr engine
+**processing ace output
+*integration with aleph
+**importing ace data
+**integration of classifier
+**integration with warmr engine
+**processing alepth output
+*gui interface
+**plugin specific configuration
+**data input forms
+**extensional data shown in form of tables
+**decision tree output in form of a graph
+**prolog code viewer/simple editor
+*plugin architecture
 
 ## Runtime dependencies
 
