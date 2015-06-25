@@ -14,5 +14,7 @@
   :plugins [[lein-midje "3.0.0"]]
   :java-source-paths ["deps/jiprolog/src"]
   :javac-options ["-target" "1.8" "-source" "1.8"]
+  :jvm-opts ["-Xmx2g"]
   :resource-paths ["deps/jiprolog/src" "resources"] ; for jiprolog engine
+
   )

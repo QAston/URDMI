@@ -91,16 +91,39 @@
 
 
 (fact "pretty-print prints the same thing it got"
-      (let [parser-context (prolog/ace-parser-context)
+      (let [parser-context (prolog/parser-context
+                             [(prolog/->Operator 200 "fy" "#")
+                              (prolog/->Operator 200 "fy" "+")
+                              (prolog/->Operator 200 "fy" "-")
+                              (prolog/->Operator 200 "fy" "\\")
+                              (prolog/->Operator 200 "fy" "+\\")
+                              (prolog/->Operator 200 "fy" "-\\")
+                              (prolog/->Operator 200 "yf" "+-")
+                              (prolog/->Operator 200 "yf" "+-\\")])
             test-sentences ["hello :- world."
                             "p(X)."
                             "p(+X)."
-                            "q(+-Y)."
+                            "q(Y+-)."
                             "q(-Y)."
                             "q(\\Y)."
                             "q(+\\Y)."
                             "q(-\\Y)."
-                            "q(+-\\Y)."
+                            "q(Y+-\\)."
+                            "p(Y+X)."
+                            "hasprop(fish, travel, swim)."
+                            "hasproperty(Object, Property, Value)."
+                            "isa(Object, Parent)."
+                            "hasproperty(Parent, Property, Value)."
+                            "hasproperty(Object, Property, Value) :- hasprop(Object, Property, Value)."
+                            "hasproperty(Object) :- isa(Object), hasproperty(Parent)."
+                            "frame(name(penguin), isa(bird), [color(brown),travel(walks)],[travel(walks)])."
+                            "ff([N0,N1,N2|T], [N1|R]) :- isodd(N0), isodd(N2), !, ff([N1,N2|T], R)."
+                            "ff(_, [])."
+                            "find(L, R) :- append(L, [1,2], L1), ff([1|L], R)."
+                            "type(X=X)."
+                            "#(group, [7,8,9])."
+                            "rmode(N: #(m*s*V : conj_constants(V), conj(V)))."
+                            "rmode(N: #(const_generator(V):[vars=[V],models=m,subst=s,preprocessing=off],conj(V)))."
                             ]]
         (doseq [sentence test-sentences]
           (str/join (filter #(not= % \space)

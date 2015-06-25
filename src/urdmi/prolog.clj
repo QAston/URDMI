@@ -52,7 +52,8 @@
   "Lazily reads prolog expr from file, one at a time."
   ([^ParserContext context ^Reader rdr]
    (let [parser (create-parser context rdr)]
-     (when-let [next (.parseNext parser)]
+     (when-let [^PrologObject next (.parseNext parser)]
+       ;(println (.toString next (:engine context)))
        (cons (to-ast next) (lazy-seq (prolog-expr-seq-impl parser)))))))
 
 (def ast-cell :ast-cell)
@@ -102,14 +103,14 @@
 (defn get-functor-name
   "returns name for given functor ast node"
   [functor]
-  {:pre [(= (:type functor) ast-functor)]
+  {:pre  [(= (:type functor) ast-functor)]
    :post [(not= % nil)]}
   (:name (:head functor)))
 
 (defn get-functor-arity
   "returns arity for given functor ast node"
   [functor]
-  {:pre [(= (:type functor) ast-functor)]
+  {:pre  [(= (:type functor) ast-functor)]
    :post [(not= % nil)]}
   (loop [head (:tail functor) i 0]
     (if head
@@ -164,26 +165,44 @@
   (to-ast [^Variable obj]
     (with-file-metadata obj
                         {:type ast-variable
-                         :name (.getName obj)}
+                         :name (if (= \^ (first (.getName obj)))
+                                 "_"
+                                 (.getName obj))}
                         )))
 
 (extend-type nil
   PAstConvertible
-  (to-ast [obj]
+  (to-ast [_]
     nil))
 
 
 (defmulti pretty-print "Pretty prints a prolog ast node into builder."
           (fn [node op-manager ^StringBuilder builder] (:type node)))
 
-(defn- pretty-print-cons [obj op-manager ^StringBuilder builder]
-  (loop [head (:head obj)]
-    (when head
+(defn- pretty-print-params [obj op-manager ^StringBuilder builder]
+  (loop [obj obj]
+    (when-let [head (:head obj)]
       (pretty-print head, op-manager, builder)
       (let [tail (:tail obj)]
         (when (:head tail)
           (.append builder ","))
         (recur tail)))))
+
+(defn- pretty-print-cons [obj op-manager ^StringBuilder builder]
+  (loop [obj obj]
+    (when-let [head (:head obj)]
+      (pretty-print head, op-manager, builder)
+      (let [tail (:tail obj)]
+        (if (isa? ast (:type tail) ast-cell)
+          (do
+            (when (:head tail)
+              (.append builder ","))
+            (recur tail))
+          (when (isa? ast (:type tail) ast-variable)
+                    (do
+                      (.append builder "|")
+                      (pretty-print tail op-manager builder)))))
+        )))
 
 (defn- pretty-print-operator [functor ^com.ugos.jiprolog.engine.Operator op op-manager ^StringBuilder builder]
   (let [arity (get-functor-arity functor)
@@ -226,27 +245,14 @@
           op
           )))))
 
-
-(defn- pretty-print-params [obj op-manager ^StringBuilder builder]
-  (loop [head (:head obj)]
-    (when head
-      (pretty-print head, op-manager, builder)
-      (let [tail (:tail obj)]
-        (if (isa? ast (:type obj) ast-cell)
-          (do
-            (when (:head tail)
-              (.append builder ","))
-            (recur tail))
-          (do
-            (.append builder "|")
-            (pretty-print tail op-manager builder)))
-        ))))
+(defmethod pretty-print ast-cell [obj op-manager ^StringBuilder builder]
+  (pretty-print-cons obj op-manager builder))
 
 (defmethod pretty-print ast-clause [obj op-manager ^StringBuilder builder]
   (pretty-print (:head obj) op-manager builder)
   (when-let [tail (:tail obj)]
     (.append builder ":-")
-    (pretty-print (:head tail)))                            ;print more than just head?
+    (pretty-print (:head tail)))
   (.append builder ".")
   )
 
@@ -257,18 +263,6 @@
       (pretty-print-operator functor op op-manager builder)
       (let [arity (get-functor-arity functor)
             params (:tail functor)]
-
-        (if (and (== arity 1)
-                 (= (get-functor-name functor) "{")
-                 (= (get-functor-name params) "}"))
-          ; special case - array
-          (if (== 0 (get-functor-arity (:tail params)))
-            (.append builder "{}")
-            (do
-              (.append builder "{}(")
-              (pretty-print-params (:tail params) op-manager builder)
-              (.append builder ")")
-              ))
 
           (do
             (pretty-print (:head functor) op-manager builder)
