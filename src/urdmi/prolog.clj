@@ -261,16 +261,14 @@
     (pretty-print (:head functor))
     (if-let [op (is-operator functor op-manager)]
       (pretty-print-operator functor op op-manager builder)
-      (let [arity (get-functor-arity functor)
-            params (:tail functor)]
+      (let [params (:tail functor)]
 
           (do
             (pretty-print (:head functor) op-manager builder)
             (.append builder "(")
             (pretty-print-params params op-manager builder)
             (.append builder ")")))
-
-        ))))
+        )))
 
 (defmethod pretty-print ast-list [obj op-manager ^StringBuilder builder]
   (.append builder "[")
@@ -300,3 +298,4 @@
   (let [builder (StringBuilder.)]
     (pretty-print (first prolog-sentences) (:op-manager context) builder)
     (.toString builder)))
+
