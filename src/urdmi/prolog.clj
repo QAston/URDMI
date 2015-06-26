@@ -88,11 +88,11 @@
   )
 
 (defn- with-file-metadata [^PrologObject obj m]
-  (if (> (.getLine obj)  0)
+  (if (> (.getLine obj) 0)
     (with-meta m
-              {:line     (.getLine obj)
-               :column   (.getColumn obj)
-               :position (.getPosition obj)})
+               {:line     (.getLine obj)
+                :column   (.getColumn obj)
+                :position (.getPosition obj)})
     m))
 
 (extend-type Functor
@@ -186,22 +186,34 @@
 (defn ast-children
   "returns a seq of children of this node"
   [node]
-    (when-let [head (:head node)]
-      (list head)
-      (if-let [tail (:tail node)]
-        (list head tail)
-        (list head))))
+  (when-let [head (:head node)]
+    (list head)
+    (if-let [tail (:tail node)]
+      (list head tail)
+      (list head))))
 
 (defn ast-make-node
   "given an existing node and a seq of
 children, returns a new branch node with the supplied children.
 root is the root node."
   [node children]
-  {:pre  [(ast-branch? node)]}
-  nil
-  #_(if-let [head (:head node)]
-    (if-let [tail (:tail node)]
-      (assoc node :tail ))))
+  {:pre [(ast-branch? node)]}
+  (loop [node node children (vec (reverse children))]
+    (if (seq children)
+      (let [resttype (if (= (:type node) ast-list)
+                       ast-list
+                       ast-cell)]
+        (if-let [head (:head node)]
+         (let [tail (:tail node)]
+           (recur (assoc node :tail {:head (first children)
+                                     :tail tail
+                                     :type resttype
+                                     })
+                  (rest children))
+           )
+         (recur (assoc node :head (last children)) (butlast children))
+         ))
+      node)))
 
 (defn ast-zipper
   "returns a clojure.zip zipper for given root"
@@ -232,10 +244,10 @@ root is the root node."
               (.append builder ","))
             (recur tail))
           (when (isa? ast (:type tail) ast-variable)
-                    (do
-                      (.append builder "|")
-                      (pretty-print tail op-manager builder)))))
-        )))
+            (do
+              (.append builder "|")
+              (pretty-print tail op-manager builder)))))
+      )))
 
 (defn- pretty-print-operator [functor ^com.ugos.jiprolog.engine.Operator op op-manager ^StringBuilder builder]
   (let [arity (get-functor-arity functor)
@@ -296,12 +308,12 @@ root is the root node."
       (pretty-print-operator functor op op-manager builder)
       (let [params (:tail functor)]
 
-          (do
-            (pretty-print (:head functor) op-manager builder)
-            (.append builder "(")
-            (pretty-print-params params op-manager builder)
-            (.append builder ")")))
-        )))
+        (do
+          (pretty-print (:head functor) op-manager builder)
+          (.append builder "(")
+          (pretty-print-params params op-manager builder)
+          (.append builder ")")))
+      )))
 
 (defmethod pretty-print ast-list [obj op-manager ^StringBuilder builder]
   (.append builder "[")
