@@ -41,7 +41,28 @@
                                                                           :type :ast-functor},
                                                                    :tail nil,
                                                                    :type :ast-cell},
-                                                            :type :ast-functor})))
+                                                            :type :ast-functor})
+        (parse-string parser-context "ff([N0|T]).") => (list {:type :ast-functor,
+                                                              :head {:type :ast-atom, :name "ff"},
+                                                              :tail
+                                                                    {:type :ast-cell,
+                                                                     :head
+                                                                           {:type :ast-list,
+                                                                            :head {:type :ast-variable, :name "N0"},
+                                                                            :tail {:type :ast-variable, :name "T"}},
+                                                                     :tail nil}})
+        (parse-string parser-context "ff([N0,T]).") => (list {:type :ast-functor,
+                                                              :head {:type :ast-atom, :name "ff"},
+                                                              :tail
+                                                                    {:type :ast-cell,
+                                                                     :head
+                                                                           {:type :ast-list,
+                                                                            :head {:type :ast-variable, :name "N0"},
+                                                                            :tail
+                                                                                  {:type :ast-list,
+                                                                                   :head {:type :ast-variable, :name "T"},
+                                                                                   :tail nil}},
+                                                                     :tail nil}})))
 
 (fact "prolog expr seq returns a seq of ast nodes"
       (let [parser-context (prolog/parser-context nil)
@@ -55,6 +76,17 @@
         (isa? prolog/ast (:type (first two-sentences)) prolog/ast-object) => true
         )
       )
+
+(fact "parsed expr has token position metadata - some have position, some dont :("
+      (let [parser-context (prolog/parser-context nil)
+            sentence (first (prolog/prolog-sentence-seq parser-context (StringReader. "hello :- world.")))
+            op (first (prolog/prolog-sentence-seq parser-context (StringReader. "p([X|Y]).")))]
+        (meta sentence) => {:column 5, :line 1, :position 6}
+        (meta (:head (:tail sentence))) => nil
+        (meta (:head (:tail (:tail sentence)))) => nil
+        (meta op) => {:column 1, :line 1, :position 2}
+        (meta (:head (:head (:tail op)))) => nil
+        (meta (:tail (:head (:tail op)))) => {:line 1, :column 6, :position 7}))
 
 (defn get-prolog-files-for-tests [^String dir]
   (vec (flatten (for [extension ["pl" "kb" "bg" "b" "n" "f" "s"]]
@@ -130,3 +162,117 @@
                             (prolog/pretty-print-sentences
                               parser-context
                               (parse-string parser-context sentence)))) => (str/join (filter #(not= % \space) (butlast sentence))))))
+
+(fact "zipper queries are defined according to specs"
+      (let [context (prolog/parser-context nil)
+            atom-node {:name "+-\\", :type :ast-atom}
+            list-node (first (parse-string context "ff([N0,N1,N2|T], [N1|R])"))
+            predicate-node {:head {:name "p", :type :ast-atom},
+                            :tail
+                                  {:head {:name "X", :type :ast-variable},
+                                   :tail nil,
+                                   :type :ast-cell},
+                            :type :ast-functor}]
+        (prolog/ast-branch? atom-node) => false
+        (prolog/ast-branch? list-node) => true
+        (prolog/ast-branch? predicate-node) => true
+        (prolog/ast-children predicate-node) => (list {:name "p", :type :ast-atom} {:head {:name "X", :type :ast-variable}, :tail nil, :type :ast-cell})
+        (:type (second (prolog/ast-children list-node))) => prolog/ast-cell
+        ))
+
+(fact "zipper ast-make-node adds a seq of children to given list node"
+      (prolog/ast-make-node {:head nil,
+                             :tail nil,
+                             :type :ast-list} nil)
+      => {:head nil,
+          :tail nil,
+          :type :ast-list}
+      (prolog/ast-make-node {:head nil,
+                             :tail nil,
+                             :type :ast-list} (list {:name "p", :type :ast-atom}))
+      => {:head {:name "p", :type :ast-atom},
+          :tail nil,
+          :type :ast-list}
+
+      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
+                             :tail nil,
+                             :type :ast-list} (list {:name "q", :type :ast-atom}
+                                                    {:name "r", :type :ast-atom}))
+      => {:head {:name "p", :type :ast-atom},
+          :tail {:head {:name "q", :type :ast-atom},
+                 :tail {:head {:name "r", :type :ast-atom},
+                        :tail nil,
+                        :type :ast-list},
+                 :type :ast-list},
+          :type :ast-list}
+
+      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
+                             :tail {:name "r", :type :ast-atom},
+                             :type :ast-list} (list {:name "q", :type :ast-atom}))
+
+      => {:head {:name "p", :type :ast-atom},
+          :tail {:head {:name "q", :type :ast-atom},
+                 :tail {:name "r", :type :ast-atom},
+                 :type :ast-list},
+          :type :ast-list}
+
+      (prolog/ast-make-node {:head nil,
+                             :tail nil,
+                             :type :ast-list} (list {:name "p", :type :ast-atom}
+                                                    {:name "q", :type :ast-atom}
+                                                    {:name "r", :type :ast-atom}))
+      => {:head {:name "p", :type :ast-atom},
+          :tail {:head {:name "q", :type :ast-atom},
+                 :tail {:head {:name "r", :type :ast-atom},
+                        :tail nil,
+                        :type :ast-list},
+                 :type :ast-list},
+          :type :ast-list})
+
+(fact "zipper ast-make-node adds a seq of children to given cell node"
+      (prolog/ast-make-node {:head nil,
+                             :tail nil,
+                             :type :ast-cell} (list {:name "p", :type :ast-atom}))
+      => {:head {:name "p", :type :ast-atom},
+          :tail nil,
+          :type :ast-cell}
+
+      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
+                             :tail nil,
+                             :type :ast-cell} (list {:name "q", :type :ast-atom}
+                                                    {:name "r", :type :ast-atom}))
+      => {:head {:name "p", :type :ast-atom},
+          :tail {:head {:name "q", :type :ast-atom},
+                 :tail {:head {:name "r", :type :ast-atom},
+                        :tail nil,
+                        :type :ast-cell},
+                 :type :ast-cell},
+          :type :ast-cell}
+
+      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
+                             :tail nil,
+                             :type :ast-functor} (list {:name "q", :type :ast-atom}
+                                                       {:name "r", :type :ast-atom}))
+      => {:head {:name "p", :type :ast-atom},
+          :tail {:head {:name "q", :type :ast-atom},
+                 :tail {:head {:name "r", :type :ast-atom},
+                        :tail nil,
+                        :type :ast-cell},
+                 :type :ast-cell},
+          :type :ast-functor}
+
+      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
+                             :tail {:head {:name "s", :type :ast-atom},
+                                    :tail nil,
+                                    :type :ast-cell},
+                             :type :ast-functor} (list {:name "q", :type :ast-atom}
+                                                       {:name "r", :type :ast-atom}))
+      => {:head {:name "p", :type :ast-atom},
+          :tail {:head {:name "q", :type :ast-atom},
+                 :tail {:head {:name "r", :type :ast-atom},
+                        :tail {:head {:name "s", :type :ast-atom},
+                               :tail nil,
+                               :type :ast-cell},
+                        :type :ast-cell},
+                 :type :ast-cell},
+          :type :ast-functor})

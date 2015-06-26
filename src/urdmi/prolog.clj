@@ -4,7 +4,8 @@
            (org.apache.commons.io.input ReaderInputStream)
            (com.ugos.io PushbackLineNumberInputStream)
            (java.nio.charset Charset)
-           (clojure.lang ISeq)))
+           (clojure.lang ISeq))
+  (:require [clojure.zip :as zip]))
 
 (set! JIPDebugger/debug true)
 
@@ -87,10 +88,12 @@
   )
 
 (defn- with-file-metadata [^PrologObject obj m]
-  (with-meta m
-             {:line         (.getLine obj)
-              :column       (.getColumn obj)
-              :get-position (.getPosition obj)}))
+  (if (> (.getLine obj)  0)
+    (with-meta m
+              {:line     (.getLine obj)
+               :column   (.getColumn obj)
+               :position (.getPosition obj)})
+    m))
 
 (extend-type Functor
   PAstConvertible
@@ -174,6 +177,36 @@
   PAstConvertible
   (to-ast [_]
     nil))
+
+(defn ast-branch?
+  "returns true if given node can have children"
+  [node]
+  (isa? ast (:type node) ast-cell))
+
+(defn ast-children
+  "returns a seq of children of this node"
+  [node]
+    (when-let [head (:head node)]
+      (list head)
+      (if-let [tail (:tail node)]
+        (list head tail)
+        (list head))))
+
+(defn ast-make-node
+  "given an existing node and a seq of
+children, returns a new branch node with the supplied children.
+root is the root node."
+  [node children]
+  {:pre  [(ast-branch? node)]}
+  nil
+  #_(if-let [head (:head node)]
+    (if-let [tail (:tail node)]
+      (assoc node :tail ))))
+
+(defn ast-zipper
+  "returns a clojure.zip zipper for given root"
+  [root]
+  (zip/zipper ast-branch? ast-children ast-make-node root))
 
 
 (defmulti pretty-print "Pretty prints a prolog ast node into builder."
