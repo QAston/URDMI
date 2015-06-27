@@ -57,20 +57,18 @@
        ;(println (.toString next (:engine context)))
        (cons (to-ast next) (lazy-seq (prolog-expr-seq-impl parser)))))))
 
-(def ast-cell :ast-cell)
-(def ast-object :ast-object)
-(def ast-atom :ast-atom)
-(def ast-expression :ast-expression)
-(def ast-variable :ast-variable)
-(def ast-functor :ast-functor)
-(def ast-list :ast-list)
-(def ast-clause :ast-clause)
+(def ast-cell "grouping together (parens) or grouping in :- functor (special case)" :ast-cell) ;
+(def ast-object "all ast nodes have this type" :ast-object)
+(def ast-atom "prolog atom" :ast-atom)
+(def ast-expression "prolog expression" :ast-expression)
+(def ast-variable "prolog variable" :ast-variable)
+(def ast-functor "prolog functor or operator" :ast-functor)
+(def ast-list "prolog list" :ast-list)
 
 (def ast
   (let [parent-to-child [
                          [ast-cell ast-functor]
                          [ast-cell ast-list]
-                         [ast-cell ast-clause]
                          [ast-object ast-cell]
                          [ast-object ast-atom]
                          [ast-object ast-expression]
@@ -95,62 +93,64 @@
                 :position (.getPosition obj)})
     m))
 
+(defn cell-children
+  "Returns a seq of children from a recursive ConsCell list"
+  [^ConsCell obj]
+  (loop [^ConsCell cell obj children []]
+    (if-let [head (.getHead cell)]
+      (let [children (conj children (to-ast head))]
+        (if-let [tail (.getTail cell)]
+          (if (instance? ConsCell tail)
+            (recur tail children)
+            (conj children (assoc (to-ast tail) :rest true))
+            )
+          children
+          ))
+      children)))
+
+(extend-type ConsCell
+  PAstConvertible
+  (to-ast [^ConsCell obj]
+    (with-file-metadata obj
+                        {:type     ast-cell
+                         :children (cell-children obj)})))
+
 (extend-type Functor
   PAstConvertible
   (to-ast [^Functor obj]
     (with-file-metadata obj
-                        {:type ast-functor
-                         :head (assoc (to-ast (.getHead obj)) :name (.getFriendlyName obj))
-                         :tail (to-ast (.getTail obj))})))
+                        {:type     ast-functor
+                         :children (let [tail-children (if-let [tail (.getTail obj)]
+                                                         (cell-children tail)
+                                                         '())
+                                         name-node (assoc (to-ast (.getHead obj)) :name (.getFriendlyName obj))]
+                                     (cons name-node tail-children))})))
 
 (defn get-functor-name
   "returns name for given functor ast node"
   [functor]
   {:pre  [(= (:type functor) ast-functor)]
    :post [(not= % nil)]}
-  (:name (:head functor)))
+  (:name (first (:children functor))))
 
 (defn get-functor-arity
   "returns arity for given functor ast node"
   [functor]
   {:pre  [(= (:type functor) ast-functor)]
    :post [(not= % nil)]}
-  (loop [head (:tail functor) i 0]
-    (if head
-      (recur (:tail head) (inc i))
-      i)))
+  (count (rest (:children functor))))
 
 (extend-type List
   PAstConvertible
   (to-ast [^List obj]
     (with-file-metadata obj
-                        {:type ast-list
-                         :head (to-ast (.getHead obj))
-                         :tail (when-let [tail (to-ast (.getTail obj))]
-                                 (if-not (isa? ast (:type tail) ast-list)
-                                   {:type ast-list
-                                    :head (assoc tail :rest true)
-                                    :tail nil
-                                    }
-                                   tail))})))
+                        {:type     ast-list
+                         :children (cell-children obj)})))
 
 (extend-type Clause
   PAstConvertible
   (to-ast [^Clause obj]
-    (with-file-metadata obj
-                        {:type ast-clause
-                         :head (to-ast (.getHead obj))
-                         :tail (to-ast (.getTail obj))}
-                        )))
-
-(extend-type ConsCell
-  PAstConvertible
-  (to-ast [^Clause obj]
-    (with-file-metadata obj
-                        {:type ast-cell
-                         :head (to-ast (.getHead obj))
-                         :tail (to-ast (.getTail obj))}
-                        )))
+    (throw (RuntimeException. "Clause is invalid node type, use functor instead!"))))
 
 (extend-type Atom
   PAstConvertible
@@ -180,11 +180,6 @@
                          }
                         )))
 
-(extend-type nil
-  PAstConvertible
-  (to-ast [_]
-    nil))
-
 (defn ast-branch?
   "returns true if given node can have children"
   [node]
@@ -197,11 +192,7 @@
   [node]
   (if (seq? node)
     node
-    (when-let [head (:head node)]
-     (list head)
-     (if-let [tail (:tail node)]
-       (list head tail)
-       (list head)))))
+    (:children node)))
 
 (defn ast-make-node
   "given an existing node and a seq of
@@ -211,23 +202,8 @@ root is the root node."
   {:pre [(ast-branch? node)]}
   (if (seq? node)
     (with-meta children (meta node))
-    (let []
-      (loop [node node children (vec (reverse children))]
-        (if (seq children)
-          (let [resttype (if (= (:type node) ast-list)
-                           ast-list
-                           ast-cell)]
-            (if-let [head (:head node)]
-              (let [tail (:tail node)]
-                (recur (assoc node :tail {:head (first children)
-                                          :tail tail
-                                          :type resttype
-                                          })
-                       (rest children))
-                )
-              (recur (assoc node :head (last children)) (butlast children))
-              ))
-          node)))))
+    ; todo: handle auto-promoting nodes to cell when needed (operators)
+    (assoc node :children children)))
 
 (defn ast-zipper
   "returns a clojure.zip zipper for given root"
@@ -238,54 +214,48 @@ root is the root node."
 (defmulti pretty-print "Pretty prints a prolog ast node into builder."
           (fn [node op-manager ^StringBuilder builder] (:type node)))
 
-(defn- pretty-print-params [obj op-manager ^StringBuilder builder]
-  (loop [obj obj]
-    (when-let [head (:head obj)]
+(defn- pretty-print-params [nodes-seq op-manager ^StringBuilder builder]
+  (loop [nodes nodes-seq]
+    (when-let [head (first nodes)]
       (pretty-print head, op-manager, builder)
-      (let [tail (:tail obj)]
-        (when (:head tail)
-          (.append builder ","))
-        (recur tail)))))
+      (if-let [tail (seq (rest nodes))]
+        (do
+          (.append builder ",")
+          (recur tail)))
+      )))
 
 (defn- pretty-print-cons [obj op-manager ^StringBuilder builder]
-  (loop [obj obj]
-    (when-let [head (:head obj)]
+  (loop [nodes (:children obj)]
+    (when-let [head (first nodes)]
       (pretty-print head, op-manager, builder)
-      (when-let [tail (:tail obj)]
-        (if (isa? ast (:type tail) ast-cell)
-          (do
-            (when-let [head (:head tail)]
-              (.append builder (if (:rest head) "|" ",")))
-            (recur tail))
-          (throw (Exception. (+ "invalid tail node value" (:type tail))))))
+      (if-let [tail (seq (rest nodes))]
+        (do
+          (when-let [head (first tail)]
+            (.append builder (if (:rest head) "|" ",")))
+          (recur tail)))
       )))
 
 (defn- pretty-print-operator [functor ^com.ugos.jiprolog.engine.Operator op op-manager ^StringBuilder builder]
   (let [arity (get-functor-arity functor)
-        args (:tail functor)]
+        head (first (:children functor))
+        args (rest (:children functor))]
     (cond
       (and (== arity 1) (.getPrefix op)) (do
-                                           (pretty-print (:head functor) op-manager builder)
+                                           (pretty-print head op-manager builder)
                                            (.append builder " ")
-                                           (pretty-print (:head args) op-manager builder)
+                                           (pretty-print (first args) op-manager builder)
                                            )
       (and (== arity 1) (.getPostfix op)) (do
-                                            (pretty-print (:head args) op-manager builder)
+                                            (pretty-print (first args) op-manager builder)
                                             (.append builder " ")
-                                            (pretty-print (:head functor) op-manager builder)
+                                            (pretty-print head op-manager builder)
                                             )
       :else (do
-              (pretty-print (:head args) op-manager builder)
+              (pretty-print (first args) op-manager builder)
               (.append builder " ")
-              (pretty-print (:head functor) op-manager builder)
+              (pretty-print head op-manager builder)
               (.append builder " ")
-              (let [next-arg (:tail args)
-                    type (:type next-arg)]
-                (if (or (isa? ast type ast-list)
-                        (isa? ast type ast-functor)
-                        (not (isa? ast type ast-cell)))
-                  (pretty-print next-arg op-manager builder)
-                  (pretty-print (:head next-arg) op-manager builder)))
+              (pretty-print (second args) op-manager builder)
               ))))
 
 (defn is-operator
@@ -301,26 +271,16 @@ root is the root node."
           op
           )))))
 
-(defmethod pretty-print ast-cell [obj op-manager ^StringBuilder builder]
-  (pretty-print-cons obj op-manager builder))
-
-(defmethod pretty-print ast-clause [obj op-manager ^StringBuilder builder]
-  (pretty-print (:head obj) op-manager builder)
-  (when-let [tail (:tail obj)]
-    (.append builder ":-")
-    (pretty-print (:head tail)))
-  (.append builder ".")
-  )
-
 (defmethod pretty-print ast-functor [functor op-manager ^StringBuilder builder]
-  (if-not (:tail functor)
-    (pretty-print (:head functor))
-    (if-let [op (is-operator functor op-manager)]
-      (pretty-print-operator functor op op-manager builder)
-      (let [params (:tail functor)]
-
+  (let [children (:children functor)
+        head (first children)
+        params (seq (rest children))]
+    (if-not params
+      (pretty-print head)
+      (if-let [op (is-operator functor op-manager)]
+        (pretty-print-operator functor op op-manager builder)
         (do
-          (pretty-print (:head functor) op-manager builder)
+          (pretty-print head op-manager builder)
           (.append builder "(")
           (pretty-print-params params op-manager builder)
           (.append builder ")")))
@@ -330,6 +290,14 @@ root is the root node."
   (.append builder "[")
   (pretty-print-cons obj op-manager builder)
   (.append builder "]")
+  )
+
+(defmethod pretty-print ast-cell [obj op-manager ^StringBuilder builder]
+  ;todo: determine if parens should be printed or not based on operator manager
+  ;take "parent operator" as a param, when "," priority bigger than parent-operator param don't print parens
+  ;(.append builder "(")
+  (pretty-print-cons obj op-manager builder)
+  ;(.append builder ")")
   )
 
 (defmethod pretty-print ast-atom [obj _ ^StringBuilder builder]
@@ -342,9 +310,6 @@ root is the root node."
 
 (defmethod pretty-print ast-variable [obj _ ^StringBuilder builder]
   (.append builder (:name obj))
-  )
-
-(defmethod pretty-print nil [_ _ ^StringBuilder _]
   )
 
 (defn pretty-print-sentences
