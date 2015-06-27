@@ -5,7 +5,8 @@
   (:require
     [urdmi.prolog :as prolog]
     [clojure.java.io :as io]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [clojure.zip :as zip]))
 
 (fact "prolog ast hierarchy is defined"
       (isa? prolog/ast prolog/ast-cell prolog/ast-object) => true
@@ -49,7 +50,10 @@
                                                                      :head
                                                                            {:type :ast-list,
                                                                             :head {:type :ast-variable, :name "N0"},
-                                                                            :tail {:type :ast-variable, :name "T"}},
+                                                                            :tail
+                                                                                  {:type :ast-list,
+                                                                                   :head {:type :ast-variable, :name "T" :rest true},
+                                                                                   :tail nil}},
                                                                      :tail nil}})
         (parse-string parser-context "ff([N0,T]).") => (list {:type :ast-functor,
                                                               :head {:type :ast-atom, :name "ff"},
@@ -86,7 +90,7 @@
         (meta (:head (:tail (:tail sentence)))) => nil
         (meta op) => {:column 1, :line 1, :position 2}
         (meta (:head (:head (:tail op)))) => nil
-        (meta (:tail (:head (:tail op)))) => {:line 1, :column 6, :position 7}))
+        (meta (:head (:tail (:head (:tail op))))) => {:line 1, :column 6, :position 7}))
 
 (defn get-prolog-files-for-tests [^String dir]
   (vec (flatten (for [extension ["pl" "kb" "bg" "b" "n" "f" "s"]]
@@ -166,7 +170,7 @@
 (fact "zipper queries are defined according to specs"
       (let [context (prolog/parser-context nil)
             atom-node {:name "+-\\", :type :ast-atom}
-            list-node (first (parse-string context "ff([N0,N1,N2|T], [N1|R])"))
+            list-node (first (parse-string context "ff([N0,N1,N2|T])"))
             predicate-node {:head {:name "p", :type :ast-atom},
                             :tail
                                   {:head {:name "X", :type :ast-variable},
@@ -176,7 +180,8 @@
         (prolog/ast-branch? atom-node) => false
         (prolog/ast-branch? list-node) => true
         (prolog/ast-branch? predicate-node) => true
-        (prolog/ast-children predicate-node) => (list {:name "p", :type :ast-atom} {:head {:name "X", :type :ast-variable}, :tail nil, :type :ast-cell})
+        (prolog/ast-children list-node) =>
+        (prolog/ast-children predicate-node) => (list {:name "p", :type :ast-atom} {:name "X", :type :ast-variable})
         (:type (second (prolog/ast-children list-node))) => prolog/ast-cell
         ))
 
@@ -194,30 +199,8 @@
           :tail nil,
           :type :ast-list}
 
-      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
-                             :tail nil,
-                             :type :ast-list} (list {:name "q", :type :ast-atom}
-                                                    {:name "r", :type :ast-atom}))
-      => {:head {:name "p", :type :ast-atom},
-          :tail {:head {:name "q", :type :ast-atom},
-                 :tail {:head {:name "r", :type :ast-atom},
-                        :tail nil,
-                        :type :ast-list},
-                 :type :ast-list},
-          :type :ast-list}
-
-      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
-                             :tail {:name "r", :type :ast-atom},
-                             :type :ast-list} (list {:name "q", :type :ast-atom}))
-
-      => {:head {:name "p", :type :ast-atom},
-          :tail {:head {:name "q", :type :ast-atom},
-                 :tail {:name "r", :type :ast-atom},
-                 :type :ast-list},
-          :type :ast-list}
-
-      (prolog/ast-make-node {:head nil,
-                             :tail nil,
+      (prolog/ast-make-node {:head {:name "n", :type :ast-atom},
+                             :tail {:name "o", :type :ast-atom},
                              :type :ast-list} (list {:name "p", :type :ast-atom}
                                                     {:name "q", :type :ast-atom}
                                                     {:name "r", :type :ast-atom}))
@@ -230,12 +213,6 @@
           :type :ast-list})
 
 (fact "zipper ast-make-node adds a seq of children to given cell node"
-      (prolog/ast-make-node {:head nil,
-                             :tail nil,
-                             :type :ast-cell} (list {:name "p", :type :ast-atom}))
-      => {:head {:name "p", :type :ast-atom},
-          :tail nil,
-          :type :ast-cell}
 
       (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
                              :tail nil,
@@ -247,32 +224,18 @@
                         :tail nil,
                         :type :ast-cell},
                  :type :ast-cell},
-          :type :ast-cell}
+          :type :ast-cell})
 
-      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
-                             :tail nil,
-                             :type :ast-functor} (list {:name "q", :type :ast-atom}
-                                                       {:name "r", :type :ast-atom}))
-      => {:head {:name "p", :type :ast-atom},
-          :tail {:head {:name "q", :type :ast-atom},
-                 :tail {:head {:name "r", :type :ast-atom},
-                        :tail nil,
-                        :type :ast-cell},
-                 :type :ast-cell},
-          :type :ast-functor}
+(fact "zipper defined for seqs of ast nodes"
+      (let [atoms (list {:name "p", :type :ast-atom} {:name "q", :type :ast-atom})
+            empty (list)]
+        (prolog/ast-branch? atoms) => true
+        (prolog/ast-branch? empty) => true
+        (prolog/ast-children atoms) => atoms
+        (prolog/ast-children empty) => empty
+        (prolog/ast-make-node empty (list {:name "r", :type :ast-atom})) => (list {:name "r", :type :ast-atom})
+        (prolog/ast-make-node  atoms (list {:name "r", :type :ast-atom})) => (list {:name "r", :type :ast-atom})
+        (prolog/ast-make-node  atoms (list {:name "r", :type :ast-atom} {:name "s", :type :ast-atom})) => (list {:name "r", :type :ast-atom} {:name "s", :type :ast-atom})
+        ))
 
-      (prolog/ast-make-node {:head {:name "p", :type :ast-atom},
-                             :tail {:head {:name "s", :type :ast-atom},
-                                    :tail nil,
-                                    :type :ast-cell},
-                             :type :ast-functor} (list {:name "q", :type :ast-atom}
-                                                       {:name "r", :type :ast-atom}))
-      => {:head {:name "p", :type :ast-atom},
-          :tail {:head {:name "q", :type :ast-atom},
-                 :tail {:head {:name "r", :type :ast-atom},
-                        :tail {:head {:name "s", :type :ast-atom},
-                               :tail nil,
-                               :type :ast-cell},
-                        :type :ast-cell},
-                 :type :ast-cell},
-          :type :ast-functor})
+;replace a sentence in a file.
