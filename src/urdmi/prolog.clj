@@ -320,3 +320,7 @@ root is the root node."
     (pretty-print (first prolog-sentences) (:op-manager context) builder)
     (.toString builder)))
 
+(defn quote
+  "quotes string for use in prolog literals"[^String s]
+  (.replace (.replace s "'" "''") "\\" "\\\\"))
+

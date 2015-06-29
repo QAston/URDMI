@@ -31,4 +31,4 @@
 (defn asdf []
   main-view)
 
-(fx/sandbox #'asdf)
+;(fx/sandbox #'asdf)

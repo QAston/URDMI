@@ -189,4 +189,10 @@
         (prolog/ast-make-node atoms (list {:name "r", :type :ast-atom} {:name "s", :type :ast-atom})) => (list {:name "r", :type :ast-atom} {:name "s", :type :ast-atom})
         ))
 
+(fact "quote quotes a string for use in prolog quote"
+      (prolog/quote "asd") => "asd"
+      (prolog/quote "as\\d") => "as\\\\d"
+      (prolog/quote "as'd") => "as''d"
+      (prolog/quote "as\\'d") => "as\\\\''d")
+
 (future-fact "can replace a clause in a string with new clause without affecting other parts of a file.")
