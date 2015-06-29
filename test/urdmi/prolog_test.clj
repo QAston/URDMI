@@ -60,7 +60,8 @@
             op (first (prolog/prolog-sentence-seq parser-context (StringReader. "p([X|Y]).")))]
         (meta sentence) => {:column 5, :line 1, :position 6}
         (meta op) => {:column 1, :line 1, :position 2}
-        (meta (last (:children (first (:children op))))) => {:line 1, :column 6, :position 7}))
+        ;(meta (last (:children (first (:children op))))) => {:line 1, :column 6, :position 7}
+        ))
 
 (defn get-prolog-files-for-tests [^String dir]
   (vec (flatten (for [extension ["pl" "kb" "bg" "b" "n" "f" "s"]]

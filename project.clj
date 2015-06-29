@@ -4,11 +4,11 @@
   :license {:name "GNU General Public License, version 3"
             :url "https://www.gnu.org/licenses/gpl.html"}
   :dependencies [[org.clojure/clojure "1.7.0-RC1"]
-                 [com.igormaznitsa/prologparser "1.3.2"]
                  [clj-antlr "0.2.2"]
                  [fx-clj "0.2.0-alpha1"]
                  [com.stuartsierra/component "0.2.3"]
                  [org.apache.directory.studio/org.apache.commons.io "2.4"]
+                 [potemkin "0.3.13"]
                  ]
   :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]}}
   :plugins [[lein-midje "3.0.0"]]
