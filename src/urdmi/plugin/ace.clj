@@ -13,3 +13,6 @@
                     :dir working-dir
                     ))
   )
+
+(defn build-working-dir []
+  ())

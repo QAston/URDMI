@@ -9,6 +9,7 @@
                  [com.stuartsierra/component "0.2.3"]
                  [org.apache.directory.studio/org.apache.commons.io "2.4"]
                  [potemkin "0.3.13"]
+                 [me.raynes/fs "1.4.6"]
                  ]
   :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]}}
   :plugins [[lein-midje "3.0.0"]]

@@ -1,7 +1,8 @@
 (ns urdmi.core
   (:require [fx-clj.core :as fx])
   (:require [clojure.core.async :refer [chan go <! >!]]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [me.raynes.fs :as fs]))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader)]
@@ -32,3 +33,14 @@
   main-view)
 
 ;(fx/sandbox #'asdf)
+
+(import 'java.io.File)
+(import 'java.nio.file.Path)
+(defn merge-addition
+  "appends addition file to the working directory file, creates files if not present"
+  [^File working-dir ^File additions-dir ^File addition-file-rel]
+  (fs/mkdirs working-dir)
+  (let [^Path target-file (.toFile (.resolve (.toPath working-dir) (.toPath addition-file-rel)))]
+    (with-open [o (io/output-stream target-file :append true)]
+      (java.nio.file.Files/copy (.resolve (.toPath additions-dir) (.toPath addition-file-rel)) o))))
+
