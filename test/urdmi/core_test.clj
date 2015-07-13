@@ -6,7 +6,9 @@
     [urdmi.core :as core]
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [me.raynes.fs :as fs]))
+    [me.raynes.fs :as fs]
+    [clojure.edn :as edn]
+    [clojure.zip :as zip]))
 
 #_(facts "merge addition works"
        (let [additions-dir-name (fs/file "dev-resources/temp/proj/additions")
@@ -51,45 +53,52 @@
 (fact "load-relations loads base relation data from disk"
       (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
             loaded (core/load-relations base)
-            rels (map second (core/relations-keyname loaded))
-            relkeys (map first (core/relations-keyname loaded))]
-        (map :filename rels) => (just #{"dzial.pl" "klient.pl" "pracownik.pl" "pracownikpersonalia.pl" "pracownikprodukcja.pl" "produkcja.pl" "towar.pl" "zamowienie.pl" "zamowienieszczegoly.pl"})
-        (map :name rels) => (just #{"dzial" "klient" "pracownik" "pracownikpersonalia" "pracownikprodukcja" "produkcja" "towar" "zamowienie" "zamowienieszczegoly"})
-        relkeys => (just #{"dzial" "klient" "pracownik" "pracownikpersonalia" "pracownikprodukcja" "produkcja" "towar" "zamowienie" "zamowienieszczegoly"})))
+            rels (map second (get-in loaded (core/dir-keys core/relations-keyname :dir)))
+            relkeys (map first (get-in loaded (core/dir-keys core/relations-keyname :dir)))]
+        (map :name rels) => (just #{"dzial.pl" "klient.pl" "pracownik.pl" "pracownikpersonalia.pl" "pracownikprodukcja.pl" "produkcja.pl" "towar.pl" "zamowienie.pl" "zamowienieszczegoly.pl"})
+        (map :relname rels) => (just #{"dzial" "klient" "pracownik" "pracownikpersonalia" "pracownikprodukcja" "produkcja" "towar" "zamowienie" "zamowienieszczegoly"})
+        relkeys => (just #{"dzial.pl" "klient.pl" "pracownik.pl" "pracownikpersonalia.pl" "pracownikprodukcja.pl" "produkcja.pl" "towar.pl" "zamowienie.pl" "zamowienieszczegoly.pl"})))
 
 
 (fact "load working dir loads base working dir data from disk"
-      (let [base (core/base-project (fs/file "dev-resources/projects/ace_tilde/"))
-            workdir (core/workdir-keyname (core/load-working-dir base))
-            tildedir (get-in workdir ["tilde"])
-            outfile (get-in workdir ["tilde" :dir "pracownik.out"])]
+      (let [base (core/load-working-dir (core/base-project (fs/file "dev-resources/projects/ace_tilde/")))
+            tildedir (get-in base (core/dir-keys core/workdir-keyname "tilde"))
+            outfile (get-in base (core/dir-keys core/workdir-keyname "tilde" "pracownik.out"))]
         (:name tildedir) => "tilde"
         (:name outfile) => "pracownik.out"
         (map first (:dir tildedir)) => (just #{"pracownik.out" "pracownik.progress" "pracownik.ptree"})))
 
+(fact "file-model-zipper allows moving among files"
+      (let [base (core/base-project (fs/file "dev-resources/projects/ace_tilde/"))
+            workdir (core/workdir-keyname (:dir (core/load-working-dir base)))]
+        (zip/node (zip/down (core/file-model-zipper workdir))) => truthy
+        (get (:dir (zip/root (zip/append-child (core/file-model-zipper workdir) {:name "tyry"}))) "tyry") => {:name "tyry"}
+        ))
+
 (fact "load additions loads additions data from disk"
       (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
-            additions (core/additions-keyname (core/load-additions base))]
+            additions (get-in (core/load-additions base) (core/dir-keys core/additions-keyname :dir))]
         (map first additions) => (just #{"pracownik.b"})))
 
 (fact "load settings"
       (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
-            additions (core/settings-keyname (core/load-settings base))]
-        (map first additions) => (just #{"project.edn" "aleph.edn"})))
+            settings (get-in (core/load-settings base) (core/dir-keys core/settings-keyname :dir))]
+        (map first settings) => (just #{"project.edn" "aleph.edn"})
+        (get-in settings ["project.edn" :data]) => {:working-dir (io/file "working_dir")}))
 
 (fact "load output"
       (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
-            additions (core/output-keyname (core/load-output base))]
+            additions (get-in (core/load-output base) (core/dir-keys core/output-keyname :dir))]
         (map first additions) => (just #{"result.edn"})))
 
 (fact "load project populates project fields"
       (let [proj (core/load-project (fs/file "dev-resources/projects/aleph_default/"))]
-        (< 0 (count (core/relations-keyname proj))) => truthy
-        (< 0 (count (core/additions-keyname proj))) => truthy
-        (< 0 (count (core/output-keyname proj))) => truthy
-        (< 0 (count (core/settings-keyname proj))) => truthy
-        (< 0 (count (core/workdir-keyname proj))) => truthy))
+        (< 0 (count (get-in proj (core/dir-keys core/relations-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/dir-keys core/additions-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/dir-keys core/workdir-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/dir-keys core/output-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/dir-keys core/settings-keyname :dir)))) => truthy))
 
 (fact "generate-menu-entries works on example data"
       (let [proj (core/load-project (fs/file "dev-resources/projects/aleph_default/"))]
-        (core/generate-menu-entries proj) => []))
+        ))
