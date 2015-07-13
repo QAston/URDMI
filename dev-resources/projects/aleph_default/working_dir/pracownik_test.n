@@ -1,8 +1,0 @@
-pracownik(7,robotnik,1,null,02,1).
-pracownik(11,ksiegowy,1,null,08,5).
-pracownik(14,ksiegowy,1,null,09,5).
-pracownik(24,informatyk,2,null,08,6).
-pracownik(26,informatyk,3,2,01,1).
-pracownik(31,marketingowiec,2,null,08,4).
-pracownik(34,ekspert,2,null,09,3).
-pracownik(38,robotnik,1,null,09,1).

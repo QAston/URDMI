@@ -57,14 +57,17 @@
 (defprotocol Plugin
   "All urdmi plugins must implement this protocol"
   (new-project-creation-view ^View [this app-event-in-channel] "returns a view for creating a ")
-  (run [this project] "Run datamining engine associated to this plugin. Updates outout menu entries.")
+  (run [this project] "Run datamining engine associated to this plugin. Updates output menu entries.")
   (update-working-dir [this project changed-entry] "Updates working dir files for given entry change")
   (new-entry-view ^View [this project entry to-app-channel] "Returns a view for editing/display of a menu entry"))
 
-(defn register-plugin [])
 
+(defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])
 
-(defrecord Project [dir, project-dir])
+(defrecord App [^Project open-project ^clojure.lang.IPersistentMap plugins])
+
+(defn register-plugin [^App app name ^urdmi.core.Plugin plugin]
+  (assoc-in app [:plugins name] plugin))
 
 (def project-keyname :project)
 (def relations-keyname :relations)
@@ -83,7 +86,7 @@
   (->Project {settings-keyname {:name settings-keyname
                                 :dir
                                 {"project.edn" {:name "project.edn"
-                                                :data {:working-dir (io/file working-dir-default-folder)}}}}} project-dir))
+                                                :data {:working-dir (io/file working-dir-default-folder)}}}}} project-dir nil))
 
 (defn dir-keys
   "constructs a vector of keys into project :dir map from given node names (name-keys)"
@@ -274,4 +277,7 @@
         settings (vec (cons settings-keyname (sort (map #(:name) (:settings p)))))
         ]
     [project-keyname relations working-dir outputs additions settings]))
+
+(defn build[^Project p]
+  )
 

@@ -99,6 +99,6 @@
         (< 0 (count (get-in proj (core/dir-keys core/output-keyname :dir)))) => truthy
         (< 0 (count (get-in proj (core/dir-keys core/settings-keyname :dir)))) => truthy))
 
-(fact "generate-menu-entries works on example data"
+(future-fact "generate-menu-entries works on example data"
       (let [proj (core/load-project (fs/file "dev-resources/projects/aleph_default/"))]
         ))
