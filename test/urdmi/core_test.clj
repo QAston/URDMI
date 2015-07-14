@@ -80,24 +80,12 @@
             additions (get-in (core/load-additions base) (core/dir-keys core/additions-keyname :dir))]
         (map first additions) => (just #{"pracownik.b"})))
 
-(fact "load settings"
-      (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
-            settings (get-in (core/load-settings base) (core/dir-keys core/settings-keyname :dir))]
-        (map first settings) => (just #{"project.edn" "aleph.edn"})
-        (get-in settings ["project.edn" :data]) => {:working-dir (io/file "working_dir")}))
-
 (fact "load output"
       (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
             additions (get-in (core/load-output base) (core/dir-keys core/output-keyname :dir))]
         (map first additions) => (just #{"result.edn"})))
 
-(fact "load project populates project fields"
-      (let [proj (core/load-project (fs/file "dev-resources/projects/aleph_default/"))]
-        (< 0 (count (get-in proj (core/dir-keys core/relations-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/dir-keys core/additions-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/dir-keys core/workdir-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/dir-keys core/output-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/dir-keys core/settings-keyname :dir)))) => truthy))
+
 
 (future-fact "generate-menu-entries works on example data"
       (let [proj (core/load-project (fs/file "dev-resources/projects/aleph_default/"))]

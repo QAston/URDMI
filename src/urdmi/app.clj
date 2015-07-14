@@ -8,8 +8,8 @@
 
 (defn register-plugins [^App app]
   (-> app
-      (register-plugin :ace (ace/create))
-      (register-plugin :aleph (aleph/create))))
+      (register-plugin :ace #'ace/create)
+      (register-plugin :aleph #'aleph/create)))
 
 (defn init-app []
   (register-plugins (->App nil {}))

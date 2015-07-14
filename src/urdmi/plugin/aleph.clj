@@ -11,7 +11,7 @@
   (run [this project]
     (let [swiprolog-location "C:\\Program Files\\pl\\bin\\plcon.exe"
           aleph-location "C:\\portable\\aleph.pl"
-          working-dir (io/file (io/resource "projects/aleph_default/working_dir"))
+          working-dir (api/get-working-dir project)
           dbname "pracownik"]
       (shell/sh swiprolog-location "-g" "true"
                 :in (StringReader. (str "consult('" (prolog/quote aleph-location) "').\nread_all(" (prolog/quote dbname) ").\n.\ninduce.\nhalt.\n"))

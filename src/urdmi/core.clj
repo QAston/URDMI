@@ -64,9 +64,9 @@
 
 (defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])
 
-(defrecord App [^Project open-project ^clojure.lang.IPersistentMap plugins])
+(defrecord App [^Project project ^clojure.lang.IPersistentMap plugins])
 
-(defn register-plugin [^App app name ^urdmi.core.Plugin plugin]
+(defn register-plugin [^App app name ^clojure.lang.IFn plugin]
   (assoc-in app [:plugins name] plugin))
 
 (def project-keyname :project)
@@ -85,8 +85,8 @@
 (defn base-project [project-dir]
   (->Project {settings-keyname {:name settings-keyname
                                 :dir
-                                {"project.edn" {:name "project.edn"
-                                                :data {:working-dir (io/file working-dir-default-folder)}}}}} project-dir nil))
+                                      {"project.edn" {:name "project.edn"
+                                                      :data {:working-dir (io/file working-dir-default-folder)}}}}} project-dir nil))
 
 (defn dir-keys
   "constructs a vector of keys into project :dir map from given node names (name-keys)"
@@ -98,8 +98,11 @@
   [dir-keys]
   (vec (remove (fn [k] (= :dir k)) dir-keys)))
 
+(defn get-project-settings [project]
+  (:data (get (:dir (:settings (:dir project))) "project.edn")))
+
 (defn get-working-dir [project]
-  (let [wdir (:working-dir (:data (get (:dir (:settings (:dir project))) "project.edn")))]
+  (let [wdir (:working-dir (get-project-settings project))]
     (if (fs/absolute? wdir)
       wdir
       (io/file (:project-dir project) wdir))))
@@ -222,12 +225,26 @@
   (update data :working-dir (fn [workdir-file]
                               (.toString workdir-file))))
 
-(defn load-settings [^Project p]
-  (let [proj-with-settings (assoc-in p (dir-keys settings-keyname) (generate-model-map (get-settings-dir p) settings-keyname))
+(defn- load-plugin [^App app]
+  (let [plugin-key (:active-plugin (get-project-settings (:project app)))
+        plugin-map (:plugins app)]
+    (assoc-in app [:project :plugin] ((get plugin-map plugin-key (fn [] nil))))))
+
+(defn- load-project-edn [^App app]
+  (let [p (:project app)
         proj-settings-keys [settings-keyname "project.edn"]]
-    (assoc-in proj-with-settings
-              (conj (apply dir-keys proj-settings-keys) :data)
-              (deserialize-project-edn (read-edn-data (name-keys-to-file proj-with-settings proj-settings-keys))))))
+    (assoc-in app
+              (cons :project (conj (apply dir-keys proj-settings-keys) :data))
+             (deserialize-project-edn (read-edn-data (name-keys-to-file p proj-settings-keys))))))
+
+(defn load-settings [^App app]
+  (let [p (:project app)
+        proj-with-settings (assoc-in p (dir-keys settings-keyname) (generate-model-map (get-settings-dir p) settings-keyname))
+        ]
+    (-> app
+        (assoc :project proj-with-settings)
+        (load-project-edn)
+        (load-plugin))))
 
 (defn load-output [^Project p]
   (assoc-in p (dir-keys output-keyname) (generate-model-map (get-output-dir p) output-keyname)))
@@ -237,17 +254,19 @@
     (assoc-in p (dir-keys relations-keyname)
               {:dir (into {} (map (fn [file] (let [name (string/join (fs/base-name file ".pl"))
                                                    filename (.getName file)]
-                                               [filename {:name filename
-                                                      :relname     name}]))
+                                               [filename {:name    filename
+                                                          :relname name}]))
                                   toread))})))
 
-(defn load-project [^File dir]
-  (-> (base-project dir)
-      (load-settings)
-      (load-additions)
-      (load-relations)
-      (load-working-dir)
-      (load-output)))
+(defn load-project [^App app ^File dir]
+  (let [app-with-project (load-settings (assoc app :project (base-project dir)))]
+    (assoc app-with-project :project
+      (-> app-with-project
+         (:project)
+         (load-additions)
+         (load-relations)
+         (load-working-dir)
+         (load-output)))))
 
 (def entries-to-displaynames {
                               [project-keyname]                   "Project"
@@ -278,6 +297,9 @@
         ]
     [project-keyname relations working-dir outputs additions settings]))
 
-(defn build[^Project p]
+(defn build-working-dir [^Project p]
+  ;get relations and put them into correct files
+  ;get additions and put them into correct files
+  ;
   )
 

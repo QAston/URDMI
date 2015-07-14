@@ -21,7 +21,7 @@
   (run [this project]
     (let [ace-location "C:\\ML-Tools\\ACE-1.2.15\\windows\\bin\\ACE.exe"
           command "t\n"
-          working-dir (io/file (io/resource "projects/ace_tilde/working_dir"))]
+          working-dir (api/get-working-dir project)]
       (shell/sh ace-location
                 :in (StringReader. command)
                 :dir working-dir
