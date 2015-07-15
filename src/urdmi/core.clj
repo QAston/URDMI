@@ -45,8 +45,7 @@
   (fs/mkdirs working-dir)
   (let [^Path target-file (io/file working-dir addition-file-rel)]
     (with-open [o (io/output-stream target-file :append true)]
-      (java.nio.file.Files/copy (io/file additions-dir addition-file-rel) o))))
-
+      (java.nio.file.Files/copy (.toPath (io/file additions-dir addition-file-rel)) o))))
 
 
 (defprotocol View
@@ -58,7 +57,8 @@
   "All urdmi plugins must implement this protocol"
   (new-project-creation-view ^View [this app-event-in-channel] "returns a view for creating a ")
   (run [this project] "Run datamining engine associated to this plugin. Updates output menu entries.")
-  (update-working-dir [this project changed-entry] "Updates working dir files for given entry change")
+  (update-working-dir [this project name-keys] "Updates working dir files for given entry change")
+  (rebuild-working-dir [this project])
   (new-entry-view ^View [this project entry to-app-channel] "Returns a view for editing/display of a menu entry"))
 
 
@@ -252,11 +252,16 @@
 (defn load-relations [^Project p]
   (let [toread (fs/glob (get-relations-dir p) "*.pl")]
     (assoc-in p (dir-keys relations-keyname)
-              {:dir (into {} (map (fn [file] (let [name (string/join (fs/base-name file ".pl"))
+              {:dir (into {} (map (fn [file] (let [base-name (fs/base-name file ".pl")
+                                                   name (string/join (butlast (string/split base-name #"_")))
+                                                   arity (Integer/valueOf ^String (last (string/split base-name #"_")))
                                                    filename (.getName file)]
-                                               [filename {:name    filename
-                                                          :relname name}]))
+                                               [filename {:name filename
+                                                          :rel  [name arity]}]))
                                   toread))})))
+
+(defn relation-to-filename [[relname relarity]]
+  (str relname "_" relarity ".pl"))
 
 (defn load-project [^App app ^File dir]
   (let [app-with-project (load-settings (assoc app :project (base-project dir)))]
@@ -296,10 +301,4 @@
         settings (vec (cons settings-keyname (sort (map #(:name) (:settings p)))))
         ]
     [project-keyname relations working-dir outputs additions settings]))
-
-(defn build-working-dir [^Project p]
-  ;get relations and put them into correct files
-  ;get additions and put them into correct files
-  ;
-  )
 

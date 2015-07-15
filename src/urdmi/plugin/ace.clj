@@ -28,6 +28,7 @@
                 ))
     )
   (update-working-dir [this project changed-entry])
+  (rebuild-working-dir [this project])
   (new-entry-view ^api/View [this project entry to-app-channel]))
 
 (defn create []

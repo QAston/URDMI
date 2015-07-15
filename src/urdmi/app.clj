@@ -14,3 +14,7 @@
 (defn init-app []
   (register-plugins (->App nil {}))
   )
+
+(defn build-working-dir [^Project p]
+  (rebuild-working-dir (:plugin p) p)
+  )

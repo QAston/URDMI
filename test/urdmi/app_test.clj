@@ -26,4 +26,4 @@
 
 (future-fact "build project generates expected working_dir output"
              (let [app (core/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))]
-               (core/build-working-dir (:project app))))
+               (build-working-dir (:project app))))

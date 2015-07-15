@@ -10,7 +10,7 @@
     [clojure.edn :as edn]
     [clojure.zip :as zip]))
 
-#_(facts "merge addition works"
+(facts "merge addition works"
        (let [additions-dir-name (fs/file "dev-resources/temp/proj/additions")
              working-dir-name (fs/file "dev-resources/temp/proj/working")
              working-file-appended (io/file "subdir/appended")
@@ -55,9 +55,9 @@
             loaded (core/load-relations base)
             rels (map second (get-in loaded (core/dir-keys core/relations-keyname :dir)))
             relkeys (map first (get-in loaded (core/dir-keys core/relations-keyname :dir)))]
-        (map :name rels) => (just #{"dzial.pl" "klient.pl" "pracownik.pl" "pracownikpersonalia.pl" "pracownikprodukcja.pl" "produkcja.pl" "towar.pl" "zamowienie.pl" "zamowienieszczegoly.pl"})
-        (map :relname rels) => (just #{"dzial" "klient" "pracownik" "pracownikpersonalia" "pracownikprodukcja" "produkcja" "towar" "zamowienie" "zamowienieszczegoly"})
-        relkeys => (just #{"dzial.pl" "klient.pl" "pracownik.pl" "pracownikpersonalia.pl" "pracownikprodukcja.pl" "produkcja.pl" "towar.pl" "zamowienie.pl" "zamowienieszczegoly.pl"})))
+        (map :name rels) => (just #{"towar_6.pl" "produkcja_5.pl" "pracownik_7.pl" "pracownikpersonalia_8.pl" "klient_9.pl" "zamowienieszczegoly_4.pl" "pracownikprodukcja_7.pl" "zamowienie_5.pl" "dzial_6.pl"})
+        (map :rel rels) => (just #{["dzial" 6] ["klient" 9] ["pracownik" 7] ["pracownikpersonalia" 8] ["pracownikprodukcja" 7] ["produkcja" 5] ["towar" 6] ["zamowienie" 5] ["zamowienieszczegoly" 4]})
+        relkeys => (just #{"towar_6.pl" "produkcja_5.pl" "pracownik_7.pl" "pracownikpersonalia_8.pl" "klient_9.pl" "zamowienieszczegoly_4.pl" "pracownikprodukcja_7.pl" "zamowienie_5.pl" "dzial_6.pl"})))
 
 
 (fact "load working dir loads base working dir data from disk"
@@ -85,8 +85,8 @@
             additions (get-in (core/load-output base) (core/dir-keys core/output-keyname :dir))]
         (map first additions) => (just #{"result.edn"})))
 
-
+(fact "relation-to-filename"
+      (core/relation-to-filename ["rel" 5]) => "rel_5.pl")
 
 (future-fact "generate-menu-entries works on example data"
-      (let [proj (core/load-project (fs/file "dev-resources/projects/aleph_default/"))]
-        ))
+      )
