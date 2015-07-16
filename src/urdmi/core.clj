@@ -1,11 +1,13 @@
 (ns urdmi.core
+  (:use clojure.pprint)
   (:require [fx-clj.core :as fx])
   (:require [clojure.core.async :refer [chan go <! >!]]
             [clojure.java.io :as io]
             [me.raynes.fs :as fs]
             [clojure.zip :as zip]
             [clojure.edn :as edn]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [urdmi.prolog :as prolog]))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader)]
@@ -201,11 +203,11 @@
 (defn zipiter-to-name-keys [zipiter]
   (into (list (:name (zip/node zipiter))) (map :name (zip/path zipiter))))
 
-#_(defn- read-edn-data-into-iter-node [^Project p zipiter node]
+(defn- read-edn-data-into-iter-node [^Project p zipiter node]
   (zip/replace zipiter (assoc node :data (read-edn-data (name-keys-to-file p (zipiter-to-name-keys zipiter))))))
 
-#_(defn load-files[^Project p]
-  (assoc-in p (dir-keys settings-keyname :dir)
+(defn load-files [^Project p]
+  (assoc-in p (dir-keys settings-keyname)
             (zip/root (loop [zipiter (file-model-zipper (get-in p (dir-keys settings-keyname)))]
                         (if (zip/end? zipiter)
                           zipiter
@@ -235,11 +237,12 @@
         proj-settings-keys [settings-keyname "project.edn"]]
     (assoc-in app
               (cons :project (conj (apply dir-keys proj-settings-keys) :data))
-             (deserialize-project-edn (read-edn-data (name-keys-to-file p proj-settings-keys))))))
+              (deserialize-project-edn (read-edn-data (name-keys-to-file p proj-settings-keys))))))
 
 (defn load-settings [^App app]
   (let [p (:project app)
         proj-with-settings (assoc-in p (dir-keys settings-keyname) (generate-model-map (get-settings-dir p) settings-keyname))
+        proj-with-settings (load-files proj-with-settings)
         ]
     (-> app
         (assoc :project proj-with-settings)
@@ -250,28 +253,38 @@
   (assoc-in p (dir-keys output-keyname) (generate-model-map (get-output-dir p) output-keyname)))
 
 (defn load-relations [^Project p]
-  (let [toread (fs/glob (get-relations-dir p) "*.pl")]
+  (let [toread (fs/glob (get-relations-dir p) "*.pl")
+        parser-context (prolog/parser-context nil)]
     (assoc-in p (dir-keys relations-keyname)
               {:dir (into {} (map (fn [file] (let [base-name (fs/base-name file ".pl")
                                                    name (string/join (butlast (string/split base-name #"_")))
                                                    arity (Integer/valueOf ^String (last (string/split base-name #"_")))
-                                                   filename (.getName file)]
+                                                   filename (.getName file)
+                                                   asts (with-open [rel-rdr (io/reader file)]
+                                                          (doall (prolog/prolog-sentence-seq parser-context rel-rdr)))]
                                                [filename {:name filename
-                                                          :rel  [name arity]}]))
+                                                          :rel  [name arity]
+                                                          :ast  asts}]))
                                   toread))})))
 
 (defn relation-to-filename [[relname relarity]]
   (str relname "_" relarity ".pl"))
 
+(defn get-relation-data [^Project p [relname relarity :as rel]]
+  (get-in p (dir-keys relations-keyname (relation-to-filename rel))))
+
+(defn get-relations [^Project p]
+  (map second (get-in p (dir-keys relations-keyname :dir))))
+
 (defn load-project [^App app ^File dir]
   (let [app-with-project (load-settings (assoc app :project (base-project dir)))]
     (assoc app-with-project :project
-      (-> app-with-project
-         (:project)
-         (load-additions)
-         (load-relations)
-         (load-working-dir)
-         (load-output)))))
+                            (-> app-with-project
+                                (:project)
+                                (load-additions)
+                                (load-relations)
+                                (load-working-dir)
+                                (load-output)))))
 
 (def entries-to-displaynames {
                               [project-keyname]                   "Project"

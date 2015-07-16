@@ -4,7 +4,7 @@
   (:use urdmi.core)
   (:require [urdmi.plugin.ace :as ace]
             [urdmi.plugin.aleph :as aleph])
-  (:import (urdmi.core App)))
+  (:import (urdmi.core App Project)))
 
 (defn register-plugins [^App app]
   (-> app

@@ -1,5 +1,6 @@
 (ns urdmi.core-test
-  (:use midje.sweet)
+  (:use midje.sweet
+        urdmi.prolog-test)
   (:import java.io.StringReader
            (com.ugos.jiprolog.engine PrologObject))
   (:require
@@ -8,7 +9,8 @@
     [clojure.string :as str]
     [me.raynes.fs :as fs]
     [clojure.edn :as edn]
-    [clojure.zip :as zip]))
+    [clojure.zip :as zip]
+    [urdmi.prolog :as prolog]))
 
 (facts "merge addition works"
        (let [additions-dir-name (fs/file "dev-resources/temp/proj/additions")
@@ -53,10 +55,20 @@
 (fact "load-relations loads base relation data from disk"
       (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
             loaded (core/load-relations base)
-            rels (map second (get-in loaded (core/dir-keys core/relations-keyname :dir)))
+            dzial-6-rel (parse-string (prolog/parser-context nil) "dzial(1,produkcja,produkcyjna,1,null,lapy).
+dzial(2,sprzedaz,lipowa,1,1,bialystok).
+dzial(3,kontrolajakosci,produkcyjna,1,1,lapy).
+dzial(4,marketing,lipowa,1,2,bialystok).
+dzial(5,ksiegowosc,lipowa,1,3,bialystok).
+dzial(6,informatyka,lipowa,1,4,bialystok).
+dzial(7,reklamacja,lipowa,1,5,bialystok).
+dzial(8,informatyka,produkcyjna,1,1,lapy).
+")
+            rels (core/get-relations loaded)
             relkeys (map first (get-in loaded (core/dir-keys core/relations-keyname :dir)))]
         (map :name rels) => (just #{"towar_6.pl" "produkcja_5.pl" "pracownik_7.pl" "pracownikpersonalia_8.pl" "klient_9.pl" "zamowienieszczegoly_4.pl" "pracownikprodukcja_7.pl" "zamowienie_5.pl" "dzial_6.pl"})
         (map :rel rels) => (just #{["dzial" 6] ["klient" 9] ["pracownik" 7] ["pracownikpersonalia" 8] ["pracownikprodukcja" 7] ["produkcja" 5] ["towar" 6] ["zamowienie" 5] ["zamowienieszczegoly" 4]})
+        (:ast (core/get-relation-data loaded ["dzial" 6])) => dzial-6-rel
         relkeys => (just #{"towar_6.pl" "produkcja_5.pl" "pracownik_7.pl" "pracownikpersonalia_8.pl" "klient_9.pl" "zamowienieszczegoly_4.pl" "pracownikprodukcja_7.pl" "zamowienie_5.pl" "dzial_6.pl"})))
 
 

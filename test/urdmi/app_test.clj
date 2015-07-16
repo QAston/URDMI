@@ -14,6 +14,7 @@
             settings (get-in (:project app) (core/dir-keys core/settings-keyname :dir))]
         (map first settings) => (just #{"project.edn" "aleph.edn"})
         (get-in settings ["project.edn" :data]) => {:working-dir (io/file "working_dir") :active-plugin :aleph}
+        (get-in settings ["aleph.edn" :data]) => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
         (extends? core/Plugin (class (get-in app [:project :plugin]))) => truthy))
 
 (fact "load project populates project fields"

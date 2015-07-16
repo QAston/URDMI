@@ -48,7 +48,6 @@
           working-dir (api/get-working-dir project)
           target-relation (:target-rel plugin-settings)
           target-relation-param (:target-rel-param plugin-settings)
-
           ]
       #_(io/output-stream )))
   (new-entry-view ^api/View [this project entry to-app-channel]))
