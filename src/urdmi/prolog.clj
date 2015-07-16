@@ -1,6 +1,6 @@
 (ns urdmi.prolog
   (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader JIPDebugger PrologObject ConsCell Functor List Clause Atom Expression Variable)
-           (java.io Reader)
+           (java.io Reader Writer StringWriter)
            (org.apache.commons.io.input ReaderInputStream)
            (com.ugos.io PushbackLineNumberInputStream)
            (java.nio.charset Charset)
@@ -165,7 +165,7 @@
   (to-ast [^Expression obj]
     (with-file-metadata obj
                         {:type  ast-expression
-                         :value (if (.isInteger obj) (int (.getValue obj))
+                         :value (if (.isInteger obj) (long (.getValue obj))
                                                      (.getValue obj))}
                         )))
 
@@ -212,9 +212,9 @@ root is the root node."
 
 
 (defmulti pretty-print "Pretty prints a prolog ast node into builder."
-          (fn [node op-manager ^StringBuilder builder] (:type node)))
+          (fn [node op-manager ^Writer builder] (:type node)))
 
-(defn- pretty-print-params [nodes-seq op-manager ^StringBuilder builder]
+(defn- pretty-print-params [nodes-seq op-manager ^Writer builder]
   (loop [nodes nodes-seq]
     (when-let [head (first nodes)]
       (pretty-print head, op-manager, builder)
@@ -224,7 +224,7 @@ root is the root node."
           (recur tail)))
       )))
 
-(defn- pretty-print-cons [obj op-manager ^StringBuilder builder]
+(defn- pretty-print-cons [obj op-manager ^Writer builder]
   (loop [nodes (:children obj)]
     (when-let [head (first nodes)]
       (pretty-print head, op-manager, builder)
@@ -235,7 +235,7 @@ root is the root node."
           (recur tail)))
       )))
 
-(defn- pretty-print-operator [functor ^com.ugos.jiprolog.engine.Operator op op-manager ^StringBuilder builder]
+(defn- pretty-print-operator [functor ^com.ugos.jiprolog.engine.Operator op op-manager ^Writer builder]
   (let [arity (get-functor-arity functor)
         head (first (:children functor))
         args (rest (:children functor))]
@@ -271,7 +271,7 @@ root is the root node."
           op
           )))))
 
-(defmethod pretty-print ast-functor [functor op-manager ^StringBuilder builder]
+(defmethod pretty-print ast-functor [functor op-manager ^Writer builder]
   (let [children (:children functor)
         head (first children)
         params (seq (rest children))]
@@ -286,13 +286,13 @@ root is the root node."
           (.append builder ")")))
       )))
 
-(defmethod pretty-print ast-list [obj op-manager ^StringBuilder builder]
+(defmethod pretty-print ast-list [obj op-manager ^Writer builder]
   (.append builder "[")
   (pretty-print-cons obj op-manager builder)
   (.append builder "]")
   )
 
-(defmethod pretty-print ast-cell [obj op-manager ^StringBuilder builder]
+(defmethod pretty-print ast-cell [obj op-manager ^Writer builder]
   ;todo: determine if parens should be printed or not based on operator manager
   ;take "parent operator" as a param, when "," priority bigger than parent-operator param don't print parens
   ;(.append builder "(")
@@ -300,27 +300,32 @@ root is the root node."
   ;(.append builder ")")
   )
 
-(defmethod pretty-print ast-atom [obj _ ^StringBuilder builder]
-  (.append builder (:name obj))
+(defmethod pretty-print ast-atom [obj _ ^Writer builder]
+  (.append builder ^String (:name obj))
   )
 
-(defmethod pretty-print ast-expression [obj _ ^StringBuilder builder]
-  (.append builder (:value obj))
+(defmethod pretty-print ast-expression [obj _ ^Writer builder]
+  (.append builder ^String (.toString (:value obj)))
   )
 
-(defmethod pretty-print ast-variable [obj _ ^StringBuilder builder]
-  (.append builder (:name obj))
+(defmethod pretty-print ast-variable [obj _ ^Writer builder]
+  (.append builder ^String (:name obj))
   )
 
 (defn pretty-print-sentences
   "Pretty-prints a a seq of prolog ast nodes. Assumes these are in order."
-  [^ParserContext context, ^ISeq prolog-sentences]
-  ;todo: handle seqs
-  (let [builder (StringBuilder.)]
-    (pretty-print (first prolog-sentences) (:op-manager context) builder)
-    (.toString builder)))
+  ([^ParserContext context, ^ISeq prolog-sentences ^Writer writer]
+    (doseq [sentence prolog-sentences]
+      (pretty-print sentence (:op-manager context) writer)
+      (.append writer ".\n")
+      ))
+  ([^ParserContext context, ^ISeq prolog-sentences]
+   (let [writer (StringWriter.)]
+     (pretty-print-sentences context prolog-sentences writer)
+     (.toString writer)
+     )))
 
 (defn quote
-  "quotes string for use in prolog literals"[^String s]
+  "quotes string for use in prolog literals" [^String s]
   (.replace (.replace s "'" "''") "\\" "\\\\"))
 

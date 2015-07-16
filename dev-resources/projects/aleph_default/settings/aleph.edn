@@ -1,4 +1,4 @@
 {:target-rel ["pracownik" 7]
- :target-rel-param 6
+ :target-rel-param 7
  :aleph-loc "C:\\portable\\aleph.pl"
  :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe"}

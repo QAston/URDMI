@@ -7,7 +7,8 @@
             [clojure.zip :as zip]
             [clojure.edn :as edn]
             [clojure.string :as string]
-            [urdmi.prolog :as prolog]))
+            [urdmi.prolog :as prolog])
+  (:import (java.io Writer)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader)]
@@ -40,15 +41,6 @@
 ;(fx/sandbox #'asdf)
 
 (import 'java.io.File)
-
-(defn merge-addition
-  "appends addition file to the working directory file, creates files if not present"
-  [^File working-dir ^File additions-dir ^File addition-file-rel]
-  (fs/mkdirs working-dir)
-  (let [^Path target-file (io/file working-dir addition-file-rel)]
-    (with-open [o (io/output-stream target-file :append true)]
-      (java.nio.file.Files/copy (.toPath (io/file additions-dir addition-file-rel)) o))))
-
 
 (defprotocol View
   (main-widget [this])
@@ -167,6 +159,18 @@
   (with-open [i (io/reader file)]
     (edn/read (java.io.PushbackReader. i))))
 
+(defn append-addition
+  "appends addition file to the working directory file, creates files if not present"
+  ([^Project p ^File addition-file-rel ^Writer writer]
+   (let [file (io/file (get-additions-dir p) addition-file-rel)]
+     (when (fs/file? file)
+       (with-open [file-rdr (io/reader file)]
+         (loop []
+           (let [data (.read file-rdr)]
+             (when-not (== data -1)
+               (.write writer data)
+               (recur)))))))))
+
 (defn save-entry [^Project p name-keys]
   )
 
@@ -270,8 +274,14 @@
 (defn relation-to-filename [[relname relarity]]
   (str relname "_" relarity ".pl"))
 
+(defn relation-to-string [[relname relarity]]
+  (str relname "/" relarity))
+
 (defn get-relation-data [^Project p [relname relarity :as rel]]
   (get-in p (dir-keys relations-keyname (relation-to-filename rel))))
+
+(defn get-settings-data [^Project p settings-filename]
+  (:data (get-in p (dir-keys settings-keyname settings-filename))))
 
 (defn get-relations [^Project p]
   (map second (get-in p (dir-keys relations-keyname :dir))))

@@ -12,33 +12,6 @@
     [clojure.zip :as zip]
     [urdmi.prolog :as prolog]))
 
-(facts "merge addition works"
-       (let [additions-dir-name (fs/file "dev-resources/temp/proj/additions")
-             working-dir-name (fs/file "dev-resources/temp/proj/working")
-             working-file-appended (io/file "subdir/appended")
-             addition-file-new (io/file "new")
-             addition-file-appended (io/file "subdir/appended")
-             spit-file (fn [dir name]
-                         (fs/mkdirs (fs/parent (fs/file dir name)))
-                         (spit (fs/file dir name) (str dir "/" name))
-                         (str dir "/" name))
-             slurp-file (fn [name]
-                          (slurp (fs/file working-dir-name name)))]
-         (try (fact " dir created " (fs/mkdirs additions-dir-name) => truthy)
-              (let [new-file-content (spit-file additions-dir-name addition-file-new)
-                    append-file-content (str (spit-file working-dir-name working-file-appended) (spit-file additions-dir-name addition-file-appended))]
-
-                (fact "new file is created in working dir if didn't exist"
-                      (core/merge-addition  working-dir-name additions-dir-name addition-file-new)
-                      (slurp-file addition-file-new) => new-file-content)
-                (fact "already existing file has appendix added to it"
-                      (core/merge-addition  working-dir-name additions-dir-name working-file-appended)
-                      (slurp-file working-file-appended) => append-file-content)
-
-                )
-              (finally (fs/delete-dir "dev-resources/temp/"))))
-       )
-
 (fact "relativize path correctly calls Path relativize"
       (core/relativize-path (fs/file ".") (fs/file "dev-resources")) => (io/file "dev-resources"))
 

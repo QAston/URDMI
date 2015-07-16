@@ -3,7 +3,7 @@
   :url "https://github.com/QAston/URDMI"
   :license {:name "GNU General Public License, version 3"
             :url "https://www.gnu.org/licenses/gpl.html"}
-  :dependencies [[org.clojure/clojure "1.7.0-RC1"]
+  :dependencies [[org.clojure/clojure "1.7.0"]
                  [clj-antlr "0.2.2"]
                  [fx-clj "0.2.0-alpha1"]
                  [com.stuartsierra/component "0.2.3"]
