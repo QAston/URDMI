@@ -18,3 +18,7 @@
 (defn build-working-dir [^Project p]
   (rebuild-working-dir (:plugin p) p)
   )
+
+(defn run-learning [^Project p]
+  (run (:plugin p) p)
+  )

@@ -5,7 +5,8 @@
   (:require [me.raynes.fs :as fs]
             [urdmi.core :as core]
             [clojure.java.io :as io]
-            [urdmi.prolog :as prolog])
+            [urdmi.prolog :as prolog]
+            [clojure.string :as string])
   (:import (urdmi.core App)
            (java.io File)))
 
@@ -44,24 +45,40 @@
                     (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
                       (count sentences) => 17
                       (distinct (map (fn [sentence]
-                              (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
+                                       (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
             (fact "pracownik.n"
                   (with-open [rdr (io/reader (io/file workdir-dir "pracownik.n"))]
                     (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
                       (count sentences) => 17
                       (distinct (map (fn [sentence]
-                              (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
+                                       (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
             (fact "pracownik.b"
                   (with-open [rdr (io/reader (io/file workdir-dir "pracownik.b"))]
                     (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
                       (count sentences) => 1415
                       (distinct (map (fn [sentence]
                                        (:name (first (:children sentence)))) sentences)) => (just #{"dzial" "klient" "pracownikpersonalia" "pracownikprodukcja"
-                                                                                                                          "produkcja" "towar" "zamowienie"
-                                                                                                                          "zamowienieszczegoly" ":-"})))))
+                                                                                                    "produkcja" "towar" "zamowienie"
+                                                                                                    "zamowienieszczegoly" ":-"})))))
           (finally
             (fs/delete-dir workdir-dir)
             (core/move-file backup-dir workdir-dir)
+            ))))
+
+(fact "build project generates expected working_dir output"
+      (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")
+            backup-working-dir (fs/file "dev-resources/projects/aleph_default/working_dir_orig")]
+        (try
+          (core/move-file workdir-dir backup-working-dir)
+          (fs/mkdir workdir-dir)
+          (let [app (core/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))]
+            (build-working-dir (:project app))
+            (let [result (run-learning (:project app))]
+              (:exit result) => 0
+              (string/blank?  (:out result)) => false))
+          (finally
+            (fs/delete-dir workdir-dir)
+            (core/move-file backup-working-dir workdir-dir)
             ))))
 
 (future-fact "provide [apply] button for settings, settings until 'applied' are stored locally on screen")
