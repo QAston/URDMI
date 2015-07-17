@@ -8,7 +8,8 @@
             [clojure.edn :as edn]
             [clojure.string :as string]
             [urdmi.prolog :as prolog])
-  (:import (java.io Writer)))
+  (:import (java.io Writer)
+           (java.nio.file Files CopyOption)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader)]
@@ -75,6 +76,9 @@
 (def output-dir-name "output")
 (def relations-dir-name "relations")
 (def working-dir-default-folder "working_dir")
+
+(defn move-file[^File src ^File dst]
+  (Files/move (.toPath src) (.toPath dst) (into-array CopyOption [])))
 
 (defn base-project [project-dir]
   (->Project {settings-keyname {:name settings-keyname
@@ -232,9 +236,11 @@
                               (.toString workdir-file))))
 
 (defn- load-plugin [^App app]
+  {:pre [(not (nil? (:project app)))]}
   (let [plugin-key (:active-plugin (get-project-settings (:project app)))
-        plugin-map (:plugins app)]
-    (assoc-in app [:project :plugin] ((get plugin-map plugin-key (fn [] nil))))))
+        plugin-map (:plugins app)
+        app (assoc-in app [:project :plugin] ((get plugin-map plugin-key (fn [] nil))))]
+    app))
 
 (defn- load-project-edn [^App app]
   (let [p (:project app)
