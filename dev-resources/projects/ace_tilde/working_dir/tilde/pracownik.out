@@ -1,0 +1,163 @@
+/** -------------------------------------------------
+ ** Algorithm:   Tilde
+ ** Output type: out
+ ** Date:        7/18/2015 19:5:32
+ ** ACE version: 1.2.15
+ ** Hardware:    QASTON-PC running 'Windows NT 6.2'
+ ** -------------------------------------------------
+ ** Settings:
+ **
+ ** Common ** 
+ *  heuristic : gainratio (default) 
+ *  tilde_mode : classify (default) 
+ *  intra_literal_sharing : yes (default) 
+ *  query_batch_size : default (default) 
+ *  single_query_generation : no (default) 
+ *  inst_generation_prob : 1.0 (default) 
+ *  rmode_inst_generation_prob : 1.0 (default) 
+ *  query_sample_probability : 1.0 (default) 
+ *  query_sample_algo : smart (default) 
+ *  aggregate_refiners : no (default) 
+ *  aggregate_recursion : no (default) 
+ *  aggregate_maxconjuncts : 2 (default) 
+ *  aggregate_lookahead : no (default) 
+ *  aggregate_refinement : no (default) 
+ *  example_cache : 102400 (default) 
+ *  select_root_models : on (default) 
+ *  write_predictions : [] (default) 
+ *  compatibility : ace1.1 (default) 
+ *  max_query_len : inf (default) 
+ *  log_pid : off (default) 
+ *  nsplit_unsorted_fractions : 0 (default) 
+ *  nsplit_sorting : basic (default) 
+ *  nsplit_version : basic (default) 
+ *  nsplit_talking : off (default) 
+ *  discretize : entropy (default) 
+ *  transform_queries : once (default) 
+ *  output_dir : default (default) 
+ *  bg_file : default (default) 
+ *  kb_file : default (default) 
+ *  randomise : none (default) 
+ *  report_timings : off (default) 
+ *  default_prefix : off (default) 
+ *  default_min : 1 (default) 
+ *  default_preprocessing : off (default) 
+ *  mi_distance_maxsample : 100 (default) 
+ *  language_warnings : on (default) 
+ *  expert_implicit_language : off (default) 
+ *  granularity : 10 (default) 
+ *  leave_out : false (default) 
+ *  classes : [0,1] 
+ *  use_packs : ilp (default) 
+ *  outerloop : queries (default) 
+ *  talking : 4 
+ *  load : key (default) 
+ ** Tilde ** 
+ *  write_ensemble_models : [] (default) 
+ *  tilde_maxdepth : inf (default) 
+ *  exhaustive_lookahead : 0 (default) 
+ *  query_length_bias : short (default) 
+ *  special_min : 0.0 (default) 
+ *  out_of_bag : no (default) 
+ *  roulette_wheel_selection : no (default) 
+ *  tilde_rst_optimization : no (default) 
+ *  repeat_exec_time : 1 (default) 
+ *  combination_rule : sum (default) 
+ *  show_averages : 1 (default) 
+ *  classify_mode : 0 (default) 
+ *  complexity_penalty : 1.0 (default) 
+ *  precompute : [] (default) 
+ *  resume : off (default) 
+ *  m_estimate : none (default) 
+ *  output_options : [c45,prolog] (default) 
+ *  prune_rules : false (default) 
+ *  confidence_level : 0.25 (default) 
+ *  random_test_set : 0 (default) 
+ *  random_validation_set : 0 (default) 
+ *  stopping_criterion : mincases (default) 
+ *  pruning : c45 (default) 
+ *  discretization : none (default) 
+ *  multiscore_2 : off (default) 
+ *  multiscore : off (default) 
+ *  sampling_strategy : fixed(1000) (default) 
+ *  max_querytime : 100 (default) 
+ *  accuracy : 1.0 (default) 
+ *  tilde_test_eval_model : std (default) 
+ *  minimal_cases : 2 (default) 
+ *  ftest : 0.05 (default) 
+ *  tilde_version : 3.0 (default) 
+ ************** 
+ ** Language:
+ **
+ ** WARMODE BIAS ** 
+ *  warmode_key(pracownik(+idpracownika,+stanowisko,+pensja,+premia,+rokzatrudnienia,+iddzialu,-grupa)) 
+ ** RMODE BIAS ** 
+ *  rmode_key(pracownik(+A,+B,+C,+D,+E,+F,-G)) 
+ *  root(pracownik(A,B,C,D,E,F,G)) 
+ *  rmode(pracownikpersonalia(+A,-B,-C,-D,-E,-F,-G,+-H)) 
+ *  rmode(dzial(+A,#,-B,-C,-D,+-E)) 
+ *  rmode(towar(+A,-B,-C,-D,-E,-F)) 
+ *  rmode(towar(-A,+B,-C,-D,-E,-F)) 
+ *  rmode(produkcja(+A,-B,-C,-D,-E)) 
+ *  rmode(zamowienie(+A,-B,-C,-D,-E)) 
+ *  rmode(zamowienie(-A,+B,-C,-D,-E)) 
+ *  rmode(zamowienieszczegoly(+A,-B,-C,-D)) 
+ *  rmode(klient(+A,-B,-C,-D,-E,-F,-G,-H,+-I)) 
+ *  rmode(#(inf*inf*A:pracownik(B,A,C,D,E,F,G),+H=A)) 
+ *  rmode(#(inf*inf*A:pracownik(B,C,A,D,E,F,G),+H=A)) 
+ *  rmode(#(inf*inf*A:pracownik(B,C,D,E,A,F,G),+H=A)) 
+ *  max_lookahead(1) 
+ *  typed_language(yes) 
+ *  type(pracownikpersonalia(idpracownika,imie,nazwisko,nip,ulica,nrdomu,nrlokalu,miejscowosc)) 
+ *  type(dzial(iddzialu,nazwa,ulica,numerdomu,numerlokalu,miejscowosc)) 
+ *  type(pracownikprodukcja(idtowaru,idpracownika,poczatek,koniec,stawka,liczbagodzin)) 
+ *  type(towar(idtowaru,nazwa,model,rokprodukcji,ilosc,cena)) 
+ *  type(produkcja(idtowaru,opis,poczatek,koniec,budzet)) 
+ *  type(zamowienie(idzamowienia,idklienta,idpracownika,data,platnosc)) 
+ *  type(zamowienieszczegoly(idzamowienia,idtowaru,ilosc,upust)) 
+ *  type(klient(idklienta,imie,nazwisko,nip,ulica,nrdomu,nrlokalu,kod,miejscowosc)) 
+ *  type(A=A) 
+ *  type(pracownik(idpracownika,stanowisko,pensja,premia,rokzatrudnienia,iddzialu,grupa)) 
+ *  type(member(A,B)) 
+ *  type(for_int(A,B,C)) 
+ ******************** 
+ **/
+
+Average discretization time: 0.0
+Average induction time: 0.04
+
+Model:
+    Complexity: 1.0 nodes, 1.0 literals
+    C4.5 error estimate: 2.66255220801058, relative: 0.0783103590591346
+Training:
+    Number of examples: 34
+
+    REAL\PRED | 0         1         
+    ----------------------------------------------
+    0         | 17        0         | 17
+    1         | 0         17        | 17
+    ----------------------------------------------
+              | 17        17        | 34
+
+    Accuracy: 1.0 (stderr: 0.0, default: 0.5)
+    Cramer's coefficient: 1.0
+    Class: 0: TP = 1.0, FP = 0.0
+Testing:
+    No examples available.
+
+
+Compact notation of tree:
+
+pracownik(-A,-B,-C,-D,-E,-F,-G)
+G=1 ? 
++--yes: [1] 17.0 [[0:0.0,1:17.0]]
++--no:  [0] 17.0 [[0:17.0,1:0.0]]
+
+Equivalent prolog program:
+
+pracownik(A,B,C,D,E,F,[1]) :- [1]=1, !.
+% 17.0/17.0=1.0
+pracownik(A,B,C,D,E,F,[0]).
+% 17.0/17.0=1.0
+
+
