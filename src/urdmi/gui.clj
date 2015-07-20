@@ -27,7 +27,7 @@
     view))
 
 (def main-view (load-fxml "sample.fxml"))
-(defn asdf []
+#_(defn asdf []
   main-view)
 
-(fx/sandbox #'asdf)
+#_(fx/sandbox #'asdf)
