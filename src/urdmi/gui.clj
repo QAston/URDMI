@@ -4,9 +4,8 @@
             [fx-clj.core :as fx]))
 
 (defn load-fxml [filename]
-  (let [loader (new javafx.fxml.FXMLLoader)]
-    (.setLocation loader (io/resource ""))
-    (.load loader (-> filename io/resource io/input-stream))))
+  (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
+    (.load loader)))
 
 (defn create-view []
   (let [click-ch (chan)
@@ -27,7 +26,7 @@
 
     view))
 
-(def main-view (load-fxml "main.fxml"))
+(def main-view (load-fxml "sample.fxml"))
 (defn asdf []
   main-view)
 
