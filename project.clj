@@ -20,5 +20,4 @@
             :resource-paths ["deps/jiprolog/src" "resources"] ; for jiprolog engine
             :main urdmi.launcher
             :aot [urdmi.launcher]
-            :target-path "target/%s/"
             )
