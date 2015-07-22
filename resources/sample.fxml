@@ -45,6 +45,7 @@
     (.setText actiontarget "1 2 3"))
     (defn tyry []
     "asdxczcx")
+    (println *ns*)
     </fx:script>
 
 </GridPane>
