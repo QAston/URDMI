@@ -5,7 +5,9 @@
                       :url  "https://www.gnu.org/licenses/gpl.html"}
             :dependencies [[org.clojure/clojure "1.7.0"]
                            [clj-antlr "0.2.2"]
-                           [fx-clj "0.2.0-alpha1"]
+                           [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+                           [fx-clj "0.2.0-alpha1" :exclusions [org.clojure/core.async]]
+                           [async-watch "0.1.1"]
                            [com.stuartsierra/component "0.2.3"]
                            [org.apache.directory.studio/org.apache.commons.io "2.4"]
                            [potemkin "0.3.13"]
