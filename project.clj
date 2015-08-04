@@ -8,6 +8,7 @@
                            [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                            [fx-clj "0.2.0-alpha1" :exclusions [org.clojure/core.async]]
                            [async-watch "0.1.1"]
+                           [differ "0.2.1"]
                            [com.stuartsierra/component "0.2.3"]
                            [org.apache.directory.studio/org.apache.commons.io "2.4"]
                            [potemkin "0.3.13"]

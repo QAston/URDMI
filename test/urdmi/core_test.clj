@@ -2,7 +2,8 @@
   (:use midje.sweet
         urdmi.prolog-test)
   (:import java.io.StringReader
-           (com.ugos.jiprolog.engine PrologObject))
+           (com.ugos.jiprolog.engine PrologObject)
+           (java.io File))
   (:require
     [urdmi.core :as core]
     [clojure.java.io :as io]
@@ -72,6 +73,3 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 
 (fact "relation-to-filename"
       (core/relation-to-filename ["rel" 5]) => "rel_5.pl")
-
-(future-fact "generate-menu-entries works on example data"
-      )

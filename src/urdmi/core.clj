@@ -196,6 +196,8 @@
                           )
                         ))))
 
+;todo: add update variants which work with diffs to filesystem
+
 (defn deserialize-project-edn [data]
   (update data :working-dir (fn [workdir]
                               (io/file workdir))))
@@ -280,6 +282,14 @@
                               [additions-keyname workdir-keyname] "Additions"
                               })
 
+(defn load-base-project[^File dir]
+  (->
+    (base-project dir)
+    load-additions
+    load-output
+    load-working-dir
+    load-relations))
+
 (defn- subdir-map-to-vec [subdir-entry]
   (let [dirname (first subdir-entry)
         files (second subdir-entry)
@@ -290,13 +300,4 @@
 
 (defn model-map-to-menu-entries [m]
   )
-
-(defn generate-menu-entries [p]
-  (let [relations (vec (cons relations-keyname (sort (map #(:name) (:relations p)))))
-        working-dir (vec (cons workdir-keyname (model-map-to-menu-entries nil)))
-        outputs (vec (cons output-keyname (sort (map #(:name) (:output p)))))
-        additions (vec (cons additions-keyname (sort (map #(:name) (:additions p)))))
-        settings (vec (cons settings-keyname (sort (map #(:name) (:settings p)))))
-        ]
-    [project-keyname relations working-dir outputs additions settings]))
 
