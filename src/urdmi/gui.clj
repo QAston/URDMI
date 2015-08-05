@@ -4,18 +4,23 @@
             [fx-clj.core :as fx]
             [differ.core :as differ]
             [urdmi.core :as core]
-            [clojure.zip :as zip])
+            [clojure.zip :as zip]
+            [urdmi.prolog :as prolog])
   (:import [javafx.beans.property.StringProperty]
            (javafx.scene.layout AnchorPane Region VBox Priority HBox)
            (javafx.geometry Pos Insets)
            (javafx.scene.text Font TextAlignment)
            (javafx.scene.paint Color)
-           (javafx.scene.control TreeItem TreeCell)
+           (javafx.scene.control TreeItem TreeCell TableColumn)
            (javafx.collections ObservableList FXCollections)
            (java.util ArrayList)
            (urdmi.core Project)
            (javafx.util Callback StringConverter)
-           (javafx.scene.control.cell TextFieldTreeCell)))
+           (javafx.scene.control.cell TextFieldTreeCell TextFieldTableCell)
+           (com.ugos.jiprolog.engine OperatorManager)
+           (java.io StringWriter)
+           (javafx.beans.value ObservableStringValue)
+           (javafx.beans.property StringProperty SimpleStringProperty)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -52,27 +57,27 @@
   (let [path (into [proj-key] (conj (mapv :name (rest (zip/path zipiter))) (:name (zip/node zipiter))))
         name (:name (zip/node zipiter))]
     (if (zip/branch? zipiter)
-     (vector
-       (keep identity (cons [:name (:name (zip/node zipiter)) :path path]
-                            (if-let [childiter (zip/down zipiter)]
-                              (loop [iter childiter
-                                     children []
-                                     ]
-                                (if-not (nil? iter)
-                                  (recur (zip/right iter) (conj children (file-names-recursively iter proj-key)))
-                                  children))
+      (vector
+        (keep identity (cons [:name (:name (zip/node zipiter)) :path path]
+                             (if-let [childiter (zip/down zipiter)]
+                               (loop [iter childiter
+                                      children []
+                                      ]
+                                 (if-not (nil? iter)
+                                   (recur (zip/right iter) (conj children (file-names-recursively iter proj-key)))
+                                   children))
 
-                              (list)
-                              ))))
-     {:name name :path path})))
+                               (list)
+                               ))))
+      {:name name :path path})))
 
 (defn- get-file-names [^Project p proj-key display-name]
   (vec (cons {:name display-name :path [proj-key]}
              (rest (first (file-names-recursively (core/file-model-zipper (get-in p (core/dir-keys proj-key))) proj-key))))))
 
-(defn generate-menu-entries [^Project p]
+(defn generate-menu-viewmodel [^Project p]
   (let [
-        relations  (get-file-names p core/relations-keyname "Relations")
+        relations (get-file-names p core/relations-keyname "Relations")
         working-dir (get-file-names p core/workdir-keyname "Working dir")
         outputs (get-file-names p core/output-keyname "Output")
         additions (get-file-names p core/output-keyname "Additions")
@@ -80,67 +85,122 @@
         ]
     [{:name "Project" :path []} relations working-dir outputs additions settings]))
 
+(defn set-widget-children [node children]
+  (fx/run!
+    (.. node
+        (getChildren)
+        (setAll
+          children))))
+
 (defn- build-file-menu-entry-widget [data]
   (if-not (vector? data)
     (fx/tree-item {:value data})
     (let [dir-data (first data)]
-      (println dir-data)
       (doto (fx/tree-item {:value dir-data})
-       (.. getChildren
-           (setAll
-             (for [entry (rest data)]
-               (build-file-menu-entry-widget entry))))
-       ))))
+        (.. getChildren
+            (setAll
+              (for [entry (rest data)]
+                (build-file-menu-entry-widget entry))))
+        ))))
 
 (defn update-main-file-menu
   [view]
-  (fx/run!
-    (if-let [files-widget (fx/lookup view :#file-selection)]
+  (set-widget-children (fx/lookup view :#file-selection)
+                       (list (doto (fx/tree-view
+                                     {:cell-factory (reify
+                                                      Callback
+                                                      (call [this tree-view]
+                                                        (TextFieldTreeCell. (proxy
+                                                                              [StringConverter] []
+                                                                              (toString [obj]
+                                                                                (:name obj)
+                                                                                )))))
+                                      :root         (doto (build-file-menu-entry-widget [{:name "Project", :path []}
+                                                                                         [{:name "Relations", :path [:relations]}
+                                                                                          {:name "towar_6.pl", :path [:relations "towar_6.pl"]}
+                                                                                          {:name "produkcja_5.pl", :path [:relations "produkcja_5.pl"]}
+                                                                                          {:name "pracownik_7.pl", :path [:relations "pracownik_7.pl"]}
+                                                                                          {:name "pracownikpersonalia_8.pl",
+                                                                                           :path [:relations "pracownikpersonalia_8.pl"]}
+                                                                                          {:name "klient_9.pl", :path [:relations "klient_9.pl"]}
+                                                                                          {:name "zamowienieszczegoly_4.pl",
+                                                                                           :path [:relations "zamowienieszczegoly_4.pl"]}
+                                                                                          {:name "pracownikprodukcja_7.pl",
+                                                                                           :path [:relations "pracownikprodukcja_7.pl"]}
+                                                                                          {:name "zamowienie_5.pl", :path [:relations "zamowienie_5.pl"]}
+                                                                                          {:name "dzial_6.pl", :path [:relations "dzial_6.pl"]}]
+                                                                                         [{:name "Working dir", :path [:working-dir]}
+                                                                                          {:name "pracownik.b", :path [:working-dir "pracownik.b"]}
+                                                                                          {:name "pracownik.f", :path [:working-dir "pracownik.f"]}
+                                                                                          {:name "pracownik.n", :path [:working-dir "pracownik.n"]}]
+                                                                                         [{:name "Output", :path [:output]}
+                                                                                          {:name "result.edn", :path [:output "result.edn"]}]
+                                                                                         [{:name "Additions", :path [:output]}
+                                                                                          {:name "result.edn", :path [:output "result.edn"]}]
+                                                                                         [{:name "Settings", :path [:output]}
+                                                                                          {:name "result.edn", :path [:output "result.edn"]}]])
+                                                      (.setExpanded true))}
+                                     )
+                               (VBox/setVgrow Priority/ALWAYS))))
+  )
 
-      (.. files-widget
-          (getChildren)
-          (setAll
-            (list
-              (doto (fx/tree-view
-                      {:cell-factory (reify
-                                       Callback
-                                       (call [this tree-view]
-                                         (TextFieldTreeCell. (proxy
-                                                               [StringConverter] []
-                                                               (toString [obj]
-                                                                   (:name obj)
-                                                                 )))))
-                       :root         (doto (build-file-menu-entry-widget [{:name "Project", :path []}
-                                                                          [{:name "Relations", :path [:relations]}
-                                                                           {:name "towar_6.pl", :path [:relations "towar_6.pl"]}
-                                                                           {:name "produkcja_5.pl", :path [:relations "produkcja_5.pl"]}
-                                                                           {:name "pracownik_7.pl", :path [:relations "pracownik_7.pl"]}
-                                                                           {:name "pracownikpersonalia_8.pl",
-                                                                            :path [:relations "pracownikpersonalia_8.pl"]}
-                                                                           {:name "klient_9.pl", :path [:relations "klient_9.pl"]}
-                                                                           {:name "zamowienieszczegoly_4.pl",
-                                                                            :path [:relations "zamowienieszczegoly_4.pl"]}
-                                                                           {:name "pracownikprodukcja_7.pl",
-                                                                            :path [:relations "pracownikprodukcja_7.pl"]}
-                                                                           {:name "zamowienie_5.pl", :path [:relations "zamowienie_5.pl"]}
-                                                                           {:name "dzial_6.pl", :path [:relations "dzial_6.pl"]}]
-                                                                          [{:name "Working dir", :path [:working-dir]}
-                                                                           {:name "pracownik.b", :path [:working-dir "pracownik.b"]}
-                                                                           {:name "pracownik.f", :path [:working-dir "pracownik.f"]}
-                                                                           {:name "pracownik.n", :path [:working-dir "pracownik.n"]}]
-                                                                          [{:name "Output", :path [:output]}
-                                                                           {:name "result.edn", :path [:output "result.edn"]}]
-                                                                          [{:name "Additions", :path [:output]}
-                                                                           {:name "result.edn", :path [:output "result.edn"]}]
-                                                                          [{:name "Settings", :path [:output]}
-                                                                           {:name "result.edn", :path [:output "result.edn"]}]])
-                                       (.setExpanded true))}
-                             )
-                (VBox/setVgrow Priority/ALWAYS))
-              ))
+(defn- generate-rel-ast [rel-asts]
+  (let [op-manager (:op-manager (prolog/parser-context []))
+        ]
+    (->> rel-asts
+        (mapv (fn [ast]
+               (->> ast
+                    :children
+                    rest
+                    (mapv (fn [ast]
+                       (let [writer (StringWriter.)]
+                         (prolog/pretty-print ast op-manager writer)
+                         (.toString writer))))))))))
 
+(defn generate-relations-viewmodel [rel]
+  (let [rel-asts (:ast rel)
+        [rel-name rel-arity] (:rel rel)]
+    {:name  rel-name
+     :arity rel-arity
+     :data  (generate-rel-ast rel-asts)}
+    ))
+
+;a panel with a table view with remove add column buttons and sorting
+;also rename relation textbox
+;
+(defn build-relation-edit-widget []
+  (list (doto (fx/h-box
+            (fx/label "Name:") (fx/text-field "5"))
+      (VBox/setVgrow Priority/NEVER))
+    (doto (fx/h-box
+            (fx/label "Arity:") (fx/text-field "5"))
+      (VBox/setVgrow Priority/NEVER))
+    (doto (fx/table-view {:editable true})
+      (VBox/setVgrow Priority/ALWAYS)
+      (.. getColumns
+          (setAll (for [i (range 5)]
+                    (doto (TableColumn. (str "col_" i))
+                      (.setEditable true)
+                      (.setCellFactory (reify Callback
+                                         (call [this table-column]
+                                           (TextFieldTableCell.
+                                             ))
+                                         ))
+                      (.setCellValueFactory (reify Callback
+                                              (call [this cell-data-features]
+                                                (SimpleStringProperty. (str (nth (.getValue cell-data-features) i))))
+                                                  )))))
           )
-      )))
+      (.. getItems
+          (setAll (vec (for [i (range 20)]
+                     (vec (for [j (range 5)]
+                            (str i j)
+                            )))))))))
+
+;additions edition:
+;just a large text area
+;there's undo/redo support
+;http://fxexperience.com/controlsfx/ the best control lib so far
 
 (defn new-main-view []
   (let [font (Font/font 11.0)
@@ -161,19 +221,14 @@
                                              :pref-height       Region/USE_COMPUTED_SIZE
                                              :pref-width        Region/USE_COMPUTED_SIZE}
 
-                                            (fx/v-box :#file-selection {:focus-traversable true})
+                                            (doto
+                                              (fx/v-box :#file-selection {:focus-traversable true})
+                                              (VBox/setVgrow Priority/ALWAYS))
 
-                                            (fx/scroll-pane {}
-                                                            (fx/pane :#Content {:max-height     Region/USE_PREF_SIZE
-                                                                                :max-width      Region/USE_PREF_SIZE
-                                                                                :min-width      Region/USE_COMPUTED_SIZE
-                                                                                :pick-on-bounds false}
-                                                                     (fx/label {:alignment      Pos/CENTER
-                                                                                :layout-x       14.0
-                                                                                :layout-y       14.0
-                                                                                :text           "View"
-                                                                                :text-alignment TextAlignment/CENTER
-                                                                                :wrap-text      false}))))
+                                            (doto
+                                              (fx/v-box :#content {:focus-traversable true})
+                                              (VBox/setVgrow Priority/ALWAYS)))
+
                          (VBox/setVgrow Priority/ALWAYS))
                        (doto (fx/h-box :#hbox {:alignment Pos/CENTER_LEFT
                                                :spacing   5.0
@@ -215,6 +270,8 @@
 
 (fx/sandbox #'create-main-view)
 (update-main-file-menu main-view)
+(set-widget-children (fx/lookup main-view :#content)
+                     (build-relation-edit-widget))
 (comment
   (fx/sandbox #'create-main-view))
 
