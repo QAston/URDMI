@@ -20,7 +20,8 @@
            (com.ugos.jiprolog.engine OperatorManager)
            (java.io StringWriter)
            (javafx.beans.value ObservableStringValue)
-           (javafx.beans.property StringProperty SimpleStringProperty)))
+           (javafx.beans.property StringProperty SimpleStringProperty)
+           (org.controlsfx.control.spreadsheet SpreadsheetView GridBase SpreadsheetCellType)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -148,14 +149,14 @@
   (let [op-manager (:op-manager (prolog/parser-context []))
         ]
     (->> rel-asts
-        (mapv (fn [ast]
-               (->> ast
-                    :children
-                    rest
-                    (mapv (fn [ast]
-                       (let [writer (StringWriter.)]
-                         (prolog/pretty-print ast op-manager writer)
-                         (.toString writer))))))))))
+         (mapv (fn [ast]
+                 (->> ast
+                      :children
+                      rest
+                      (mapv (fn [ast]
+                              (let [writer (StringWriter.)]
+                                (prolog/pretty-print ast op-manager writer)
+                                (.toString writer))))))))))
 
 (defn generate-relations-viewmodel [rel]
   (let [rel-asts (:ast rel)
@@ -165,37 +166,66 @@
      :data  (generate-rel-ast rel-asts)}
     ))
 
+
+(defn build-relation-edit-widget-ss [view-model]
+  (list (doto (fx/h-box
+                (fx/label "Name:") (fx/text-field (:name view-model)))
+          (VBox/setVgrow Priority/NEVER))
+        (doto (fx/h-box
+                (fx/label "Arity:") (fx/text-field (str (:arity view-model))))
+          (VBox/setVgrow Priority/NEVER))
+        (doto (SpreadsheetView. (doto (GridBase. (count (:data view-model)) (:arity view-model))
+                                  (..
+                                      getColumnHeaders
+                                      (setAll (for [i (range (:arity view-model))]
+                                                (str "col_" i)))
+                                      )
+                                  (..
+                                      (setRows (FXCollections/observableArrayList
+                                                 (for [[row row-index]
+
+                                                       (map-indexed
+                                                         (fn [i s]
+                                                           [s i])
+                                                         (:data view-model))]
+                                                   (FXCollections/observableArrayList
+                                                     (for [[entry col-index] (map-indexed
+                                                                               (fn [i s]
+                                                                                 [s i])
+                                                                               row)]
+                                                       (.. (SpreadsheetCellType/STRING)
+                                                           (createCell row-index col-index 1 1 entry))))))))))
+
+          (VBox/setVgrow Priority/ALWAYS))))
+
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
-;
-(defn build-relation-edit-widget []
+;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
+(defn build-relation-edit-widget [view-model]
   (list (doto (fx/h-box
-            (fx/label "Name:") (fx/text-field "5"))
-      (VBox/setVgrow Priority/NEVER))
-    (doto (fx/h-box
-            (fx/label "Arity:") (fx/text-field "5"))
-      (VBox/setVgrow Priority/NEVER))
-    (doto (fx/table-view {:editable true})
-      (VBox/setVgrow Priority/ALWAYS)
-      (.. getColumns
-          (setAll (for [i (range 5)]
-                    (doto (TableColumn. (str "col_" i))
-                      (.setEditable true)
-                      (.setCellFactory (reify Callback
-                                         (call [this table-column]
-                                           (TextFieldTableCell.
+                (fx/label "Name:") (fx/text-field (:name view-model)))
+          (VBox/setVgrow Priority/NEVER))
+        (doto (fx/h-box
+                (fx/label "Arity:") (fx/text-field (str (:arity view-model))))
+          (VBox/setVgrow Priority/NEVER))
+        (doto (fx/table-view {:editable true})
+          (VBox/setVgrow Priority/ALWAYS)
+          (.. getColumns
+              (setAll (for [i (range (:arity view-model))]
+                        (doto (TableColumn. (str "col_" i))
+                          (.setEditable true)
+                          (.setCellFactory (reify Callback
+                                             (call [this table-column]
+                                               (TextFieldTableCell.
+                                                 ))
                                              ))
-                                         ))
-                      (.setCellValueFactory (reify Callback
-                                              (call [this cell-data-features]
-                                                (SimpleStringProperty. (str (nth (.getValue cell-data-features) i))))
+                          (.setCellValueFactory (reify Callback
+                                                  (call [this cell-data-features]
+                                                    (SimpleStringProperty. (str (nth (.getValue cell-data-features) i))))
                                                   )))))
-          )
-      (.. getItems
-          (setAll (vec (for [i (range 20)]
-                     (vec (for [j (range 5)]
-                            (str i j)
-                            )))))))))
+              )
+          (.. getItems
+              (setAll (:data view-model))))))
 
 ;additions edition:
 ;just a large text area
@@ -271,7 +301,16 @@
 (fx/sandbox #'create-main-view)
 (update-main-file-menu main-view)
 (set-widget-children (fx/lookup main-view :#content)
-                     (build-relation-edit-widget))
+                     (build-relation-edit-widget-ss {:name  "dzial"
+                                                  :arity 6
+                                                  :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
+                                                          ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
+                                                          ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
+                                                          ["4" "marketing" "lipowa" "1" "2" "bialystok"]
+                                                          ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
+                                                          ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
+                                                          ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
+                                                          ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}))
 (comment
   (fx/sandbox #'create-main-view))
 
