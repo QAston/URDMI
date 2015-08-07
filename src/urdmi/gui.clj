@@ -11,7 +11,7 @@
            (javafx.geometry Pos Insets)
            (javafx.scene.text Font TextAlignment)
            (javafx.scene.paint Color)
-           (javafx.scene.control TreeItem TreeCell TableColumn)
+           (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode)
            (javafx.collections ObservableList FXCollections)
            (java.util ArrayList)
            (urdmi.core Project)
@@ -169,6 +169,10 @@
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
 ;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
+;todo: implement copy/paste on cell level
+;multiple selection: ctrl + click on cell to add cell to the selection
+; shift + click, add all cells in bettween
+; tabs and \n to split cols, rows for excell compatibility
 (defn build-relation-edit-widget [view-model]
   (list (doto (fx/h-box
                 (fx/label "Name:") (fx/text-field (:name view-model)))
@@ -178,6 +182,10 @@
           (VBox/setVgrow Priority/NEVER))
         (doto (fx/table-view {:editable true})
           (VBox/setVgrow Priority/ALWAYS)
+          (.. getSelectionModel
+              (setSelectionMode SelectionMode/MULTIPLE))
+          (.. getSelectionModel
+              (setCellSelectionEnabled true))
           (.. getColumns
               (setAll (for [i (range (:arity view-model))]
                         (doto (TableColumn. (str "col_" i))
