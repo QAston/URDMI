@@ -166,38 +166,6 @@
      :data  (generate-rel-ast rel-asts)}
     ))
 
-
-(defn build-relation-edit-widget-ss [view-model]
-  (list (doto (fx/h-box
-                (fx/label "Name:") (fx/text-field (:name view-model)))
-          (VBox/setVgrow Priority/NEVER))
-        (doto (fx/h-box
-                (fx/label "Arity:") (fx/text-field (str (:arity view-model))))
-          (VBox/setVgrow Priority/NEVER))
-        (doto (SpreadsheetView. (doto (GridBase. (count (:data view-model)) (:arity view-model))
-                                  (..
-                                      getColumnHeaders
-                                      (setAll (for [i (range (:arity view-model))]
-                                                (str "col_" i)))
-                                      )
-                                  (..
-                                      (setRows (FXCollections/observableArrayList
-                                                 (for [[row row-index]
-
-                                                       (map-indexed
-                                                         (fn [i s]
-                                                           [s i])
-                                                         (:data view-model))]
-                                                   (FXCollections/observableArrayList
-                                                     (for [[entry col-index] (map-indexed
-                                                                               (fn [i s]
-                                                                                 [s i])
-                                                                               row)]
-                                                       (.. (SpreadsheetCellType/STRING)
-                                                           (createCell row-index col-index 1 1 entry))))))))))
-
-          (VBox/setVgrow Priority/ALWAYS))))
-
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
 ;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
@@ -301,7 +269,7 @@
 (fx/sandbox #'create-main-view)
 (update-main-file-menu main-view)
 (set-widget-children (fx/lookup main-view :#content)
-                     (build-relation-edit-widget-ss {:name  "dzial"
+                     (build-relation-edit-widget {:name  "dzial"
                                                   :arity 6
                                                   :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
                                                           ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
