@@ -7,3 +7,6 @@
      ~@(mapv (fn [name-value]
                `(def ~(symbol (first name-value)) ~(second name-value))) (partition 2 locals))
      ~@exprs))
+
+(defn args-vec[& args]
+  (vec args))

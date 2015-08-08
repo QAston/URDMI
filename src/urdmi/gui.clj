@@ -5,15 +5,17 @@
             [differ.core :as differ]
             [urdmi.core :as core]
             [clojure.zip :as zip]
-            [urdmi.prolog :as prolog])
+            [urdmi.prolog :as prolog]
+            [clojure.string :as string]
+            [urdmi.util :as util])
   (:import [javafx.beans.property.StringProperty]
            (javafx.scene.layout AnchorPane Region VBox Priority HBox)
            (javafx.geometry Pos Insets)
            (javafx.scene.text Font TextAlignment)
            (javafx.scene.paint Color)
-           (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode)
+           (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition)
            (javafx.collections ObservableList FXCollections)
-           (java.util ArrayList)
+           (java.util ArrayList List)
            (urdmi.core Project)
            (javafx.util Callback StringConverter)
            (javafx.scene.control.cell TextFieldTreeCell TextFieldTableCell)
@@ -21,7 +23,9 @@
            (java.io StringWriter)
            (javafx.beans.value ObservableStringValue)
            (javafx.beans.property StringProperty SimpleStringProperty)
-           (org.controlsfx.control.spreadsheet SpreadsheetView GridBase SpreadsheetCellType)))
+           (org.controlsfx.control.spreadsheet SpreadsheetView GridBase SpreadsheetCellType)
+           (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent)
+           (javafx.event EventHandler)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -166,13 +170,117 @@
      :data  (generate-rel-ast rel-asts)}
     ))
 
+(defn- calc-cell-bounds [cells]
+  (if (<= (count cells) 1)
+    [(.getColumn (first cells)) (.getRow (first cells)) (.getColumn (first cells)) (.getRow (first cells))]
+    (reduce (fn [tp-a ^TablePosition tp-b]
+              (if (vector? tp-a)
+                (let [[left top right bottom] tp-a]
+                  [(min left (.getColumn tp-b))
+                   (min top (.getRow tp-b))
+                   (max right (.getColumn tp-b))
+                   (max bottom (.getRow tp-b))])
+                [(min (.getColumn tp-a) (.getColumn tp-b))
+                 (min (.getRow tp-a) (.getRow tp-b))
+                 (max (.getColumn tp-a) (.getColumn tp-b))
+                 (max (.getRow tp-a) (.getRow tp-b))])
+              )
+            cells)))
+
+(defn- relation-edit-copy [^TableView relation-table]
+  (let [selection-model (.getSelectionModel relation-table)
+        sorted-cells (sort-by (fn [^TablePosition table-position]
+                                [(.getRow table-position) (.getColumn table-position)])
+                              (seq (.getSelectedCells selection-model)))
+        [left-bound top-bound right-bound bottom-bound] (calc-cell-bounds sorted-cells)
+
+        data (loop [cells sorted-cells builder (StringBuilder.) row top-bound col left-bound]
+               (if-not (seq cells)
+                 (.toString builder)
+                 (let [^TablePosition next (first cells)]
+                   (cond (< row (.getRow next))
+                         (do
+                           (dotimes [i (inc (- right-bound col))]
+                             (.append builder \tab))
+                           (.append builder "\n")
+                           (recur cells builder (inc row) left-bound))
+                         :else
+                         (do
+                           (dotimes [i (- (.getColumn next) col)]
+                             (.append builder \tab))
+                           (.append builder (.get ^List (.get (.getItems relation-table)
+                                                              (.getRow next)) (.getColumn next)))
+                           (when-not (= (.getColumn next) right-bound)
+                             (.append builder \tab))
+                           (recur (rest cells) builder row (inc (.getColumn next))))
+                         ))))]
+    data))
+
+(defn- relation-edit-paste [in-string ^TableView relation-table]
+  (when in-string
+    (let [data (for [line (string/split-lines in-string)]
+                 (string/split line #"\t"))
+          ^ObservableList items (.getItems relation-table)
+          [left-bound top-bound right-bound bottom-bound] (calc-cell-bounds
+                                                            (seq (.. relation-table
+                                                                     getSelectionModel
+                                                                     getSelectedCells)))]
+      (doseq [[row-index src-row] (map-indexed util/args-vec data)
+              :when (< (+ top-bound row-index) (count items))
+              :let [^ObservableList target-row (.get items (+ top-bound row-index))]]
+        (doseq [[col-index src-col] (map-indexed util/args-vec src-row)]
+          (when (< (+ col-index left-bound) (count target-row))
+            (.set target-row (+ col-index left-bound) src-col))
+          )
+        ;this refreshes the table
+        (.set items (+ top-bound row-index) target-row))
+      )))
+
+(defn- relation-edit-context-menu [^TableView relation-table]
+  (doto (ContextMenu.)
+    (.. getItems
+        (add (doto (MenuItem. "Copy")
+               (.setAccelerator (KeyCodeCombination. KeyCode/C (into-array (list KeyCodeCombination/SHORTCUT_DOWN))))
+               (.setOnAction (reify EventHandler
+                               (handle [this action-event]
+                                 (.setContent (Clipboard/getSystemClipboard)
+                                              (doto (ClipboardContent.)
+                                                (.putString (relation-edit-copy relation-table))))
+                                 ))))))
+    (.. getItems
+        (add (doto (MenuItem. "Paste")
+               (.setAccelerator (KeyCodeCombination. KeyCode/V (into-array (list KeyCodeCombination/SHORTCUT_DOWN))))
+               (.setOnAction (reify EventHandler
+                               (handle [this action-event]
+                                 (relation-edit-paste
+                                   (.getString (Clipboard/getSystemClipboard))
+                                   relation-table)))))))
+    ))
+
+(defn- relation-edit-table [^TableView relation-table view-model]
+  (let [context-menu (relation-edit-context-menu relation-table)]
+    (.. relation-table
+        getColumns
+        (setAll (for [i (range (:arity view-model))]
+                  (doto (TableColumn. (str "col_" i))
+                    (.setEditable true)
+                    (.setCellFactory (reify Callback
+                                       (call [this table-column]
+                                         (doto (TextFieldTableCell.)
+                                           (.setContextMenu context-menu)))
+                                       ))
+                    (.setCellValueFactory (reify Callback
+                                            (call [this cell-data-features]
+                                              (SimpleStringProperty. (str (nth (.getValue cell-data-features) i))))
+                                            ))))))
+    ))
+
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
 ;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
-;todo: implement copy/paste on cell level
 ;multiple selection: ctrl + click on cell to add cell to the selection
 ; shift + click, add all cells in bettween
-; tabs and \n to split cols, rows for excell compatibility
+; \t and \n to split cols, rows for excell compatibility
 (defn build-relation-edit-widget [view-model]
   (list (doto (fx/h-box
                 (fx/label "Name:") (fx/text-field (:name view-model)))
@@ -186,22 +294,9 @@
               (setSelectionMode SelectionMode/MULTIPLE))
           (.. getSelectionModel
               (setCellSelectionEnabled true))
-          (.. getColumns
-              (setAll (for [i (range (:arity view-model))]
-                        (doto (TableColumn. (str "col_" i))
-                          (.setEditable true)
-                          (.setCellFactory (reify Callback
-                                             (call [this table-column]
-                                               (TextFieldTableCell.
-                                                 ))
-                                             ))
-                          (.setCellValueFactory (reify Callback
-                                                  (call [this cell-data-features]
-                                                    (SimpleStringProperty. (str (nth (.getValue cell-data-features) i))))
-                                                  )))))
-              )
+          (relation-edit-table view-model)
           (.. getItems
-              (setAll (:data view-model))))))
+              (setAll (map (fn [a] (FXCollections/observableArrayList a)) (:data view-model)))))))
 
 ;additions edition:
 ;just a large text area
