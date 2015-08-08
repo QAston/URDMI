@@ -18,14 +18,14 @@
            (java.util ArrayList List)
            (urdmi.core Project)
            (javafx.util Callback StringConverter)
-           (javafx.scene.control.cell TextFieldTreeCell TextFieldTableCell)
+           (javafx.scene.control.cell TextFieldTreeCell TextFieldTableCell CellUtils)
            (com.ugos.jiprolog.engine OperatorManager)
            (java.io StringWriter)
            (javafx.beans.value ObservableStringValue)
            (javafx.beans.property StringProperty SimpleStringProperty)
-           (org.controlsfx.control.spreadsheet SpreadsheetView GridBase SpreadsheetCellType)
            (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent)
-           (javafx.event EventHandler)))
+           (javafx.event EventHandler)
+           (javafx.util.converter DefaultStringConverter)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -188,36 +188,37 @@
             cells)))
 
 (defn- relation-edit-copy [^TableView relation-table]
-  (let [selection-model (.getSelectionModel relation-table)
-        sorted-cells (sort-by (fn [^TablePosition table-position]
-                                [(.getRow table-position) (.getColumn table-position)])
-                              (seq (.getSelectedCells selection-model)))
-        [left-bound top-bound right-bound bottom-bound] (calc-cell-bounds sorted-cells)
+  (when-not (.. relation-table getSelectionModel getSelectedItems isEmpty)
+    (let [selection-model (.getSelectionModel relation-table)
+          sorted-cells (sort-by (fn [^TablePosition table-position]
+                                  [(.getRow table-position) (.getColumn table-position)])
+                                (seq (.getSelectedCells selection-model)))
+          [left-bound top-bound right-bound bottom-bound] (calc-cell-bounds sorted-cells)
 
-        data (loop [cells sorted-cells builder (StringBuilder.) row top-bound col left-bound]
-               (if-not (seq cells)
-                 (.toString builder)
-                 (let [^TablePosition next (first cells)]
-                   (cond (< row (.getRow next))
-                         (do
-                           (dotimes [i (inc (- right-bound col))]
-                             (.append builder \tab))
-                           (.append builder "\n")
-                           (recur cells builder (inc row) left-bound))
-                         :else
-                         (do
-                           (dotimes [i (- (.getColumn next) col)]
-                             (.append builder \tab))
-                           (.append builder (.get ^List (.get (.getItems relation-table)
-                                                              (.getRow next)) (.getColumn next)))
-                           (when-not (= (.getColumn next) right-bound)
-                             (.append builder \tab))
-                           (recur (rest cells) builder row (inc (.getColumn next))))
-                         ))))]
-    data))
+          data (loop [cells sorted-cells builder (StringBuilder.) row top-bound col left-bound]
+                 (if-not (seq cells)
+                   (.toString builder)
+                   (let [^TablePosition next (first cells)]
+                     (cond (< row (.getRow next))
+                           (do
+                             (dotimes [i (inc (- right-bound col))]
+                               (.append builder \tab))
+                             (.append builder "\n")
+                             (recur cells builder (inc row) left-bound))
+                           :else
+                           (do
+                             (dotimes [i (- (.getColumn next) col)]
+                               (.append builder \tab))
+                             (.append builder (.get ^List (.get (.getItems relation-table)
+                                                                (.getRow next)) (.getColumn next)))
+                             (when-not (= (.getColumn next) right-bound)
+                               (.append builder \tab))
+                             (recur (rest cells) builder row (inc (.getColumn next))))
+                           ))))]
+      data)))
 
 (defn- relation-edit-paste [in-string ^TableView relation-table]
-  (when in-string
+  (when (and in-string (not (.. relation-table getSelectionModel getSelectedItems isEmpty)))
     (let [data (for [line (string/split-lines in-string)]
                  (string/split line #"\t"))
           ^ObservableList items (.getItems relation-table)
@@ -257,6 +258,38 @@
                                    relation-table)))))))
     ))
 
+(gen-class
+  :name "urdmi.gui.RelationsTableCell"
+  :extends TableCell
+  :state "state"
+  :init "init"
+  :constructors {[] []}
+  :exposes-methods {startEdit superStartEdit, cancelEdit superCancelEdit, updateEdit superUpdateEdit}
+  :post-init "post-init"
+  :prefix "relations-table-cell-")
+
+(defn relations-table-cell-init []
+  [[] (atom {:converter (DefaultStringConverter.)})])
+
+(defn relations-table-cell-post-init [this]
+  (.. this getStyleClass (add "text-field-table-cell")))
+
+(defn relations-table-cell-startEdit [this]
+  (when
+    (and (.isEditable this) (.. this getTableView isEditable) (.. this getTableColumn isEditable))
+    (.superStartEdit this)
+    (when (.isEditing this)
+      (swap! (.state this) (fn [state-map]
+                             (if-not (:text-field state-map)
+                               (assoc state-map :text-field nil #_(CellUtils/createTextField this (:converter state-map)))
+                               state-map)))
+      (let [text-field (:text-field @(.state this))
+            converter (:converter @(.state this))]
+        (.setText text-field (.toString converter (.getItem this)))
+        (.setText this nil)
+        (.setGraphic cell )
+        ))))
+
 (defn- relation-edit-table [^TableView relation-table view-model]
   (let [context-menu (relation-edit-context-menu relation-table)]
     (.. relation-table
@@ -266,7 +299,7 @@
                     (.setEditable true)
                     (.setCellFactory (reify Callback
                                        (call [this table-column]
-                                         (doto (TextFieldTableCell.)
+                                         (doto (TextFieldTableCell. (DefaultStringConverter.))
                                            (.setContextMenu context-menu)))
                                        ))
                     (.setCellValueFactory (reify Callback
@@ -278,9 +311,9 @@
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
 ;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
+;todo: confirmation on lost focus
 ;multiple selection: ctrl + click on cell to add cell to the selection
 ; shift + click, add all cells in bettween
-; \t and \n to split cols, rows for excell compatibility
 (defn build-relation-edit-widget [view-model]
   (list (doto (fx/h-box
                 (fx/label "Name:") (fx/text-field (:name view-model)))
