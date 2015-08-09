@@ -8,25 +8,25 @@
             [urdmi.prolog :as prolog]
             [clojure.string :as string]
             [urdmi.util :as util])
-  (:import [javafx.beans.property.StringProperty]
-           (javafx.scene.layout AnchorPane Region VBox Priority HBox)
-           (javafx.geometry Pos Insets)
-           (javafx.scene.text Font TextAlignment)
-           (javafx.scene.paint Color)
-           (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition TextField TableColumn$CellEditEvent)
-           (javafx.collections ObservableList FXCollections)
-           (java.util ArrayList List)
-           (urdmi.core Project)
-           (javafx.util Callback StringConverter)
-           (javafx.scene.control.cell TextFieldTreeCell TextFieldTableCell CellUtils)
-           (com.ugos.jiprolog.engine OperatorManager)
-           (java.io StringWriter)
-           (javafx.beans.value ObservableStringValue ChangeListener)
-           (javafx.beans.property StringProperty SimpleStringProperty)
-           (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent)
-           (javafx.event EventHandler)
-           (javafx.util.converter DefaultStringConverter)
-           (org.apache.commons.lang3.reflect FieldUtils)))
+  (:import
+    (javafx.scene.layout AnchorPane Region VBox Priority HBox)
+    (javafx.geometry Pos Insets)
+    (javafx.scene.text Font TextAlignment)
+    (javafx.scene.paint Color)
+    (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition TextField TableColumn$CellEditEvent)
+    (javafx.collections ObservableList FXCollections)
+    (java.util ArrayList List)
+    (urdmi.core Project)
+    (javafx.util Callback StringConverter)
+    (javafx.scene.control.cell TextFieldTreeCell TextFieldTableCell CellUtils)
+    (com.ugos.jiprolog.engine OperatorManager)
+    (java.io StringWriter)
+    (javafx.beans.value ObservableStringValue ChangeListener)
+    (javafx.beans.property StringProperty SimpleStringProperty)
+    (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent)
+    (javafx.event EventHandler)
+    (javafx.util.converter DefaultStringConverter)
+    (org.apache.commons.lang3.reflect FieldUtils)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -232,7 +232,7 @@
               :let [^ObservableList target-row (.get items (+ top-bound row-index))]]
         (doseq [[col-index src-col] (map-indexed util/args-vec src-row)]
           (when (< (+ col-index left-bound) (count target-row))
-            (.setValue ^StringProperty (.get target-row (+ col-index left-bound))  src-col))
+            (.setValue ^StringProperty (.get target-row (+ col-index left-bound)) src-col))
           ))
       )))
 
@@ -263,6 +263,7 @@
         getColumns
         (setAll (for [i (range (:arity view-model))]
                   (doto (TableColumn. (str "col_" i))
+
                     (.setEditable true)
                     (.setCellFactory (reify Callback
                                        (call [this table-column]
@@ -277,7 +278,19 @@
                                                                      (reify ChangeListener
                                                                        (changed [this observale old new]
                                                                          (when-not new
-                                                                           (.commitEdit cell (.getText newTextField))))))))))
+                                                                           (.commitEdit ^TextFieldTableCell cell
+                                                                                        (.getText newTextField))
+
+                                                                           ;this is a hack, because isEditing is false
+                                                                           ;when changing to another cell
+                                                                           (let [col i
+                                                                                 row (.getIndex cell)
+                                                                                 cell-val (.get (.get (.getItems relation-table) row) col)
+                                                                                 selected-cell-pos (first (.. relation-table
+                                                                                                              getSelectionModel
+                                                                                                              getSelectedCells))]
+                                                                                 (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col) (not= (.getRow selected-cell-pos) row))
+                                                                                                (.setValue cell-val (.getText newTextField)))))))))))))
                                            (.setContextMenu context-menu)))
                                        ))
                     (.setOnEditCommit (reify EventHandler
@@ -295,7 +308,6 @@
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
 ;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
-;todo: confirmation on lost focus
 ;multiple selection: ctrl + click on cell to add cell to the selection
 ; shift + click, add all cells in bettween
 (defn build-relation-edit-widget [view-model]
