@@ -267,10 +267,10 @@
                   (distinct)
                   )]
     (doseq [row-index rows]
-    (.add (.getItems relation-table)
-          row-index
-          (new-relation-row (count (.get (.getItems relation-table) (int row-index))))
-          ))))
+      (.add (.getItems relation-table)
+            row-index
+            (new-relation-row (count (.get (.getItems relation-table) (int row-index))))
+            ))))
 
 (defn- relation-edit-context-menu [^TableView relation-table]
   (doto (ContextMenu.)
@@ -357,8 +357,12 @@
 ;multiple selection: ctrl + click on cell to add cell to the selection
 ; shift + click, add all cells in bettween
 (defn build-relation-edit-widget [view-model]
-  (list (doto (fx/h-box
-                (fx/label "Name:") (fx/text-field (:name view-model)))
+  (list (doto (fx/h-box {:padding   (Insets. 5 5 5 5)
+                         :alignment (Pos/CENTER_LEFT)}
+                        (fx/label {:padding (Insets. 3 3 3 3)} "Name:")
+                        (fx/text-field {:padding (Insets. 3 3 3 3)} (:name view-model))
+                        (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
+                        (fx/text-field {:padding (Insets. 3 3 3 3)} (str (:arity view-model))))
           (VBox/setVgrow Priority/NEVER))
         (doto (fx/h-box
                 (fx/label "Arity:") (fx/text-field (str (:arity view-model))))
