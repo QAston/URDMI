@@ -259,24 +259,6 @@
                                    relation-table)))))))
     ))
 
-(gen-class
-  :name "urdmi.gui.RelationsTableCell"
-  :extends TextFieldTableCell
-  :exposes-methods {startEdit superStartEdit}
-  :prefix "relations-table-cell-")
-
-(defn relations-table-cell-startEdit [this]
-  (let [cell this
-        oldTextField (FieldUtils/readField this "textField", true)
-        _ (.superStartEdit this)
-        ^TextField newTextField (FieldUtils/readField this "textField", true)]
-    (when-not (identical? oldTextField newTextField)
-      (.addListener (.focusedProperty newTextField)
-                    (reify ChangeListener
-                      (changed [this observale old new]
-                        (when-not new
-                          (.commitEdit cell (.getText newTextField)))))))))
-
 (defn- relation-edit-table [^TableView relation-table view-model]
   (let [context-menu (relation-edit-context-menu relation-table)]
     (.. relation-table
@@ -286,7 +268,7 @@
                     (.setEditable true)
                     (.setCellFactory (reify Callback
                                        (call [this table-column]
-                                         (doto (proxy [TextFieldTableCell] [(DefaultStringConverter.)]
+                                         (doto nil #_(proxy [TextFieldTableCell] [(DefaultStringConverter.)]
                                                  (startEdit []
                                                    (let [cell this
                                                          oldTextField (FieldUtils/readField this "textField", true)

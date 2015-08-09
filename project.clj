@@ -21,7 +21,7 @@
             :plugins [[lein-midje "3.0.0"]]
             :java-source-paths ["deps/jiprolog/src" "java_src"]
             :javac-options ["-target" "1.8" "-source" "1.8"]
-            :jvm-opts ["-Xmx2g"]
+            :jvm-opts ["-Xmx1g"]
             :resource-paths ["deps/jiprolog/src" "resources"] ; for jiprolog engine
             :main urdmi.launcher
             :aot [urdmi.launcher]
