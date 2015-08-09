@@ -2,8 +2,7 @@
   (:gen-class
     :extends javafx.application.Application)
   (:import (javafx.application Application)
-           (javafx.scene Scene)
-           (urdmi launcher)))
+           (javafx.scene Scene)))
 
 (defn -main []
   (Application/launch urdmi.launcher (into-array String *command-line-args*))

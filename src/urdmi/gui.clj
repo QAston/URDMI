@@ -13,7 +13,7 @@
            (javafx.geometry Pos Insets)
            (javafx.scene.text Font TextAlignment)
            (javafx.scene.paint Color)
-           (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition)
+           (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition TextField)
            (javafx.collections ObservableList FXCollections)
            (java.util ArrayList List)
            (urdmi.core Project)
@@ -21,11 +21,12 @@
            (javafx.scene.control.cell TextFieldTreeCell TextFieldTableCell CellUtils)
            (com.ugos.jiprolog.engine OperatorManager)
            (java.io StringWriter)
-           (javafx.beans.value ObservableStringValue)
+           (javafx.beans.value ObservableStringValue ChangeListener)
            (javafx.beans.property StringProperty SimpleStringProperty)
            (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent)
            (javafx.event EventHandler)
-           (javafx.util.converter DefaultStringConverter)))
+           (javafx.util.converter DefaultStringConverter)
+           (org.apache.commons.lang3.reflect FieldUtils)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -260,35 +261,21 @@
 
 (gen-class
   :name "urdmi.gui.RelationsTableCell"
-  :extends TableCell
-  :state "state"
-  :init "init"
-  :constructors {[] []}
-  :exposes-methods {startEdit superStartEdit, cancelEdit superCancelEdit, updateEdit superUpdateEdit}
-  :post-init "post-init"
+  :extends TextFieldTableCell
+  :exposes-methods {startEdit superStartEdit}
   :prefix "relations-table-cell-")
 
-(defn relations-table-cell-init []
-  [[] (atom {:converter (DefaultStringConverter.)})])
-
-(defn relations-table-cell-post-init [this]
-  (.. this getStyleClass (add "text-field-table-cell")))
-
 (defn relations-table-cell-startEdit [this]
-  (when
-    (and (.isEditable this) (.. this getTableView isEditable) (.. this getTableColumn isEditable))
-    (.superStartEdit this)
-    (when (.isEditing this)
-      (swap! (.state this) (fn [state-map]
-                             (if-not (:text-field state-map)
-                               (assoc state-map :text-field nil #_(CellUtils/createTextField this (:converter state-map)))
-                               state-map)))
-      (let [text-field (:text-field @(.state this))
-            converter (:converter @(.state this))]
-        (.setText text-field (.toString converter (.getItem this)))
-        (.setText this nil)
-        (.setGraphic cell )
-        ))))
+  (let [cell this
+        oldTextField (FieldUtils/readField this "textField", true)
+        _ (.superStartEdit this)
+        ^TextField newTextField (FieldUtils/readField this "textField", true)]
+    (when-not (identical? oldTextField newTextField)
+      (.addListener (.focusedProperty newTextField)
+                    (reify ChangeListener
+                      (changed [this observale old new]
+                        (when-not new
+                          (.commitEdit cell (.getText newTextField)))))))))
 
 (defn- relation-edit-table [^TableView relation-table view-model]
   (let [context-menu (relation-edit-context-menu relation-table)]
@@ -299,7 +286,18 @@
                     (.setEditable true)
                     (.setCellFactory (reify Callback
                                        (call [this table-column]
-                                         (doto (TextFieldTableCell. (DefaultStringConverter.))
+                                         (doto (proxy [TextFieldTableCell] [(DefaultStringConverter.)]
+                                                 (startEdit []
+                                                   (let [cell this
+                                                         oldTextField (FieldUtils/readField this "textField", true)
+                                                         _ (proxy-super startEdit)
+                                                         ^TextField newTextField (FieldUtils/readField this "textField", true)]
+                                                     (when-not (identical? oldTextField newTextField)
+                                                       (.addListener (.focusedProperty newTextField)
+                                                                     (reify ChangeListener
+                                                                       (changed [this observale old new]
+                                                                         (when-not new
+                                                                           (.commitEdit cell (.getText newTextField))))))))))
                                            (.setContextMenu context-menu)))
                                        ))
                     (.setCellValueFactory (reify Callback
