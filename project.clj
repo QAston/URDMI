@@ -19,9 +19,9 @@
                            ]
             :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]}}
             :plugins [[lein-midje "3.0.0"]]
-            :java-source-paths ["deps/jiprolog/src" "java_src"]
+            :java-source-paths ["deps/jiprolog/src"]
             :javac-options ["-target" "1.8" "-source" "1.8"]
-            :jvm-opts ["-Xmx1g"]
+            :jvm-opts ["-Xmx2g"]
             :resource-paths ["deps/jiprolog/src" "resources"] ; for jiprolog engine
             :main urdmi.launcher
             :aot [urdmi.launcher]

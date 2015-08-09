@@ -13,7 +13,7 @@
            (javafx.geometry Pos Insets)
            (javafx.scene.text Font TextAlignment)
            (javafx.scene.paint Color)
-           (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition TextField)
+           (javafx.scene.control TreeItem TableCell TableRow TreeCell TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition TextField TableColumn$CellEditEvent)
            (javafx.collections ObservableList FXCollections)
            (java.util ArrayList List)
            (urdmi.core Project)
@@ -210,8 +210,8 @@
                            (do
                              (dotimes [i (- (.getColumn next) col)]
                                (.append builder \tab))
-                             (.append builder (.get ^List (.get (.getItems relation-table)
-                                                                (.getRow next)) (.getColumn next)))
+                             (.append builder (.getValue ^StringProperty (.get ^List (.get (.getItems relation-table)
+                                                                                           (.getRow next)) (.getColumn next))))
                              (when-not (= (.getColumn next) right-bound)
                                (.append builder \tab))
                              (recur (rest cells) builder row (inc (.getColumn next))))
@@ -232,10 +232,8 @@
               :let [^ObservableList target-row (.get items (+ top-bound row-index))]]
         (doseq [[col-index src-col] (map-indexed util/args-vec src-row)]
           (when (< (+ col-index left-bound) (count target-row))
-            (.set target-row (+ col-index left-bound) src-col))
-          )
-        ;this refreshes the table
-        (.set items (+ top-bound row-index) target-row))
+            (.setValue ^StringProperty (.get target-row (+ col-index left-bound))  src-col))
+          ))
       )))
 
 (defn- relation-edit-context-menu [^TableView relation-table]
@@ -268,7 +266,7 @@
                     (.setEditable true)
                     (.setCellFactory (reify Callback
                                        (call [this table-column]
-                                         (doto nil #_(proxy [TextFieldTableCell] [(DefaultStringConverter.)]
+                                         (doto (proxy [TextFieldTableCell] [(DefaultStringConverter.)]
                                                  (startEdit []
                                                    (let [cell this
                                                          oldTextField (FieldUtils/readField this "textField", true)
@@ -282,9 +280,15 @@
                                                                            (.commitEdit cell (.getText newTextField))))))))))
                                            (.setContextMenu context-menu)))
                                        ))
+                    (.setOnEditCommit (reify EventHandler
+                                        (handle [this cell-edit-event]
+                                          (let [row (.getRowValue cell-edit-event)
+                                                col-index (.. cell-edit-event getTablePosition getColumn)
+                                                newValue (.getNewValue cell-edit-event)]
+                                            (.setValue (.get row col-index) newValue)))))
                     (.setCellValueFactory (reify Callback
                                             (call [this cell-data-features]
-                                              (SimpleStringProperty. (str (nth (.getValue cell-data-features) i))))
+                                              (.get (.getValue cell-data-features) i))
                                             ))))))
     ))
 
@@ -309,7 +313,10 @@
               (setCellSelectionEnabled true))
           (relation-edit-table view-model)
           (.. getItems
-              (setAll (map (fn [a] (FXCollections/observableArrayList a)) (:data view-model)))))))
+              (setAll (->> (:data view-model)
+                           (map (fn [row] (FXCollections/observableArrayList (->> row
+                                                                                  (map (fn [el]
+                                                                                         (SimpleStringProperty. el)))))))))))))
 
 ;additions edition:
 ;just a large text area
