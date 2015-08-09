@@ -251,6 +251,27 @@
       (.remove (.getItems relation-table) (int row-index)))
     ))
 
+(defn- new-relation-row [arity]
+  (FXCollections/observableArrayList (for [i (range arity)]
+                                       (SimpleStringProperty. "0"))))
+
+(defn- relations-edit-insert-row [^TableView relation-table action-event]
+  (let [items (seq (.. relation-table
+                       getSelectionModel
+                       getSelectedCells))
+        rows (->> items
+                  (map (fn [^TablePosition tp]
+                         (.getRow tp)))
+                  (sort)
+                  (reverse)
+                  (distinct)
+                  )]
+    (doseq [row-index rows]
+    (.add (.getItems relation-table)
+          row-index
+          (new-relation-row (count (.get (.getItems relation-table) (int row-index))))
+          ))))
+
 (defn- relation-edit-context-menu [^TableView relation-table]
   (doto (ContextMenu.)
     (.. getItems
@@ -275,6 +296,11 @@
                (.setOnAction (reify EventHandler
                                (handle [this action-event]
                                  (relations-edit-delete-rows relation-table)))))))
+    (.. getItems
+        (add (doto (MenuItem. "Insert row above")
+               (.setOnAction (reify EventHandler
+                               (handle [this action-event]
+                                 (relations-edit-insert-row relation-table action-event)))))))
     ))
 
 (defn- relation-edit-table [^TableView relation-table view-model]
