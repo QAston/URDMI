@@ -236,6 +236,21 @@
           ))
       )))
 
+(defn- relations-edit-delete-rows [^TableView relation-table]
+  (let [items (seq (.. relation-table
+                       getSelectionModel
+                       getSelectedCells))
+        rows (->> items
+                  (map (fn [^TablePosition tp]
+                         (.getRow tp)))
+                  (sort)
+                  (reverse)
+                  (distinct)
+                  )]
+    (doseq [row-index rows]
+      (.remove (.getItems relation-table) (int row-index)))
+    ))
+
 (defn- relation-edit-context-menu [^TableView relation-table]
   (doto (ContextMenu.)
     (.. getItems
@@ -255,6 +270,11 @@
                                  (relation-edit-paste
                                    (.getString (Clipboard/getSystemClipboard))
                                    relation-table)))))))
+    (.. getItems
+        (add (doto (MenuItem. "Delete selected rows")
+               (.setOnAction (reify EventHandler
+                               (handle [this action-event]
+                                 (relations-edit-delete-rows relation-table)))))))
     ))
 
 (defn- relation-edit-table [^TableView relation-table view-model]
@@ -262,7 +282,7 @@
     (.. relation-table
         getColumns
         (setAll (for [i (range (:arity view-model))]
-                  (doto (TableColumn. (str "col_" i))
+                  (doto (TableColumn. (str "term_" i))
 
                     (.setEditable true)
                     (.setCellFactory (reify Callback
@@ -289,8 +309,8 @@
                                                                                  selected-cell-pos (first (.. relation-table
                                                                                                               getSelectionModel
                                                                                                               getSelectedCells))]
-                                                                                 (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col) (not= (.getRow selected-cell-pos) row))
-                                                                                                (.setValue cell-val (.getText newTextField)))))))))))))
+                                                                             (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col) (not= (.getRow selected-cell-pos) row))
+                                                                                            (.setValue cell-val (.getText newTextField)))))))))))))
                                            (.setContextMenu context-menu)))
                                        ))
                     (.setOnEditCommit (reify EventHandler
