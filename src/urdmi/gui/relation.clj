@@ -173,41 +173,43 @@
                                  (insert-row-action relation-table action-event)))))))
     ))
 
-(defn- build-edit-table [^TableView relation-table view-model]
+(defn- column-cell-factory[^TableView relation-table ^ContextMenu context-menu col-index]
+  (reify Callback
+    (call [this table-column]
+      (doto (proxy [TextFieldTableCell] [(DefaultStringConverter.)]
+              (startEdit []
+                (let [cell this
+                      oldTextField (FieldUtils/readField this "textField", true)
+                      _ (proxy-super startEdit)
+                      ^TextField newTextField (FieldUtils/readField this "textField", true)]
+                  (when-not (identical? oldTextField newTextField)
+                    (.addListener (.focusedProperty newTextField)
+                                  (reify ChangeListener
+                                    (changed [this observale old new]
+                                      (when-not new
+                                        (.commitEdit ^TextFieldTableCell cell
+                                                     (.getText newTextField))
+
+                                        ;this is a hack, because isEditing is false
+                                        ;when changing to another cell
+                                        (let [row-index (.getIndex cell)
+                                              cell-val (.get (.get (.getItems relation-table) row-index) col-index)
+                                              selected-cell-pos (first (.. relation-table
+                                                                           getSelectionModel
+                                                                           getSelectedCells))]
+                                          (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col-index) (not= (.getRow selected-cell-pos) row-index))
+                                                         (.setValue cell-val (.getText newTextField)))))))))))))
+        (.setContextMenu context-menu)))
+    ))
+
+(defn- build-table-columns [^TableView relation-table view-model]
   (let [context-menu (build-context-menu relation-table)]
     (.. relation-table
         getColumns
-        (setAll (for [i (range (:arity view-model))]
-                  (doto (TableColumn. (str "term_" i))
+        (setAll (for [col-index (range (:arity view-model))]
+                  (doto (TableColumn. (str "term_" col-index))
                     (.setEditable true)
-                    (.setCellFactory (reify Callback
-                                       (call [this table-column]
-                                         (doto (proxy [TextFieldTableCell] [(DefaultStringConverter.)]
-                                                 (startEdit []
-                                                   (let [cell this
-                                                         oldTextField (FieldUtils/readField this "textField", true)
-                                                         _ (proxy-super startEdit)
-                                                         ^TextField newTextField (FieldUtils/readField this "textField", true)]
-                                                     (when-not (identical? oldTextField newTextField)
-                                                       (.addListener (.focusedProperty newTextField)
-                                                                     (reify ChangeListener
-                                                                       (changed [this observale old new]
-                                                                         (when-not new
-                                                                           (.commitEdit ^TextFieldTableCell cell
-                                                                                        (.getText newTextField))
-
-                                                                           ;this is a hack, because isEditing is false
-                                                                           ;when changing to another cell
-                                                                           (let [col i
-                                                                                 row (.getIndex cell)
-                                                                                 cell-val (.get (.get (.getItems relation-table) row) col)
-                                                                                 selected-cell-pos (first (.. relation-table
-                                                                                                              getSelectionModel
-                                                                                                              getSelectedCells))]
-                                                                             (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col) (not= (.getRow selected-cell-pos) row))
-                                                                                            (.setValue cell-val (.getText newTextField)))))))))))))
-                                           (.setContextMenu context-menu)))
-                                       ))
+                    (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index))
                     (.setOnEditCommit (reify EventHandler
                                         (handle [this cell-edit-event]
                                           (let [row (.getRowValue cell-edit-event)
@@ -216,9 +218,59 @@
                                             (.setValue (.get row col-index) newValue)))))
                     (.setCellValueFactory (reify Callback
                                             (call [this cell-data-features]
-                                              (.get (.getValue cell-data-features) i))
+                                              (.get (.getValue cell-data-features) col-index))
                                             ))))))
     ))
+
+(defn- build-name-arity-widget[^SimpleStringProperty name-property ^SimpleLongProperty arity-property]
+  (doto (fx/h-box {:padding   (Insets. 5 5 5 5)
+                   :alignment (Pos/CENTER_LEFT)}
+                  (fx/label {:padding (Insets. 3 3 3 3)} "Name:")
+                  (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3)} (.getValue name-property))]
+                    (.addListener (.focusedProperty text-field)
+                                  (reify ChangeListener
+                                    (changed [this observable old new]
+                                      (when-not new
+                                        (.setValue name-property (Long/valueOf ^String (.getText text-field)))))))
+                    text-field)
+                  (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
+                  (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3) :pref-width 50} (str (.getValue arity-property)))]
+                    (.addListener (.focusedProperty text-field)
+                                  (reify ChangeListener
+                                    (changed [this observable old new]
+                                      (when-not new
+                                        (.setValue arity-property (Long/valueOf ^String (.getText text-field)))))))
+                    text-field))
+
+    (VBox/setVgrow Priority/NEVER)))
+
+(defn- build-new-row-widget[^SimpleLongProperty arity-property]
+  (doto (fx/h-box {:padding   (Insets. 5 0 5 0)
+                   :alignment (Pos/CENTER_LEFT)})
+    (.. getChildren
+        (setAll
+          (doto (FXCollections/observableArrayList
+                  (for [i (range (.getValue arity-property))]
+                    (fx/text-field {:padding     (Insets. 1 1 1 1)
+                                    :min-height  Region/USE_COMPUTED_SIZE
+                                    :prompt-text (str "term_" i)} "")))
+            (.add (fx/button {:min-width 40} "Add"))))
+        )
+    (VBox/setVgrow Priority/NEVER)))
+
+(defn- build-table-widget[view-model]
+  (doto (fx/table-view {:editable true})
+    (VBox/setVgrow Priority/ALWAYS)
+    (.. getSelectionModel
+        (setSelectionMode SelectionMode/MULTIPLE))
+    (.. getSelectionModel
+        (setCellSelectionEnabled true))
+    (build-table-columns view-model)
+    (.. getItems
+        (setAll (->> (:data view-model)
+                     (map (fn [row] (FXCollections/observableArrayList (->> row
+                                                                            (map (fn [el]
+                                                                                   (SimpleStringProperty. el))))))))))))
 
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
@@ -227,49 +279,8 @@
 ; shift + click, add all cells in bettween
 (defn build-relation-edit-widget [view-model]
   (let [name-property (SimpleStringProperty. (:name view-model))
-        arity-property (SimpleLongProperty. (:arity view-model))]
-    (list (doto (fx/h-box {:padding   (Insets. 5 5 5 5)
-                           :alignment (Pos/CENTER_LEFT)}
-                          (fx/label {:padding (Insets. 3 3 3 3)} "Name:")
-                          (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3)} (.getValue name-property))]
-                            (.addListener (.focusedProperty text-field)
-                                          (reify ChangeListener
-                                            (changed [this observable old new]
-                                              (when-not new
-                                                (.setValue name-property (Long/valueOf ^String (.getText text-field)))))))
-                            text-field)
-                          (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
-                          (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3) :pref-width 50} (str (.getValue arity-property)))]
-                            (.addListener (.focusedProperty text-field)
-                                          (reify ChangeListener
-                                            (changed [this observable old new]
-                                              (when-not new
-                                                (.setValue arity-property (Long/valueOf ^String (.getText text-field)))))))
-                            text-field))
-
-            (VBox/setVgrow Priority/NEVER))
-          (doto (fx/h-box {:padding   (Insets. 5 0 5 0)
-                           :alignment (Pos/CENTER_LEFT)})
-            (.. getChildren
-                (setAll
-                  (doto (FXCollections/observableArrayList
-                          (for [i (range (:arity view-model))]
-                            (fx/text-field {:padding     (Insets. 1 1 1 1)
-                                            :min-height  Region/USE_COMPUTED_SIZE
-                                            :prompt-text (str "term_" i)} "")))
-                    (.add (fx/button {:min-width 40} "Add"))))
-
-                )
-            (VBox/setVgrow Priority/NEVER))
-          (doto (fx/table-view {:editable true})
-            (VBox/setVgrow Priority/ALWAYS)
-            (.. getSelectionModel
-                (setSelectionMode SelectionMode/MULTIPLE))
-            (.. getSelectionModel
-                (setCellSelectionEnabled true))
-            (build-edit-table view-model)
-            (.. getItems
-                (setAll (->> (:data view-model)
-                             (map (fn [row] (FXCollections/observableArrayList (->> row
-                                                                                    (map (fn [el]
-                                                                                           (SimpleStringProperty. el))))))))))))) )
+        arity-property (SimpleLongProperty. (:arity view-model))
+        widget (list (build-name-arity-widget name-property arity-property)
+                     (build-new-row-widget arity-property)
+                     (build-table-widget view-model))]
+    widget))
