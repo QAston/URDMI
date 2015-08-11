@@ -161,16 +161,15 @@
                          (VBox/setVgrow Priority/NEVER))
                        (doto (fx/split-pane {:divider-positions (double-array [0.25])
                                              :focus-traversable true
-                                             :pref-height       Region/USE_COMPUTED_SIZE
-                                             :pref-width        Region/USE_COMPUTED_SIZE}
+                                             }
 
-                                            (doto
-                                              (fx/v-box :#file-selection {:focus-traversable true})
-                                              (VBox/setVgrow Priority/ALWAYS))
+                                            (fx/v-box :#file-selection {:focus-traversable true})
 
-                                            (doto
-                                              (fx/v-box :#content {:focus-traversable true})
-                                              (VBox/setVgrow Priority/ALWAYS)))
+                                            (fx/scroll-pane {:fit-to-height true
+                                                             :fit-to-width  true}
+                                                            (fx/v-box :#content {:focus-traversable true
+                                                                                 :max-height        Double/MAX_VALUE
+                                                                                 :max-width         Double/MAX_VALUE})))
 
                          (VBox/setVgrow Priority/ALWAYS))
                        (doto (fx/h-box :#hbox {:alignment Pos/CENTER_LEFT
@@ -215,15 +214,15 @@
 (update-main-file-menu main-view)
 (set-widget-children (fx/lookup main-view :#content)
                      (relation/build-relation-edit-widget {:name  "dzial"
-                                                  :arity 6
-                                                  :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
-                                                          ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
-                                                          ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
-                                                          ["4" "marketing" "lipowa" "1" "2" "bialystok"]
-                                                          ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
-                                                          ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
-                                                          ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
-                                                          ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}))
+                                                           :arity 6
+                                                           :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
+                                                                   ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
+                                                                   ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
+                                                                   ["4" "marketing" "lipowa" "1" "2" "bialystok"]
+                                                                   ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
+                                                                   ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
+                                                                   ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
+                                                                   ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}))
 (comment
   (fx/sandbox #'create-main-view))
 

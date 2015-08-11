@@ -202,7 +202,7 @@
         (.setContextMenu context-menu)))
     ))
 
-(defn- build-table-columns [^TableView relation-table arity-property]
+(defn- build-table-columns [^TableView relation-table arity-property column-widths]
   (let [context-menu (build-context-menu relation-table)]
     (.addListener arity-property
                   (reify ChangeListener
@@ -212,20 +212,24 @@
                           (.. relation-table
                               getColumns
                               (addAll (for [i (range diff)
-                                            :let [col-index (+ i old-size)]]
-                                        (doto (TableColumn. (str "term_" col-index))
-                                          (.setEditable true)
-                                          (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index))
-                                          (.setOnEditCommit (reify EventHandler
-                                                              (handle [this cell-edit-event]
-                                                                (let [row (.getRowValue cell-edit-event)
-                                                                      col-index (.. cell-edit-event getTablePosition getColumn)
-                                                                      newValue (.getNewValue cell-edit-event)]
-                                                                  (.setValue (.get row col-index) newValue)))))
-                                          (.setCellValueFactory (reify Callback
-                                                                  (call [this cell-data-features]
-                                                                    (.get (.getValue cell-data-features) col-index))
-                                                                  ))))))
+                                            :let [col-index (+ i old-size)
+                                                  col-width (.get column-widths col-index)]]
+                                        (let [col (doto (TableColumn. (str "term_" col-index))
+                                           (.setEditable true)
+                                           (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index))
+                                           (.setOnEditCommit (reify EventHandler
+                                                               (handle [this cell-edit-event]
+                                                                 (let [row (.getRowValue cell-edit-event)
+                                                                       col-index (.. cell-edit-event getTablePosition getColumn)
+                                                                       newValue (.getNewValue cell-edit-event)]
+                                                                   (.setValue (.get row col-index) newValue)))))
+                                           (.setCellValueFactory (reify Callback
+                                                                   (call [this cell-data-features]
+                                                                     (.get (.getValue cell-data-features) col-index))
+                                                                   )))]
+                                          (.bind col-width (.widthProperty col) )
+                                          col
+                                          ))))
                           (.. relation-table
                               getColumns
                               (remove new-size old-size))
@@ -267,9 +271,11 @@
 
     widget))
 
-(defn- build-new-row-widget [^SimpleLongProperty arity-property]
-  (let [widget (doto (fx/h-box {:padding   (Insets. 5 0 5 0)
-                                :alignment (Pos/CENTER_LEFT)})
+(defn- build-new-row-widget [^SimpleLongProperty arity-property column-widths]
+  (let [widget (doto (fx/h-box {:padding   (Insets. 5 1 5 1)
+                                :alignment (Pos/CENTER_LEFT)
+                                :spacing 1})
+
                  (VBox/setVgrow Priority/NEVER))
         add-button (fx/button {:min-width 40} "Add")]
     (.addListener arity-property
@@ -280,10 +286,16 @@
                           (doto (.. widget
                                     getChildren)
                             (.remove add-button)
-                            (.addAll (for [i (range diff)]
-                                       (fx/text-field {:padding     (Insets. 1 1 1 1)
-                                                       :min-height  Region/USE_COMPUTED_SIZE
-                                                       :prompt-text (str "term_" (+ old-size i))} "")))
+                            (.addAll (for [i (range diff)
+                                           :let [col-width (.get column-widths (+ old-size i))
+                                                 text-field (doto (fx/text-field {:padding     (Insets. 1)
+                                                                                  :min-height  Region/USE_COMPUTED_SIZE
+                                                                                  :prompt-text (str "term_" (+ old-size i))} ""))]]
+
+                                       (do
+                                         (.bind (.maxWidthProperty text-field) col-width)
+                                         (.bind (.minWidthProperty text-field) col-width)
+                                         text-field)))
                             (.add add-button)
                             )
                           (.. widget
@@ -292,16 +304,17 @@
                         ))))
     widget))
 
-(defn- build-table-widget [table-data arity-property]
+(defn- build-table-widget [table-data arity-property column-widths]
   (doto (fx/table-view {:editable true})
     (VBox/setVgrow Priority/ALWAYS)
     (.. getSelectionModel
         (setSelectionMode SelectionMode/MULTIPLE))
     (.. getSelectionModel
         (setCellSelectionEnabled true))
-    (build-table-columns arity-property)
+    (build-table-columns arity-property column-widths)
     (.setItems table-data)))
 
+;todo: on file save expressions that are not valid prolog should be put in urdmi_editor("expr") to be safely saved
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
 ;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
@@ -310,10 +323,22 @@
 (defn build-relation-edit-widget [view-model]
   (let [name-property (SimpleStringProperty. "")
         arity-property (SimpleLongProperty. 0)
+        column-widths (FXCollections/observableArrayList)
+        _     (.addListener arity-property
+                            (reify ChangeListener
+                              (changed [this obs old-size new-size]
+                                (let [diff (- new-size old-size)]
+                                  (if (<= 0 diff)
+                                    (.addAll column-widths
+                                             (for [i (range diff)]
+                                               (SimpleLongProperty. 0)))
+                                    (.remove column-widths new-size old-size)
+                                    )))))
         data (FXCollections/observableArrayList)
         widget (list (build-name-arity-widget name-property arity-property)
-                     (build-new-row-widget arity-property)
-                     (build-table-widget data arity-property))]
+                     (build-new-row-widget arity-property column-widths)
+                     (build-table-widget data arity-property column-widths))]
+
     (.addListener arity-property
                   (reify ChangeListener
                     (changed [this obs old-size new-size]
