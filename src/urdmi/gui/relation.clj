@@ -167,7 +167,7 @@
     (.. getItems
         (add (fx/menu-item {:text      "Insert row above"
                             :on-action (fn [e]
-                                 (insert-row-action relation-table))})))
+                                         (insert-row-action relation-table))})))
     ))
 
 (defn- column-cell-factory [^TableView relation-table ^ContextMenu context-menu col-index]
@@ -274,32 +274,49 @@
                                 :spacing   1})
 
                  (VBox/setVgrow Priority/NEVER))
+        new-row-data (FXCollections/observableArrayList)
         add-button (fx/button {:min-width 40
                                :on-action (fn [e]
-                                            (println data))} "Add")]
+                                            (.add data
+                                                  (FXCollections/observableArrayList (for [prop new-row-data]
+                                                                                       (SimpleStringProperty. (.getValue prop)))))
+                                            (doseq [prop new-row-data]
+                                              (.setValue prop ""))
+                                            (.. widget
+                                                getChildren
+                                                (get 0)
+                                                (requestFocus))
+                                            )} "Add")]
     (.addListener arity-property
                   (reify ChangeListener
                     (changed [this observer old-size new-size]
                       (let [diff (- new-size old-size)]
                         (if (>= diff 0)
-                          (doto (.. widget
-                                    getChildren)
-                            (.remove add-button)
-                            (.addAll (for [i (range diff)
-                                           :let [col-width (.get column-widths (+ old-size i))
-                                                 text-field (doto (fx/text-field {:padding     (Insets. 1)
-                                                                                  :min-height  Region/USE_COMPUTED_SIZE
-                                                                                  :prompt-text (str "term_" (+ old-size i))} ""))]]
+                          (do
+                            (.addAll
+                              new-row-data
+                              (for [i (range diff)]
+                                (SimpleStringProperty. "")))
+                            (doto (.. widget
+                                      getChildren)
+                              (.remove add-button)
+                              (.addAll (for [i (range diff)
+                                             :let [col-width (.get column-widths (+ old-size i))
+                                                   text-field (doto (fx/text-field {:padding     (Insets. 1)
+                                                                                    :min-height  Region/USE_COMPUTED_SIZE
+                                                                                    :prompt-text (str "term_" (+ old-size i))} ""))]]
 
-                                       (do
-                                         (.bind (.maxWidthProperty text-field) col-width)
-                                         (.bind (.minWidthProperty text-field) col-width)
-                                         text-field)))
-                            (.add add-button)
-                            )
-                          (.. widget
-                              getChildren
-                              (remove new-size old-size)))
+                                         (do
+                                           (.bindBidirectional (.get new-row-data i) (.textProperty text-field))
+                                           (.bind (.maxWidthProperty text-field) col-width)
+                                           (.bind (.minWidthProperty text-field) col-width)
+                                           text-field)))
+                              (.add add-button)))
+                          (do
+                            (.. widget
+                                getChildren
+                                (remove new-size old-size))
+                            (.remove new-row-data new-size old-size)))
                         ))))
     widget))
 
