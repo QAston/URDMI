@@ -121,11 +121,13 @@
       (.remove (.getItems relation-table) (int row-index)))
     ))
 
+(def default-cell-value "_")
+
 (defn- new-relation-row [arity]
   (FXCollections/observableArrayList (for [i (range arity)]
-                                       (SimpleStringProperty. "0"))))
+                                       (SimpleStringProperty. default-cell-value))))
 
-(defn- insert-row-action [^TableView relation-table action-event]
+(defn- insert-row-action [^TableView relation-table]
   (let [items (seq (.. relation-table
                        getSelectionModel
                        getSelectedCells))
@@ -143,34 +145,29 @@
             ))))
 
 (defn- build-context-menu [^TableView relation-table]
-  (doto (ContextMenu.)
+  (doto (fx/context-menu)
     (.. getItems
-        (add (doto (MenuItem. "Copy")
-               (.setAccelerator (KeyCodeCombination. KeyCode/C (into-array (list KeyCodeCombination/SHORTCUT_DOWN))))
-               (.setOnAction (reify EventHandler
-                               (handle [this action-event]
-                                 (.setContent (Clipboard/getSystemClipboard)
-                                              (doto (ClipboardContent.)
-                                                (.putString (copy-action relation-table))))
-                                 ))))))
+        (add (fx/menu-item {:text        "Copy"
+                            :accelerator (KeyCodeCombination. KeyCode/C (into-array (list KeyCodeCombination/SHORTCUT_DOWN)))
+                            :on-action   (fn [e]
+                                           (.setContent (Clipboard/getSystemClipboard)
+                                                        (doto (ClipboardContent.)
+                                                          (.putString (copy-action relation-table)))))})))
     (.. getItems
-        (add (doto (MenuItem. "Paste")
-               (.setAccelerator (KeyCodeCombination. KeyCode/V (into-array (list KeyCodeCombination/SHORTCUT_DOWN))))
-               (.setOnAction (reify EventHandler
-                               (handle [this action-event]
-                                 (paste-action
-                                   (.getString (Clipboard/getSystemClipboard))
-                                   relation-table)))))))
+        (add (fx/menu-item {:text        "Paste"
+                            :accelerator (KeyCodeCombination. KeyCode/V (into-array (list KeyCodeCombination/SHORTCUT_DOWN)))
+                            :on-action   (fn [e]
+                                           (paste-action
+                                             (.getString (Clipboard/getSystemClipboard))
+                                             relation-table))})))
     (.. getItems
-        (add (doto (MenuItem. "Delete selected rows")
-               (.setOnAction (reify EventHandler
-                               (handle [this action-event]
-                                 (delete-rows-action relation-table)))))))
+        (add (fx/menu-item {:text      "Delete selected rows"
+                            :on-action (fn [e]
+                                         (delete-rows-action relation-table))})))
     (.. getItems
-        (add (doto (MenuItem. "Insert row above")
-               (.setOnAction (reify EventHandler
-                               (handle [this action-event]
-                                 (insert-row-action relation-table action-event)))))))
+        (add (fx/menu-item {:text      "Insert row above"
+                            :on-action (fn [e]
+                                 (insert-row-action relation-table))})))
     ))
 
 (defn- column-cell-factory [^TableView relation-table ^ContextMenu context-menu col-index]
@@ -215,19 +212,19 @@
                                             :let [col-index (+ i old-size)
                                                   col-width (.get column-widths col-index)]]
                                         (let [col (doto (TableColumn. (str "term_" col-index))
-                                           (.setEditable true)
-                                           (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index))
-                                           (.setOnEditCommit (reify EventHandler
-                                                               (handle [this cell-edit-event]
-                                                                 (let [row (.getRowValue cell-edit-event)
-                                                                       col-index (.. cell-edit-event getTablePosition getColumn)
-                                                                       newValue (.getNewValue cell-edit-event)]
-                                                                   (.setValue (.get row col-index) newValue)))))
-                                           (.setCellValueFactory (reify Callback
-                                                                   (call [this cell-data-features]
-                                                                     (.get (.getValue cell-data-features) col-index))
-                                                                   )))]
-                                          (.bind col-width (.widthProperty col) )
+                                                    (.setEditable true)
+                                                    (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index))
+                                                    (.setOnEditCommit (reify EventHandler
+                                                                        (handle [this cell-edit-event]
+                                                                          (let [row (.getRowValue cell-edit-event)
+                                                                                col-index (.. cell-edit-event getTablePosition getColumn)
+                                                                                newValue (.getNewValue cell-edit-event)]
+                                                                            (.setValue (.get row col-index) newValue)))))
+                                                    (.setCellValueFactory (reify Callback
+                                                                            (call [this cell-data-features]
+                                                                              (.get (.getValue cell-data-features) col-index))
+                                                                            )))]
+                                          (.bind col-width (.widthProperty col))
                                           col
                                           ))))
                           (.. relation-table
@@ -271,13 +268,15 @@
 
     widget))
 
-(defn- build-new-row-widget [^SimpleLongProperty arity-property column-widths]
+(defn- build-new-row-widget [^SimpleLongProperty arity-property column-widths data]
   (let [widget (doto (fx/h-box {:padding   (Insets. 5 1 5 1)
                                 :alignment (Pos/CENTER_LEFT)
-                                :spacing 1})
+                                :spacing   1})
 
                  (VBox/setVgrow Priority/NEVER))
-        add-button (fx/button {:min-width 40} "Add")]
+        add-button (fx/button {:min-width 40
+                               :on-action (fn [e]
+                                            (println data))} "Add")]
     (.addListener arity-property
                   (reify ChangeListener
                     (changed [this observer old-size new-size]
@@ -324,19 +323,19 @@
   (let [name-property (SimpleStringProperty. "")
         arity-property (SimpleLongProperty. 0)
         column-widths (FXCollections/observableArrayList)
-        _     (.addListener arity-property
-                            (reify ChangeListener
-                              (changed [this obs old-size new-size]
-                                (let [diff (- new-size old-size)]
-                                  (if (<= 0 diff)
-                                    (.addAll column-widths
-                                             (for [i (range diff)]
-                                               (SimpleLongProperty. 0)))
-                                    (.remove column-widths new-size old-size)
-                                    )))))
+        _ (.addListener arity-property
+                        (reify ChangeListener
+                          (changed [this obs old-size new-size]
+                            (let [diff (- new-size old-size)]
+                              (if (<= 0 diff)
+                                (.addAll column-widths
+                                         (for [i (range diff)]
+                                           (SimpleLongProperty. 0)))
+                                (.remove column-widths new-size old-size)
+                                )))))
         data (FXCollections/observableArrayList)
         widget (list (build-name-arity-widget name-property arity-property)
-                     (build-new-row-widget arity-property column-widths)
+                     (build-new-row-widget arity-property column-widths data)
                      (build-table-widget data arity-property column-widths))]
 
     (.addListener arity-property
@@ -347,7 +346,7 @@
                           (let [row (.get data row-index)]
                             (if (<= 0 diff)
                               (.addAll row (for [i (range diff)]
-                                             (SimpleStringProperty. "0")))
+                                             (SimpleStringProperty. default-cell-value)))
                               (.remove row new-size old-size))
                             ))
                         ))))
