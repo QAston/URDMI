@@ -59,6 +59,36 @@
               )
             cells)))
 
+(def default-cell-value "_")
+
+(defn- new-relation-row [arity]
+  (FXCollections/observableArrayList (for [i (range arity)]
+                                       (SimpleStringProperty. default-cell-value))))
+
+(defn- set-data-cols [data new-cols-cnt]
+  (when-not (.isEmpty data)
+    (let [old-cols-cnt (count (first data))
+          diff (- new-cols-cnt old-cols-cnt)]
+      (dotimes [row-index (.size data)]
+        (let [row (.get data row-index)]
+          (if (<= 0 diff)
+            (.addAll row (for [i (range diff)]
+                           (SimpleStringProperty. default-cell-value)))
+            (.remove row new-cols-cnt old-cols-cnt))
+          ))
+      )))
+
+(defn- set-data-rows [data new-row-cnt]
+  (when-not (.isEmpty data)
+    (let [old-row-cnt (count data)
+          arity (count (first data))
+          diff (- new-row-cnt old-row-cnt)]
+      (if (<= 0 diff)
+        (.addAll data (for [i (range diff)]
+                        (new-relation-row arity)))
+        (.remove data new-row-cnt old-row-cnt))
+      )))
+
 (defn- copy-action [^TableView relation-table]
   (when-not (.. relation-table getSelectionModel getSelectedItems isEmpty)
     (let [selection-model (.getSelectionModel relation-table)
@@ -89,7 +119,7 @@
                            ))))]
       data)))
 
-(defn- paste-action [in-string ^TableView relation-table]
+(defn- paste-action [in-string ^TableView relation-table arity-property]
   (when (and in-string (not (.. relation-table getSelectionModel getSelectedItems isEmpty)))
     (let [data (for [line (string/split-lines in-string)]
                  (string/split line #"\t"))
@@ -97,55 +127,53 @@
           [left-bound top-bound right-bound bottom-bound] (calc-cell-bounds
                                                             (seq (.. relation-table
                                                                      getSelectionModel
-                                                                     getSelectedCells)))]
+                                                                     getSelectedCells)))
+          items (.getItems relation-table)
+          pasted-rows (count data)
+          pasted-cols (apply max (map count data))
+          new-row-cnt (+ pasted-rows top-bound)
+          new-col-cnt (+ pasted-cols left-bound)
+          row-cnt (count items)
+          col-cnt (count (first items))
+          ]
+      (when (< row-cnt new-row-cnt)
+        (set-data-rows items new-row-cnt))
+      (when (< col-cnt new-col-cnt)
+        (.setValue arity-property new-col-cnt))
       (doseq [[row-index src-row] (map-indexed util/args-vec data)
-              :when (< (+ top-bound row-index) (count items))
               :let [^ObservableList target-row (.get items (+ top-bound row-index))]]
         (doseq [[col-index src-col] (map-indexed util/args-vec src-row)]
-          (when (< (+ col-index left-bound) (count target-row))
-            (.setValue ^StringProperty (.get target-row (+ col-index left-bound)) src-col))
-          ))
-      )))
+          (.setValue ^StringProperty (.get target-row (+ col-index left-bound)) src-col)
+          )
+        ))))
 
-(defn- delete-rows-action [^TableView relation-table]
+(defn- get-selected-row-indexes-in-reverse-order [^TableView relation-table]
   (let [items (seq (.. relation-table
                        getSelectionModel
-                       getSelectedCells))
-        rows (->> items
-                  (map (fn [^TablePosition tp]
-                         (.getRow tp)))
-                  (sort)
-                  (reverse)
-                  (distinct)
-                  )]
-    (doseq [row-index rows]
-      (.remove (.getItems relation-table) (int row-index)))
+                       getSelectedCells))]
+    (->> items
+         (map (fn [^TablePosition tp]
+                (.getRow tp)))
+         (sort)
+         (reverse)
+         (distinct)
+         )
     ))
 
-(def default-cell-value "_")
-
-(defn- new-relation-row [arity]
-  (FXCollections/observableArrayList (for [i (range arity)]
-                                       (SimpleStringProperty. default-cell-value))))
+(defn- delete-rows-action [^TableView relation-table]
+  (doseq [row-index (get-selected-row-indexes-in-reverse-order relation-table)]
+    (.remove (.getItems relation-table) (int row-index)))
+  )
 
 (defn- insert-row-action [^TableView relation-table]
-  (let [items (seq (.. relation-table
-                       getSelectionModel
-                       getSelectedCells))
-        rows (->> items
-                  (map (fn [^TablePosition tp]
-                         (.getRow tp)))
-                  (sort)
-                  (reverse)
-                  (distinct)
-                  )]
-    (doseq [row-index rows]
+    (doseq [row-index (get-selected-row-indexes-in-reverse-order relation-table)
+            arity (count (first (.getItems relation-table)))]
       (.add (.getItems relation-table)
             row-index
-            (new-relation-row (count (.get (.getItems relation-table) (int row-index))))
-            ))))
+            (new-relation-row arity)
+            )))
 
-(defn- build-context-menu [^TableView relation-table]
+(defn- build-context-menu [^TableView relation-table arity-property]
   (doto (fx/context-menu)
     (.. getItems
         (add (fx/menu-item {:text        "Copy"
@@ -160,7 +188,8 @@
                             :on-action   (fn [e]
                                            (paste-action
                                              (.getString (Clipboard/getSystemClipboard))
-                                             relation-table))})))
+                                             relation-table
+                                             arity-property))})))
     (.. getItems
         (add (fx/menu-item {:text      "Delete selected rows"
                             :on-action (fn [e]
@@ -201,7 +230,7 @@
     ))
 
 (defn- build-table-columns [^TableView relation-table arity-property column-widths]
-  (let [context-menu (build-context-menu relation-table)]
+  (let [context-menu (build-context-menu relation-table arity-property)]
     (.addListener arity-property
                   (reify ChangeListener
                     (changed [this obs old-size new-size]
@@ -331,6 +360,13 @@
     (build-table-columns arity-property column-widths)
     (.setItems table-data)))
 
+;usability improvements:
+; confirm arity/name change using enter
+; arity validation
+; term warning in relation
+; term warning in addition
+; edit table when typing
+; select next on enter when editing table
 ;todo: on file save expressions that are not valid prolog should be put in urdmi_editor("expr") to be safely saved
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
@@ -359,15 +395,7 @@
     (.addListener arity-property
                   (reify ChangeListener
                     (changed [this obs old-size new-size]
-                      (let [diff (- new-size old-size)]
-                        (dotimes [row-index (.size data)]
-                          (let [row (.get data row-index)]
-                            (if (<= 0 diff)
-                              (.addAll row (for [i (range diff)]
-                                             (SimpleStringProperty. default-cell-value)))
-                              (.remove row new-size old-size))
-                            ))
-                        ))))
+                      (set-data-cols data new-size))))
     (.setAll data ^Collection (->> (:data view-model)
                                    (map (fn [row] (FXCollections/observableArrayList (->> row
                                                                                           (map (fn [el]
@@ -376,20 +404,20 @@
     (.setValue name-property (:name view-model))
 
     (doto (fx/v-box {:focus-traversable true
-                :max-height        Double/MAX_VALUE
-                :max-width         Double/MAX_VALUE})
+                     :max-height        Double/MAX_VALUE
+                     :max-width         Double/MAX_VALUE})
       (.. getChildren (setAll (FXCollections/observableArrayList widget))))
     ))
 
 (defn test-fn []
-                      (build-relation-edit-widget {:name  "dzial"
-                                                            :arity 6
-                                                            :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
-                                                                    ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
-                                                                    ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
-                                                                    ["4" "marketing" "lipowa" "1" "2" "bialystok"]
-                                                                    ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
-                                                                    ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
-                                                                    ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
-                                                                    ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}))
+  (build-relation-edit-widget {:name  "dzial"
+                               :arity 6
+                               :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
+                                       ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
+                                       ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
+                                       ["4" "marketing" "lipowa" "1" "2" "bialystok"]
+                                       ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
+                                       ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
+                                       ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
+                                       ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}))
 (fx/sandbox #'test-fn)
