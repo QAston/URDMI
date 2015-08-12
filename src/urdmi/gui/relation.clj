@@ -9,7 +9,7 @@
     (javafx.scene.layout Region VBox Priority HBox)
     (javafx.geometry Pos Insets)
     (javafx.scene.control TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition TextField TableColumn$CellEditEvent)
-    (javafx.collections ObservableList FXCollections ListChangeListener)
+    (javafx.collections ObservableList ListChangeListener)
     (java.util List Collection)
     (javafx.util Callback)
     (javafx.scene.control.cell TextFieldTableCell)
@@ -63,31 +63,23 @@
 (def default-cell-value "_")
 
 (defn- new-relation-row [arity]
-  (FXCollections/observableArrayList (for [i (range arity)]
-                                       (SimpleStringProperty. default-cell-value))))
+  (gui/observable-list (for [i (range arity)]
+                         (SimpleStringProperty. default-cell-value))))
 
 (defn- set-data-cols [data new-cols-cnt]
   (when-not (.isEmpty data)
-    (let [old-cols-cnt (count (first data))
-          diff (- new-cols-cnt old-cols-cnt)]
-      (dotimes [row-index (.size data)]
-        (let [row (.get data row-index)]
-          (if (<= 0 diff)
-            (.addAll row (for [i (range diff)]
-                           (SimpleStringProperty. default-cell-value)))
-            (.remove row new-cols-cnt old-cols-cnt))
-          ))
-      )))
+    (dotimes [row-index (.size data)]
+      (let [row (.get data row-index)]
+        (gui/resize-observable-list row new-cols-cnt (fn [i]
+                                                       (SimpleStringProperty. default-cell-value)))
+        ))
+    ))
 
 (defn- set-data-rows [data new-row-cnt]
   (when-not (.isEmpty data)
-    (let [old-row-cnt (count data)
-          arity (count (first data))
-          diff (- new-row-cnt old-row-cnt)]
-      (if (<= 0 diff)
-        (.addAll data (for [i (range diff)]
-                        (new-relation-row arity)))
-        (.remove data new-row-cnt old-row-cnt))
+    (let [arity (count (first data))]
+      (gui/resize-observable-list data new-row-cnt (fn [i]
+                                                     (new-relation-row arity)))
       )))
 
 (defn- copy-action [^TableView relation-table]
@@ -124,7 +116,6 @@
   (when (and in-string (not (.. relation-table getSelectionModel getSelectedItems isEmpty)))
     (let [data (for [line (string/split-lines in-string)]
                  (string/split line #"\t"))
-          ^ObservableList items (.getItems relation-table)
           [left-bound top-bound right-bound bottom-bound] (calc-cell-bounds
                                                             (seq (.. relation-table
                                                                      getSelectionModel
@@ -167,12 +158,12 @@
   )
 
 (defn- insert-row-action [^TableView relation-table]
-    (doseq [row-index (get-selected-row-indexes-in-reverse-order relation-table)
-            arity (count (first (.getItems relation-table)))]
-      (.add (.getItems relation-table)
-            row-index
-            (new-relation-row arity)
-            )))
+  (doseq [row-index (get-selected-row-indexes-in-reverse-order relation-table)
+          arity (count (first (.getItems relation-table)))]
+    (.add (.getItems relation-table)
+          row-index
+          (new-relation-row arity)
+          )))
 
 (defn- build-context-menu [^TableView relation-table arity-property]
   (doto (fx/context-menu)
@@ -211,9 +202,8 @@
                       _ (proxy-super startEdit)
                       ^TextField newTextField (FieldUtils/readField this "textField", true)]
                   (when-not (identical? oldTextField newTextField)
-                    (.addListener (.focusedProperty newTextField)
-                                  (reify ChangeListener
-                                    (changed [this observale old new]
+                    (gui/on-changed (.focusedProperty newTextField)
+                                    (fn [observale old new]
                                       (when-not new
                                         (.commitEdit ^TextFieldTableCell cell
                                                      (.getText newTextField))
@@ -226,43 +216,33 @@
                                                                            getSelectionModel
                                                                            getSelectedCells))]
                                           (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col-index) (not= (.getRow selected-cell-pos) row-index))
-                                                         (.setValue cell-val (.getText newTextField)))))))))))))
+                                                         (.setValue cell-val (.getText newTextField))))))))))))
         (.setContextMenu context-menu)))
     ))
 
 (defn- build-table-columns [^TableView relation-table arity-property column-widths]
-  (let [context-menu (build-context-menu relation-table arity-property)]
-    (.addListener arity-property
-                  (reify ChangeListener
-                    (changed [this obs old-size new-size]
-                      (let [diff (- new-size old-size)]
-                        (if (>= diff 0)
-                          (.. relation-table
-                              getColumns
-                              (addAll (for [i (range diff)
-                                            :let [col-index (+ i old-size)
-                                                  col-width (.get column-widths col-index)]]
-                                        (let [col (doto (TableColumn. (str "term_" col-index))
-                                                    (.setEditable true)
-                                                    (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index))
-                                                    (.setOnEditCommit (reify EventHandler
-                                                                        (handle [this cell-edit-event]
-                                                                          (let [row (.getRowValue cell-edit-event)
-                                                                                col-index (.. cell-edit-event getTablePosition getColumn)
-                                                                                newValue (.getNewValue cell-edit-event)]
-                                                                            (.setValue (.get row col-index) newValue)))))
-                                                    (.setCellValueFactory (reify Callback
-                                                                            (call [this cell-data-features]
-                                                                              (.get (.getValue cell-data-features) col-index))
-                                                                            )))]
-                                          (.bind col-width (.widthProperty col))
-                                          col
-                                          ))))
-                          (.. relation-table
-                              getColumns
-                              (remove new-size old-size))
-                          ))
-                      )))
+  (let [context-menu (build-context-menu relation-table arity-property)
+        column-factory (fn [col-index]
+                         (let [col-width (.get column-widths col-index)
+                               col (doto (TableColumn. (str "term_" col-index))
+                                     (.setEditable true)
+                                     (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index))
+                                     (.setOnEditCommit (reify EventHandler
+                                                         (handle [this cell-edit-event]
+                                                           (let [row (.getRowValue cell-edit-event)
+                                                                 col-index (.. cell-edit-event getTablePosition getColumn)
+                                                                 newValue (.getNewValue cell-edit-event)]
+                                                             (.setValue (.get row col-index) newValue)))))
+                                     (.setCellValueFactory (reify Callback
+                                                             (call [this cell-data-features]
+                                                               (.get (.getValue cell-data-features) col-index))
+                                                             )))]
+                           (.bind col-width (.widthProperty col))
+                           col))]
+    (gui/on-changed arity-property
+                    (fn [obs old-size new-size]
+                      (gui/resize-observable-list (.. relation-table
+                                                      getColumns) new-size column-factory)))
     ))
 
 (defn- build-name-arity-widget [^SimpleStringProperty name-property ^SimpleLongProperty arity-property]
@@ -270,20 +250,18 @@
                                 :alignment (Pos/CENTER_LEFT)}
                                (fx/label {:padding (Insets. 3 3 3 3)} "Name:")
                                (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3)} (.getValue name-property))]
-                                 (.addListener (.focusedProperty text-field)
-                                               (reify ChangeListener
-                                                 (changed [this observable old new]
+                                 (gui/on-changed (.focusedProperty text-field)
+                                                 (fn [observable old new]
                                                    (when-not new
-                                                     (.setValue name-property (.getText text-field))))))
+                                                     (.setValue name-property (.getText text-field)))))
                                  (.bind (.textProperty text-field) name-property)
                                  text-field)
                                (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
                                (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3) :pref-width 50} (str (.getValue arity-property)))]
-                                 (.addListener (.focusedProperty text-field)
-                                               (reify ChangeListener
-                                                 (changed [this observable old new]
+                                 (gui/on-changed (.focusedProperty text-field)
+                                                 (fn [observable old new]
                                                    (when-not new
-                                                     (.setValue arity-property (Long/valueOf ^String (.getText text-field)))))))
+                                                     (.setValue arity-property (Long/valueOf ^String (.getText text-field))))))
                                  (.bind (.textProperty text-field) (StringExpression/stringExpression arity-property))
                                  text-field))
 
@@ -297,12 +275,13 @@
                                 :spacing   1})
 
                  (VBox/setVgrow Priority/NEVER))
-        new-row-data (FXCollections/observableArrayList)
+        new-row-data (gui/observable-list)
         add-button (fx/button {:min-width 40
                                :on-action (fn [e]
                                             (.add data
-                                                  (FXCollections/observableArrayList (for [prop new-row-data]
-                                                                                       (SimpleStringProperty. (.getValue prop)))))
+                                                  (gui/observable-list
+                                                    (for [prop new-row-data]
+                                                      (SimpleStringProperty. (.getValue prop)))))
                                             (doseq [prop new-row-data]
                                               (.setValue prop ""))
                                             (.. widget
@@ -310,9 +289,8 @@
                                                 (get 0)
                                                 (requestFocus))
                                             )} "Add")]
-    (.addListener arity-property
-                  (reify ChangeListener
-                    (changed [this observer old-size new-size]
+    (gui/on-changed arity-property
+                    (fn [observer old-size new-size]
                       (let [diff (- new-size old-size)]
                         (if (>= diff 0)
                           (do
@@ -340,7 +318,7 @@
                                 getChildren
                                 (remove new-size old-size))
                             (.remove new-row-data new-size old-size)))
-                        ))))
+                        )))
     widget))
 
 (defn- build-table-widget [table-data arity-property column-widths]
@@ -369,37 +347,30 @@
 (defn build-relation-edit-widget [view-model]
   (let [name-property (SimpleStringProperty. "")
         arity-property (SimpleLongProperty. 0)
-        column-widths (FXCollections/observableArrayList)
-        _ (.addListener arity-property
-                        (reify ChangeListener
-                          (changed [this obs old-size new-size]
-                            (let [diff (- new-size old-size)]
-                              (if (<= 0 diff)
-                                (.addAll column-widths
-                                         (for [i (range diff)]
-                                           (SimpleLongProperty. 0)))
-                                (.remove column-widths new-size old-size)
-                                )))))
-        data (FXCollections/observableArrayList)
+        column-widths (gui/observable-list)
+        _ (gui/on-changed arity-property
+                          (fn [obs old-size new-size]
+                            (gui/resize-observable-list column-widths new-size (fn [i]
+                                                                                 (SimpleLongProperty. 0)))))
+        data (gui/observable-list)
         widget (list (build-name-arity-widget name-property arity-property)
                      (build-new-row-widget arity-property column-widths data)
                      (build-table-widget data arity-property column-widths))]
 
-    (.addListener arity-property
-                  (reify ChangeListener
-                    (changed [this obs old-size new-size]
-                      (set-data-cols data new-size))))
+    (gui/on-changed arity-property
+                    (fn [obs old-size new-size]
+                      (set-data-cols data new-size)))
     (.setAll data ^Collection (->> (:data view-model)
-                                   (map (fn [row] (FXCollections/observableArrayList (->> row
-                                                                                          (map (fn [el]
-                                                                                                 (SimpleStringProperty. el)))))))))
+                                   (map (fn [row] (gui/observable-list (->> row
+                                                                            (map (fn [el]
+                                                                                   (SimpleStringProperty. el)))))))))
     (.setValue arity-property (:arity view-model))
     (.setValue name-property (:name view-model))
 
     (doto (fx/v-box {:focus-traversable true
                      :max-height        Double/MAX_VALUE
                      :max-width         Double/MAX_VALUE})
-      (.. getChildren (setAll (FXCollections/observableArrayList widget))))
+      (.. getChildren (setAll (gui/observable-list widget))))
     ))
 
 (defn test-fn []

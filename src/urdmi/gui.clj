@@ -1,7 +1,10 @@
 (ns urdmi.gui
   (:require [clojure.core.async :refer [chan go <! >!]]
             [clojure.java.io :as io]
-            [fx-clj.core :as fx]))
+            [fx-clj.core :as fx])
+  (:import (javafx.collections ObservableList FXCollections)
+           (java.util Collection)
+           (javafx.beans.value ObservableValue ChangeListener)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -38,6 +41,34 @@
         (getChildren)
         (setAll
           children))))
+
+(defn resize-observable-list
+  "resizes given list to new-size, if needed constructs new elements
+  construct-fn is a (fn [index] (new-element-at-index))"
+  [^ObservableList list new-size construct-fn]
+  (let [old-size (count list)
+        diff (- new-size old-size)]
+    (if (<= 0 diff)
+      (.addAll list ^Collection (for [i (range diff)]
+                                  (construct-fn (+ old-size i))))
+      (.remove list new-size old-size))
+    ))
+
+(defn on-changed
+  "registers a change callback on an observable value
+  callback is a (fn [observable old-val new-val])"
+  [^ObservableValue val callback]
+  (.addListener val
+                (reify ChangeListener
+                  (changed [this obs old new]
+                    (callback obs old new)))))
+
+(defn observable-list
+  "creates a new instance of observable array list from given collection"
+  ([]
+   (FXCollections/observableArrayList))
+  ([^Collection col]
+  (FXCollections/observableArrayList col)))
 
 
 
