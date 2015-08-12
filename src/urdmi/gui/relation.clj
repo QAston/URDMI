@@ -3,7 +3,8 @@
             [fx-clj.core :as fx]
             [urdmi.prolog :as prolog]
             [clojure.string :as string]
-            [urdmi.util :as util])
+            [urdmi.util :as util]
+            [urdmi.gui :as gui])
   (:import
     (javafx.scene.layout Region VBox Priority HBox)
     (javafx.geometry Pos Insets)
@@ -374,4 +375,21 @@
     (.setValue arity-property (:arity view-model))
     (.setValue name-property (:name view-model))
 
-    widget))
+    (doto (fx/v-box {:focus-traversable true
+                :max-height        Double/MAX_VALUE
+                :max-width         Double/MAX_VALUE})
+      (.. getChildren (setAll (FXCollections/observableArrayList widget))))
+    ))
+
+(defn test-fn []
+                      (build-relation-edit-widget {:name  "dzial"
+                                                            :arity 6
+                                                            :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
+                                                                    ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
+                                                                    ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
+                                                                    ["4" "marketing" "lipowa" "1" "2" "bialystok"]
+                                                                    ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
+                                                                    ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
+                                                                    ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
+                                                                    ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}))
+(fx/sandbox #'test-fn)
