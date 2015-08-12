@@ -19,8 +19,7 @@
     (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent)
     (javafx.event EventHandler)
     (javafx.util.converter DefaultStringConverter)
-    (org.apache.commons.lang3.reflect FieldUtils)
-    (javafx.beans.binding StringExpression)))
+    (org.apache.commons.lang3.reflect FieldUtils)))
 
 (defn- rel-ast-to-table [rel-asts]
   (let [op-manager (:op-manager (prolog/parser-context []))
@@ -254,7 +253,11 @@
                                                  (fn [observable old new]
                                                    (when-not new
                                                      (.setValue name-property (.getText text-field)))))
-                                 (.bind (.textProperty text-field) name-property)
+                                 (.addListener name-property
+                                               (reify ChangeListener
+                                                 (changed [this obs old new]
+                                                   (when (not= old new)
+                                                     (.setText text-field new)))))
                                  text-field)
                                (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
                                (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3) :pref-width 50} (str (.getValue arity-property)))]
@@ -262,7 +265,11 @@
                                                  (fn [observable old new]
                                                    (when-not new
                                                      (.setValue arity-property (Long/valueOf ^String (.getText text-field))))))
-                                 (.bind (.textProperty text-field) (StringExpression/stringExpression arity-property))
+                                 (.addListener arity-property
+                                               (reify ChangeListener
+                                                 (changed [this obs old new]
+                                                   (when (not= old new)
+                                                     (.setText text-field (str new))))))
                                  text-field))
 
                  (VBox/setVgrow Priority/NEVER))]
