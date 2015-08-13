@@ -4,7 +4,12 @@
             [fx-clj.core :as fx])
   (:import (javafx.collections ObservableList FXCollections)
            (java.util Collection)
-           (javafx.beans.value ObservableValue ChangeListener)))
+           (javafx.beans.value ObservableValue ChangeListener)
+           (org.controlsfx.validation ValidationSupport Validator Severity)
+           (org.controlsfx.validation.decoration ValidationDecoration)
+           (javafx.scene.control Control)
+           (java.util.function Predicate)
+           (clojure.lang IFn)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -28,6 +33,24 @@
       (println "Done listening to clicks"))
 
     view))
+
+(defn validation-support
+  "controlsfx validation registrator"
+  ^ValidationSupport [^ValidationDecoration decoration]
+  (doto (ValidationSupport.)
+    (.setErrorDecorationEnabled true)
+    (.setValidationDecorator decoration)))
+
+(defn validate-control
+  "register validation for a given control. when pred false control displays validation message.
+  pred is a (fn [value] (Boolean.))"
+  [^ValidationSupport validation ^Control control ^IFn pred ^String message]
+  (.registerValidator validation control false (Validator/createPredicateValidator
+                                                (reify Predicate
+                                                  (test [this val]
+                                                    (pred val)))
+                                                message
+                                                Severity/ERROR)))
 
 ; property as clojure ref
 (comment @(fx/property-ref node :text))

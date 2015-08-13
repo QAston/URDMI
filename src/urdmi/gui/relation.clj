@@ -19,7 +19,9 @@
     (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent)
     (javafx.event EventHandler)
     (javafx.util.converter DefaultStringConverter)
-    (org.apache.commons.lang3.reflect FieldUtils)))
+    (org.apache.commons.lang3.reflect FieldUtils)
+    (org.controlsfx.validation.decoration GraphicValidationDecoration)
+    (org.controlsfx.validation ValidationSupport)))
 
 (defn- rel-ast-to-table [rel-asts]
   (let [op-manager (:op-manager (prolog/parser-context []))
@@ -204,6 +206,7 @@
                     (gui/on-changed (.focusedProperty newTextField)
                                     (fn [observale old new]
                                       (when-not new
+
                                         (.commitEdit ^TextFieldTableCell cell
                                                      (.getText newTextField))
 
@@ -215,7 +218,8 @@
                                                                            getSelectionModel
                                                                            getSelectedCells))]
                                           (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col-index) (not= (.getRow selected-cell-pos) row-index))
-                                                         (.setValue cell-val (.getText newTextField))))))))))))
+                                                         (.setValue cell-val (.getText newTextField))))))))
+                    ))))
         (.setContextMenu context-menu)))
     ))
 
@@ -244,7 +248,7 @@
                                                       getColumns) new-size column-factory)))
     ))
 
-(defn- build-name-arity-widget [^SimpleStringProperty name-property ^SimpleLongProperty arity-property]
+(defn- build-name-arity-widget [^SimpleStringProperty name-property ^SimpleLongProperty arity-property ^ValidationSupport validation]
   (let [widget (doto (fx/h-box {:padding   (Insets. 5 5 5 5)
                                 :alignment (Pos/CENTER_LEFT)}
                                (fx/label {:padding (Insets. 3 3 3 3)} "Name:")
@@ -253,23 +257,41 @@
                                                  (fn [observable old new]
                                                    (when-not new
                                                      (.setValue name-property (.getText text-field)))))
-                                 (.addListener name-property
-                                               (reify ChangeListener
-                                                 (changed [this obs old new]
+                                 (gui/on-changed name-property
+                                                 (fn [obs old new]
                                                    (when (not= old new)
-                                                     (.setText text-field new)))))
+                                                     (.setText text-field new))))
                                  text-field)
                                (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
-                               (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3) :pref-width 50} (str (.getValue arity-property)))]
+                               (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3) :pref-width 50} (str (.getValue arity-property)))
+                                     test-fn (fn [s]
+                                               (try
+                                                 (>= (Long/parseLong ^String s) 0)
+                                                 (catch NumberFormatException e
+                                                   false)))
+                                     update-arity-prop (fn[]
+                                                         (let [text (.getText text-field)]
+                                                           (when (test-fn text)
+                                                             (.setValue arity-property (Long/valueOf ^String text)))))
+                                     ]
+
+                                 (gui/validate-control validation text-field test-fn
+                                                       "Arity must be a number > 0")
                                  (gui/on-changed (.focusedProperty text-field)
                                                  (fn [observable old new]
                                                    (when-not new
-                                                     (.setValue arity-property (Long/valueOf ^String (.getText text-field))))))
-                                 (.addListener arity-property
-                                               (reify ChangeListener
-                                                 (changed [this obs old new]
+                                                     (update-arity-prop))))
+
+                                 (.setOnAction text-field (reify EventHandler
+                                                            (handle [this e]
+                                                              (update-arity-prop))))
+
+                                 (gui/on-changed arity-property
+                                                 (fn [obs old new]
                                                    (when (not= old new)
-                                                     (.setText text-field (str new))))))
+                                                     (.setText text-field (str new)))))
+
+
                                  text-field))
 
                  (VBox/setVgrow Priority/NEVER))]
@@ -339,8 +361,6 @@
     (.setItems table-data)))
 
 ;usability improvements:
-; confirm arity/name change using enter
-; arity validation
 ; term warning in relation
 ; term warning in addition
 ; edit table when typing
@@ -360,7 +380,8 @@
                             (gui/resize-observable-list column-widths new-size (fn [i]
                                                                                  (SimpleLongProperty. 0)))))
         data (gui/observable-list)
-        widget (list (build-name-arity-widget name-property arity-property)
+        validation (gui/validation-support (GraphicValidationDecoration.))
+        widget (list (build-name-arity-widget name-property arity-property validation)
                      (build-new-row-widget arity-property column-widths data)
                      (build-table-widget data arity-property column-widths))]
 
