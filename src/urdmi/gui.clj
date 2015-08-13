@@ -31,7 +31,6 @@
         (fx/pset! txt "Last text")
         (fx/pset! btn {:text "Done"}))
       (println "Done listening to clicks"))
-
     view))
 
 (defn validation-support
@@ -74,8 +73,7 @@
     (if (<= 0 diff)
       (.addAll list ^Collection (for [i (range diff)]
                                   (construct-fn (+ old-size i))))
-      (.remove list new-size old-size))
-    ))
+      (.remove list new-size old-size))))
 
 (defn on-changed
   "registers a change callback on an observable value

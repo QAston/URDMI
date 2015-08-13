@@ -195,4 +195,16 @@
       (prolog/quote "as'd") => "as''d"
       (prolog/quote "as\\'d") => "as\\\\''d")
 
-(future-fact "can replace a clause in a string with new clause without affecting other parts of a file.")
+(fact "parse-term parses a single prolog term, if not a single term returns nil"
+      (let [context (prolog/parser-context[])]
+        (prolog/parse-single-term context "") => nil
+        (prolog/parse-single-term context ",") => nil
+        (prolog/parse-single-term context "_") => {:name "_", :type :ast-variable}
+        (prolog/parse-single-term context "_,_") => nil
+        (prolog/parse-single-term context "_,_,_") => nil
+        (prolog/parse-single-term context "5") => {:type :ast-expression, :value 5}
+        (prolog/parse-single-term context "a(b)") => {:children ({:name "a", :type :ast-atom} {:name "b", :type :ast-atom}), :type :ast-functor}
+        (prolog/parse-single-term context "5(r, v)") => nil
+        (prolog/parse-single-term context "()") => nil
+        (prolog/parse-single-term context "(1,2") => nil
+        (prolog/parse-single-term context "1,2") => nil))

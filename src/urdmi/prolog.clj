@@ -1,11 +1,12 @@
 (ns urdmi.prolog
   (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader JIPDebugger PrologObject ConsCell Functor List Clause Atom Expression Variable)
-           (java.io Reader Writer StringWriter)
+           (java.io Reader Writer StringWriter StringReader)
            (org.apache.commons.io.input ReaderInputStream)
            (com.ugos.io PushbackLineNumberInputStream)
            (java.nio.charset Charset)
            (clojure.lang ISeq))
-  (:require [clojure.zip :as zip]))
+  (:require [clojure.zip :as zip]
+            [clojure.string :as string]))
 
 (set! JIPDebugger/debug true)
 
@@ -54,8 +55,22 @@
   ([^ParserContext context ^Reader rdr]
    (let [parser (create-parser context rdr)]
      (when-let [^PrologObject next (.parseNext parser)]
-       ;(println (.toString next (:engine context)))
        (cons (to-ast next) (lazy-seq (prolog-expr-seq-impl parser)))))))
+
+(defn parse-single-term
+  "Parses a term, returns nil if invalid or empty" [^ParserContext context ^String term]
+  (let [parser (create-parser context (StringReader. (str "term(" term ").")))]
+    (try
+      (when-let [^PrologObject next (.parseNext parser)]
+        (let [terms (->>
+                      (to-ast next)
+                      (:children)
+                      (rest))]
+          (when (= 1 (count terms))
+            (first terms))))
+      (catch Exception e
+        ))
+    ))
 
 (def ast-cell "grouping together (parens) or grouping in :- functor (special case)" :ast-cell) ;
 (def ast-object "all ast nodes have this type" :ast-object)
@@ -315,10 +330,10 @@ root is the root node."
 (defn pretty-print-sentences
   "Pretty-prints a a seq of prolog ast nodes. Assumes these are in order."
   ([^ParserContext context, ^ISeq prolog-sentences ^Writer writer]
-    (doseq [sentence prolog-sentences]
-      (pretty-print sentence (:op-manager context) writer)
-      (.append writer ".\n")
-      ))
+   (doseq [sentence prolog-sentences]
+     (pretty-print sentence (:op-manager context) writer)
+     (.append writer ".\n")
+     ))
   ([^ParserContext context, ^ISeq prolog-sentences]
    (let [writer (StringWriter.)]
      (pretty-print-sentences context prolog-sentences writer)

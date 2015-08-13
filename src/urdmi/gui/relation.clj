@@ -16,12 +16,14 @@
     (java.io StringWriter)
     (javafx.beans.value ChangeListener)
     (javafx.beans.property StringProperty SimpleStringProperty SimpleLongProperty)
-    (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent)
+    (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent KeyEvent)
     (javafx.event EventHandler)
     (javafx.util.converter DefaultStringConverter)
     (org.apache.commons.lang3.reflect FieldUtils)
     (org.controlsfx.validation.decoration GraphicValidationDecoration)
     (org.controlsfx.validation ValidationSupport)))
+
+(def term-validation-msg "Text must be a valid term.")
 
 (defn- rel-ast-to-table [rel-asts]
   (let [op-manager (:op-manager (prolog/parser-context []))
@@ -61,18 +63,19 @@
               )
             cells)))
 
-(def default-cell-value "_")
+(defn default-cell-value [col-index]
+  (str "term" col-index))
 
 (defn- new-relation-row [arity]
   (gui/observable-list (for [i (range arity)]
-                         (SimpleStringProperty. default-cell-value))))
+                         (SimpleStringProperty. (default-cell-value i)))))
 
 (defn- set-data-cols [data new-cols-cnt]
   (when-not (.isEmpty data)
     (dotimes [row-index (.size data)]
       (let [row (.get data row-index)]
         (gui/resize-observable-list row new-cols-cnt (fn [i]
-                                                       (SimpleStringProperty. default-cell-value)))
+                                                       (SimpleStringProperty. (default-cell-value i))))
         ))
     ))
 
@@ -136,9 +139,7 @@
       (doseq [[row-index src-row] (map-indexed util/args-vec data)
               :let [^ObservableList target-row (.get items (+ top-bound row-index))]]
         (doseq [[col-index src-col] (map-indexed util/args-vec src-row)]
-          (.setValue ^StringProperty (.get target-row (+ col-index left-bound)) src-col)
-          )
-        ))))
+          (.setValue ^StringProperty (.get target-row (+ col-index left-bound)) src-col))))))
 
 (defn- get-selected-row-indexes-in-reverse-order [^TableView relation-table]
   (let [items (seq (.. relation-table
@@ -150,8 +151,7 @@
          (sort)
          (reverse)
          (distinct)
-         )
-    ))
+         )))
 
 (defn- delete-rows-action [^TableView relation-table]
   (doseq [row-index (get-selected-row-indexes-in-reverse-order relation-table)]
@@ -269,7 +269,7 @@
                                                  (>= (Long/parseLong ^String s) 0)
                                                  (catch NumberFormatException e
                                                    false)))
-                                     update-arity-prop (fn[]
+                                     update-arity-prop (fn []
                                                          (let [text (.getText text-field)]
                                                            (when (test-fn text)
                                                              (.setValue arity-property (Long/valueOf ^String text)))))
@@ -295,29 +295,32 @@
                                  text-field))
 
                  (VBox/setVgrow Priority/NEVER))]
-
     widget))
 
-(defn- build-new-row-widget [^SimpleLongProperty arity-property column-widths data]
+(defn- build-new-row-widget [^SimpleLongProperty arity-property column-widths ^ValidationSupport validation validate-term-fn data]
   (let [widget (doto (fx/h-box {:padding   (Insets. 5 1 5 1)
                                 :alignment (Pos/CENTER_LEFT)
                                 :spacing   1})
 
                  (VBox/setVgrow Priority/NEVER))
         new-row-data (gui/observable-list)
-        add-button (fx/button {:min-width 40
-                               :on-action (fn [e]
-                                            (.add data
-                                                  (gui/observable-list
-                                                    (for [prop new-row-data]
-                                                      (SimpleStringProperty. (.getValue prop)))))
-                                            (doseq [prop new-row-data]
-                                              (.setValue prop ""))
-                                            (.. widget
-                                                getChildren
-                                                (get 0)
-                                                (requestFocus))
-                                            )} "Add")]
+        add-button-action (fn [e]
+                            (.add data
+                                  (gui/observable-list
+                                    (for [prop new-row-data]
+                                      (SimpleStringProperty. (.getValue prop)))))
+                            (doseq [[index prop] (map-indexed util/args-vec new-row-data)]
+                              (.setValue prop (default-cell-value index)))
+                            (.. widget
+                                getChildren
+                                (get 0)
+                                (requestFocus)))
+        add-button (doto (fx/button {:min-width 40
+                                     :on-action add-button-action} "Add")
+                     (.setOnKeyReleased (reify EventHandler
+                                          (handle [this e]
+                                            (when (= (.getCode e) KeyCode/ENTER)
+                                              (add-button-action e))))))]
     (gui/on-changed arity-property
                     (fn [observer old-size new-size]
                       (let [diff (- new-size old-size)]
@@ -326,17 +329,18 @@
                             (.addAll
                               new-row-data
                               (for [i (range diff)]
-                                (SimpleStringProperty. "")))
+                                (SimpleStringProperty. (default-cell-value (+ old-size i)))))
                             (doto (.. widget
                                       getChildren)
                               (.remove add-button)
                               (.addAll (for [i (range diff)
                                              :let [col-width (.get column-widths (+ old-size i))
-                                                   text-field (doto (fx/text-field {:padding     (Insets. 1)
-                                                                                    :min-height  Region/USE_COMPUTED_SIZE
-                                                                                    :prompt-text (str "term_" (+ old-size i))} ""))]]
-
+                                                   text-field (fx/text-field {:text        (default-cell-value (+ old-size i))
+                                                                              :padding     (Insets. 1)
+                                                                              :min-height  Region/USE_COMPUTED_SIZE
+                                                                              :prompt-text (default-cell-value (+ old-size i))})]]
                                          (do
+                                           (gui/validate-control validation text-field validate-term-fn term-validation-msg)
                                            (.bindBidirectional (.get new-row-data i) (.textProperty text-field))
                                            (.bind (.maxWidthProperty text-field) col-width)
                                            (.bind (.minWidthProperty text-field) col-width)
@@ -362,7 +366,6 @@
 
 ;usability improvements:
 ; term warning in relation
-; term warning in addition
 ; edit table when typing
 ; select next on enter when editing table
 ;todo: on file save expressions that are not valid prolog should be put in urdmi_editor("expr") to be safely saved
@@ -381,9 +384,17 @@
                                                                                  (SimpleLongProperty. 0)))))
         data (gui/observable-list)
         validation (gui/validation-support (GraphicValidationDecoration.))
+        parser-context (prolog/parser-context [])
+        validate-term-fn (fn [s]
+                           (if (prolog/parse-single-term parser-context s)
+                             true
+                             false))
+
         widget (list (build-name-arity-widget name-property arity-property validation)
-                     (build-new-row-widget arity-property column-widths data)
-                     (build-table-widget data arity-property column-widths))]
+                     (build-new-row-widget arity-property column-widths validation validate-term-fn data)
+                     (build-table-widget data arity-property column-widths))
+
+        ]
 
     (gui/on-changed arity-property
                     (fn [obs old-size new-size]
