@@ -19,7 +19,7 @@
     (javafx.event EventHandler)
     (javafx.util.converter DefaultStringConverter)
     (org.apache.commons.lang3.reflect FieldUtils)
-    (org.controlsfx.validation.decoration GraphicValidationDecoration)
+    (org.controlsfx.validation.decoration GraphicValidationDecoration StyleClassValidationDecoration)
     (org.controlsfx.validation ValidationSupport)))
 
 (def term-validation-msg "Text must be a valid term.")
@@ -212,6 +212,7 @@
                                                             (.clearSelection selection-model focus-index table-column)
                                                             (.selectNext selection-model)
                                                             )))))
+                         (gui/validate-control validation newTextField validate-term-fn term-validation-msg)
                          ;commit on lost focus
                          (gui/on-changed (.focusedProperty newTextField)
                                          (fn [observale old new]
@@ -384,6 +385,8 @@
 ;also rename relation textbox
 ;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
 ;multiple selection: ctrl + click on cell to add cell to the selection
+
+(def cnt (atom 0))
 ; shift + click, add all cells in bettween
 (defn build-relation-edit-widget [view-model]
   (let [name-property (SimpleStringProperty. "")
@@ -394,19 +397,17 @@
                             (gui/resize-observable-list column-widths new-size (fn [i]
                                                                                  (SimpleLongProperty. 0)))))
         data (gui/observable-list)
-        validation (gui/validation-support (GraphicValidationDecoration.))
+        validation (gui/validation-support (StyleClassValidationDecoration.))
         parser-context (prolog/parser-context [])
         validate-term-fn (fn [s]
-                           (if (prolog/parse-single-term parser-context s)
-                             true
-                             (do (println "asd")
-                               false)))
+                           (if s
+                             (boolean (prolog/parse-single-term parser-context s))
+                             true))
 
         widget (list (build-name-arity-widget name-property arity-property validation)
                      (build-new-row-widget arity-property column-widths validation validate-term-fn data)
-                     (build-table-widget data arity-property column-widths validation validate-term-fn))
+                     (build-table-widget data arity-property column-widths validation validate-term-fn))]
 
-        ]
 
     (gui/on-changed arity-property
                     (fn [obs old-size new-size]
@@ -418,21 +419,27 @@
     (.setValue arity-property (:arity view-model))
     (.setValue name-property (:name view-model))
 
+
     (doto (fx/v-box {:focus-traversable true
                      :max-height        Double/MAX_VALUE
                      :max-width         Double/MAX_VALUE})
       (.. getChildren (setAll (gui/observable-list widget))))
     ))
 
+(require '[clojure.java.io :as io])
 (defn test-fn []
-  (build-relation-edit-widget {:name  "dzial"
-                               :arity 6
-                               :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
-                                       ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
-                                       ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
-                                       ["4" "marketing" "lipowa" "1" "2" "bialystok"]
-                                       ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
-                                       ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
-                                       ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
-                                       ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}))
+  (let [widget (build-relation-edit-widget {:name  "dzial"
+                                            :arity 6
+                                            :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
+                                                    ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
+                                                    ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
+                                                    ["4" "marketing" "lipowa" "1" "2" "bialystok"]
+                                                    ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
+                                                    ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
+                                                    ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
+                                                    ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]})]
+    (.. widget getStylesheets (add (.toExternalForm (io/resource "main.css"))))
+    widget
+    ))
+
 (fx/sandbox #'test-fn)

@@ -7,9 +7,11 @@
            (javafx.beans.value ObservableValue ChangeListener)
            (org.controlsfx.validation ValidationSupport Validator Severity)
            (org.controlsfx.validation.decoration ValidationDecoration)
-           (javafx.scene.control Control)
+           (javafx.scene.control Control TableCell Labeled)
            (java.util.function Predicate)
-           (clojure.lang IFn)))
+           (clojure.lang IFn)
+           (javafx.util Callback)
+           (org.controlsfx.tools ValueExtractor)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -32,6 +34,15 @@
         (fx/pset! btn {:text "Done"}))
       (println "Done listening to clicks"))
     view))
+
+(ValueExtractor/addObservableValueExtractor (reify Predicate
+                                              (test [this control]
+                                                (instance? Labeled control)))
+                                            (reify Callback
+                                              (call [this control]
+                                                (let [^Labeled control control]
+                                                  (.textProperty control)))))
+
 
 (defn validation-support
   "controlsfx validation registrator"
