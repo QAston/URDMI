@@ -14,7 +14,6 @@
     (javafx.util Callback)
     (javafx.scene.control.cell TextFieldTableCell)
     (java.io StringWriter)
-    (javafx.beans.value ChangeListener)
     (javafx.beans.property StringProperty SimpleStringProperty SimpleLongProperty)
     (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent KeyEvent)
     (javafx.event EventHandler)
@@ -26,8 +25,7 @@
 (def term-validation-msg "Text must be a valid term.")
 
 (defn- rel-ast-to-table [rel-asts]
-  (let [op-manager (:op-manager (prolog/parser-context []))
-        ]
+  (let [op-manager (:op-manager (prolog/parser-context []))]
     (->> rel-asts
          (mapv (fn [ast]
                  (->> ast
@@ -193,43 +191,58 @@
                                          (insert-row-action relation-table))})))
     ))
 
-(defn- column-cell-factory [^TableView relation-table ^ContextMenu context-menu col-index]
+(defn- column-cell-factory [^TableView relation-table ^ContextMenu context-menu col-index ^ValidationSupport validation validate-term-fn]
   (reify Callback
     (call [this table-column]
-      (doto (proxy [TextFieldTableCell] [(DefaultStringConverter.)]
-              (startEdit []
-                (let [cell this
-                      oldTextField (FieldUtils/readField this "textField", true)
-                      _ (proxy-super startEdit)
-                      ^TextField newTextField (FieldUtils/readField this "textField", true)]
-                  (when-not (identical? oldTextField newTextField)
-                    (gui/on-changed (.focusedProperty newTextField)
-                                    (fn [observale old new]
-                                      (when-not new
+      (let [cell (proxy [TextFieldTableCell] [(DefaultStringConverter.)]
+                   (startEdit []
+                     (let [cell this
+                           oldTextField (FieldUtils/readField this "textField", true)
+                           _ (proxy-super startEdit)
+                           ^TextField newTextField (FieldUtils/readField this "textField", true)]
+                       (when-not (identical? oldTextField newTextField)
+                         ; select next cell on enter
+                         (let [old-action (.getOnAction newTextField)]
+                           (.setOnAction newTextField (reify EventHandler
+                                                        (handle [this e]
+                                                          (.handle old-action e)
+                                                          (.requestFocus relation-table)
+                                                          (let [selection-model (.getSelectionModel relation-table)
+                                                                focus-index (.getFocusedIndex selection-model)]
+                                                            (.clearSelection selection-model focus-index table-column)
+                                                            (.selectNext selection-model)
+                                                            )))))
+                         ;commit on lost focus
+                         (gui/on-changed (.focusedProperty newTextField)
+                                         (fn [observale old new]
+                                           (when-not new
 
-                                        (.commitEdit ^TextFieldTableCell cell
-                                                     (.getText newTextField))
+                                             (.commitEdit ^TextFieldTableCell cell
+                                                          (.getText newTextField))
 
-                                        ;this is a hack, because isEditing is false
-                                        ;when changing to another cell
-                                        (let [row-index (.getIndex cell)
-                                              cell-val (.get (.get (.getItems relation-table) row-index) col-index)
-                                              selected-cell-pos (first (.. relation-table
-                                                                           getSelectionModel
-                                                                           getSelectedCells))]
-                                          (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col-index) (not= (.getRow selected-cell-pos) row-index))
-                                                         (.setValue cell-val (.getText newTextField))))))))
-                    ))))
-        (.setContextMenu context-menu)))
+                                             ;this is a hack, because isEditing is false
+                                             ;when changing to another cell
+                                             (let [row-index (.getIndex cell)
+                                                   cell-val (.get (.get (.getItems relation-table) row-index) col-index)
+                                                   selected-cell-pos (first (.. relation-table
+                                                                                getSelectionModel
+                                                                                getSelectedCells))]
+                                               (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col-index) (not= (.getRow selected-cell-pos) row-index))
+                                                              (.setValue cell-val (.getText newTextField))))))))
+                         ))))]
+        (.setContextMenu cell context-menu)
+        (gui/validate-control validation cell validate-term-fn term-validation-msg)
+        cell
+        ))
     ))
 
-(defn- build-table-columns [^TableView relation-table arity-property column-widths]
+(defn- build-table-columns [^TableView relation-table arity-property column-widths validation validate-term-fn]
   (let [context-menu (build-context-menu relation-table arity-property)
         column-factory (fn [col-index]
                          (let [col-width (.get column-widths col-index)
                                col (doto (TableColumn. (str "term_" col-index))
                                      (.setEditable true)
-                                     (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index))
+                                     (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index validation validate-term-fn))
                                      (.setOnEditCommit (reify EventHandler
                                                          (handle [this cell-edit-event]
                                                            (let [row (.getRowValue cell-edit-event)
@@ -354,20 +367,18 @@
                         )))
     widget))
 
-(defn- build-table-widget [table-data arity-property column-widths]
+(defn- build-table-widget [table-data arity-property column-widths validation validate-term-fn]
   (doto (fx/table-view {:editable true})
     (VBox/setVgrow Priority/ALWAYS)
     (.. getSelectionModel
         (setSelectionMode SelectionMode/MULTIPLE))
     (.. getSelectionModel
         (setCellSelectionEnabled true))
-    (build-table-columns arity-property column-widths)
+    (build-table-columns arity-property column-widths validation validate-term-fn)
     (.setItems table-data)))
 
 ;usability improvements:
-; term warning in relation
 ; edit table when typing
-; select next on enter when editing table
 ;todo: on file save expressions that are not valid prolog should be put in urdmi_editor("expr") to be safely saved
 ;a panel with a table view with remove add column buttons and sorting
 ;also rename relation textbox
@@ -388,11 +399,12 @@
         validate-term-fn (fn [s]
                            (if (prolog/parse-single-term parser-context s)
                              true
-                             false))
+                             (do (println "asd")
+                               false)))
 
         widget (list (build-name-arity-widget name-property arity-property validation)
                      (build-new-row-widget arity-property column-widths validation validate-term-fn data)
-                     (build-table-widget data arity-property column-widths))
+                     (build-table-widget data arity-property column-widths validation validate-term-fn))
 
         ]
 
