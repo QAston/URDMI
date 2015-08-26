@@ -47,7 +47,6 @@
 
 (defrecord AcePlugin []
   api/Plugin
-  (new-project-creation-view ^api/View [this app-event-in-channel])
   (run [this project]
     (let [
           plugin-settings (api/get-settings-data project settings-filename)
@@ -59,12 +58,10 @@
                 :dir working-dir
                 ))
     )
-  (update-working-dir [this project changed-entry])
   (rebuild-working-dir [this project]
     (build-bg-knowledge-file this project)
     (build-knowledge-base-file this project)
-    (build-settings-file this project))
-  (new-entry-view ^api/View [this project entry to-app-channel]))
+    (build-settings-file this project)))
 
 (defn create []
   (->AcePlugin))

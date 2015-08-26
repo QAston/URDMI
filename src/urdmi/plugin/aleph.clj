@@ -75,7 +75,6 @@
 
 (defrecord AlephPlugin []
   api/Plugin
-  (new-project-creation-view ^api/View [this app-event-in-channel])
   (run [this project]
     (let [plugin-settings (api/get-settings-data project settings-filename)
           swiprolog-location (:swi-prolog-loc plugin-settings)
@@ -86,12 +85,10 @@
                 :in (StringReader. (str "consult('" (prolog/quote aleph-location) "').\nread_all(" (prolog/quote dbname) ").\n.\ninduce.\nhalt.\n"))
                 :dir working-dir
                 )))
-  (update-working-dir [this project changed-name-keys])
   (rebuild-working-dir [this project]
     (build-b-file project)
     (build-f-file project)
-    (build-n-file project))
-  (new-entry-view ^api/View [this project entry to-app-channel]))
+    (build-n-file project)))
 
 (defn create []
   (->AlephPlugin))
