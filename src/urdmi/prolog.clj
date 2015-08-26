@@ -10,12 +10,6 @@
 
 (set! JIPDebugger/debug true)
 
-(declare to-ast)
-
-(defn ^:private prolog-expr-seq-impl [^PrologParser parser]
-  (when-let [next (.parseNext parser)]
-    (cons (to-ast next) (lazy-seq (prolog-expr-seq-impl parser)))))
-
 (defrecord Operator [^int preference ^String type ^String name])
 
 (defrecord ParserContext [^JIPEngine engine, ^OperatorManager op-manager])
@@ -50,28 +44,6 @@
                    (->Operator 200 "fy" "+-")
                    (->Operator 200 "fy" "+-\\")]))
 
-(defn prolog-sentence-seq
-  "Lazily reads prolog expr from file, one at a time."
-  ([^ParserContext context ^Reader rdr]
-   (let [parser (create-parser context rdr)]
-     (when-let [^PrologObject next (.parseNext parser)]
-       (cons (to-ast next) (lazy-seq (prolog-expr-seq-impl parser)))))))
-
-(defn parse-single-term
-  "Parses a term, returns nil if invalid or empty" [^ParserContext context ^String term]
-  (let [parser (create-parser context (StringReader. (str "term(" term ").")))]
-    (try
-      (when-let [^PrologObject next (.parseNext parser)]
-        (let [terms (->>
-                      (to-ast next)
-                      (:children)
-                      (rest))]
-          (when (= 1 (count terms))
-            (first terms))))
-      (catch Exception e
-        ))
-    ))
-
 (def ast-cell "grouping together (parens) or grouping in :- functor (special case)" :ast-cell) ;
 (def ast-object "all ast nodes have this type" :ast-object)
 (def ast-atom "prolog atom" :ast-atom)
@@ -99,6 +71,54 @@
 (defprotocol PAstConvertible
   (to-ast [^PrologObject obj])
   )
+
+(defn ^:private prolog-expr-seq-impl [^PrologParser parser]
+  (when-let [next (.parseNext parser)]
+    (cons (to-ast next) (lazy-seq (prolog-expr-seq-impl parser)))))
+
+(defn prolog-sentence-seq
+  "Lazily reads prolog expr from file, one at a time."
+  ([^ParserContext context ^Reader rdr]
+   (let [parser (create-parser context rdr)]
+     (when-let [^PrologObject next (.parseNext parser)]
+       (cons (to-ast next) (lazy-seq (prolog-expr-seq-impl parser)))))))
+
+(defn parse-single-sentence
+  "Returns a sentence, nil if more or empty"
+  [^ParserContext context ^String sentence]
+  (let [parser (create-parser context (StringReader. sentence))]
+    (try
+      (when-let [^PrologObject next (.parseNext parser)]
+        (try
+          ;returns nil when nothing more to parse
+          (when-not (.parseNext parser)
+            (to-ast next))
+          (catch Exception e
+            )))
+      (catch Exception e
+        ))
+    ))
+
+(defn parse-single-term
+  "Parses a term, returns nil if invalid or empty" [^ParserContext context ^String term]
+  (let [sentence (parse-single-sentence context (str "term(" term ")."))]
+    (try
+      (let [terms (->> sentence
+                       (:children)
+                       (rest))]
+        (when (= 1 (count terms))
+          (first terms)))
+      (catch Exception e
+        ))))
+
+(defn parse-single-atom
+  "Parses an atom, returns nil if invalid or empty" [^ParserContext context ^String atom]
+  (let [sentence (parse-single-sentence context (str atom "."))]
+    (try
+      (when (= :ast-atom (:type sentence))
+        sentence)
+      (catch Exception e
+        ))))
 
 (defn- with-file-metadata [^PrologObject obj m]
   (if (> (.getLine obj) 0)
@@ -343,4 +363,3 @@ root is the root node."
 (defn quote
   "quotes string for use in prolog literals" [^String s]
   (.replace (.replace s "'" "''") "\\" "\\\\"))
-

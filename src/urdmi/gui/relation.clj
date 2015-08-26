@@ -266,15 +266,24 @@
   (let [widget (doto (fx/h-box {:padding   (Insets. 5 5 5 5)
                                 :alignment (Pos/CENTER_LEFT)}
                                (fx/label {:padding (Insets. 3 3 3 3)} "Name:")
-                               (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3)} (.getValue name-property))]
+                               (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3)} (.getValue name-property))
+
+                                     update-name-prop (fn []
+                                                        (.setValue name-property (.getText text-field)))
+                                     ]
                                  (gui/on-changed (.focusedProperty text-field)
                                                  (fn [observable old new]
                                                    (when-not new
-                                                     (.setValue name-property (.getText text-field)))))
+                                                     (update-name-prop))))
+                                 (.setOnAction text-field (reify EventHandler
+                                                            (handle [this e]
+                                                              (update-name-prop))))
                                  (gui/on-changed name-property
                                                  (fn [obs old new]
                                                    (when (not= old new)
                                                      (.setText text-field new))))
+                                 (gui/validate-control validation text-field (fn [s] (prolog/parse-single-atom (prolog/parser-context []) s))
+                                                       "Name must be a valid prolog atom")
                                  text-field)
                                (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
                                (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3) :pref-width 50} (str (.getValue arity-property)))
@@ -401,7 +410,7 @@
         parser-context (prolog/parser-context [])
         validate-term-fn (fn [s]
                            (if s
-                             (boolean (prolog/parse-single-term parser-context s))
+                             (prolog/parse-single-term parser-context s)
                              true))
 
         widget (list (build-name-arity-widget name-property arity-property validation)

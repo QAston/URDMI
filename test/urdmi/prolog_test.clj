@@ -189,22 +189,53 @@
         (prolog/ast-make-node atoms (list {:name "r", :type :ast-atom} {:name "s", :type :ast-atom})) => (list {:name "r", :type :ast-atom} {:name "s", :type :ast-atom})
         ))
 
-(fact "quote quotes a string for use in prolog quote"
-      (prolog/quote "asd") => "asd"
-      (prolog/quote "as\\d") => "as\\\\d"
-      (prolog/quote "as'd") => "as''d"
-      (prolog/quote "as\\'d") => "as\\\\''d")
+(facts prolog/quote
+       (fact "quotes a string for use in prolog quote"
+             (prolog/quote "asd") => "asd"
+             (prolog/quote "as\\d") => "as\\\\d"
+             (prolog/quote "as'd") => "as''d"
+             (prolog/quote "as\\'d") => "as\\\\''d"))
 
-(fact "parse-term parses a single prolog term, if not a single term returns nil"
-      (let [context (prolog/parser-context[])]
-        (prolog/parse-single-term context "") => nil
-        (prolog/parse-single-term context ",") => nil
-        (prolog/parse-single-term context "_") => {:name "_", :type :ast-variable}
-        (prolog/parse-single-term context "_,_") => nil
-        (prolog/parse-single-term context "_,_,_") => nil
-        (prolog/parse-single-term context "5") => {:type :ast-expression, :value 5}
-        (prolog/parse-single-term context "a(b)") => {:children ({:name "a", :type :ast-atom} {:name "b", :type :ast-atom}), :type :ast-functor}
-        (prolog/parse-single-term context "5(r, v)") => nil
-        (prolog/parse-single-term context "()") => nil
-        (prolog/parse-single-term context "(1,2") => nil
-        (prolog/parse-single-term context "1,2") => nil))
+(facts prolog/parse-single-sentence
+       (let [context (prolog/parser-context[])]
+         (fact "returns nil when more than single sentence"
+               (prolog/parse-single-sentence context "a. b.") => nil)
+         (fact "returns nil when more no empty string"
+               (prolog/parse-single-sentence context "") => nil)
+         (fact "returns nil when invalid sentence"
+               (prolog/parse-single-sentence context ",") => nil)
+         (fact "returns sentence when passed valid sentence"
+               (prolog/parse-single-sentence context "a.") => {:name "a", :type :ast-atom})))
+
+(facts prolog/parse-single-term
+       (fact "parses a single prolog term, if not a single term returns nil"
+             (let [context (prolog/parser-context [])]
+               (prolog/parse-single-term context "") => nil
+               (prolog/parse-single-term context ",") => nil
+               (prolog/parse-single-term context "_") => {:name "_", :type :ast-variable}
+               (prolog/parse-single-term context "a") => {:name "a", :type :ast-atom}
+               (prolog/parse-single-term context "_,_") => nil
+               (prolog/parse-single-term context "_,_,_") => nil
+               (prolog/parse-single-term context "5") => {:type :ast-expression, :value 5}
+               (prolog/parse-single-term context "a(b)") => {:children (list {:name "a", :type :ast-atom} {:name "b", :type :ast-atom}), :type :ast-functor}
+               (prolog/parse-single-term context "5(r, v)") => nil
+               (prolog/parse-single-term context "()") => nil
+               (prolog/parse-single-term context "(1,2") => nil
+               (prolog/parse-single-term context "1,2") => nil)))
+
+(facts prolog/parse-single-atom
+       (fact "accepts only a single, atom"
+             (let [context (prolog/parser-context [])]
+               (prolog/parse-single-atom context "") => nil
+               (prolog/parse-single-atom context ",") => nil
+               (prolog/parse-single-atom context "_") => nil
+               (prolog/parse-single-atom context "_,_") => nil
+               (prolog/parse-single-atom context "_,_,_") => nil
+               (prolog/parse-single-atom context "5") => nil
+               (prolog/parse-single-atom context "a(b)") => nil
+               (prolog/parse-single-atom context "5(r, v)") => nil
+               (prolog/parse-single-atom context "()") => nil
+               (prolog/parse-single-atom context "(1,2") => nil
+               (prolog/parse-single-atom context "1,2") => nil
+               (prolog/parse-single-atom context "a") => {:name "a", :type :ast-atom}
+               (prolog/parse-single-atom context "aTom") => {:name "aTom", :type :ast-atom})))

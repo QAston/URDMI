@@ -58,7 +58,7 @@
   (.registerValidator validation control false (Validator/createPredicateValidator
                                                 (reify Predicate
                                                   (test [this val]
-                                                    (pred val)))
+                                                    (boolean (pred val))))
                                                 message
                                                 Severity/ERROR)))
 
