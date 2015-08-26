@@ -41,7 +41,7 @@
         [rel-name rel-arity] (:rel rel)]
     {:name  rel-name
      :arity rel-arity
-     :data  (rel-ast-to-table rel-asts)}
+     :items (rel-ast-to-table rel-asts)}
     ))
 
 (defn- calc-cell-bounds [cells]
@@ -390,22 +390,13 @@
 ;usability improvements:
 ; edit table when typing
 ;todo: on file save expressions that are not valid prolog should be put in urdmi_editor("expr") to be safely saved
-;a panel with a table view with remove add column buttons and sorting
-;also rename relation textbox
-;todo: have mutuable model, which is mapped to a persistent data structure for history support on change commit
-;multiple selection: ctrl + click on cell to add cell to the selection
 
-(def cnt (atom 0))
-; shift + click, add all cells in bettween
-(defn build-relation-edit-widget [view-model]
-  (let [name-property (SimpleStringProperty. "")
-        arity-property (SimpleLongProperty. 0)
-        column-widths (gui/observable-list)
+(defn build-relation-edit-widget [name-property arity-property items-list]
+  (let [column-widths (gui/observable-list)
         _ (gui/on-changed arity-property
                           (fn [obs old-size new-size]
                             (gui/resize-observable-list column-widths new-size (fn [i]
                                                                                  (SimpleLongProperty. 0)))))
-        data (gui/observable-list)
         validation (gui/validation-support (StyleClassValidationDecoration.))
         parser-context (prolog/parser-context [])
         validate-term-fn (fn [s]
@@ -414,20 +405,12 @@
                              true))
 
         widget (list (build-name-arity-widget name-property arity-property validation)
-                     (build-new-row-widget arity-property column-widths validation validate-term-fn data)
-                     (build-table-widget data arity-property column-widths validation validate-term-fn))]
-
+                     (build-new-row-widget arity-property column-widths validation validate-term-fn items-list)
+                     (build-table-widget items-list arity-property column-widths validation validate-term-fn))]
 
     (gui/on-changed arity-property
                     (fn [obs old-size new-size]
-                      (set-data-cols data new-size)))
-    (.setAll data ^Collection (->> (:data view-model)
-                                   (map (fn [row] (gui/observable-list (->> row
-                                                                            (map (fn [el]
-                                                                                   (SimpleStringProperty. el)))))))))
-    (.setValue arity-property (:arity view-model))
-    (.setValue name-property (:name view-model))
-
+                      (set-data-cols items-list new-size)))
 
     (doto (fx/v-box {:focus-traversable true
                      :max-height        Double/MAX_VALUE
@@ -435,21 +418,58 @@
       (.. getChildren (setAll (gui/observable-list widget))))
     ))
 
+
+(deftype RelationView [name-property arity-property items-list widget]
+  gui/View
+  (main-widget [this]
+    widget)
+  (update-widget [this data]
+    (.setValue arity-property (:arity data))
+    (.setValue name-property (:name data))
+    (.setAll items-list ^Collection (->> (:items data)
+                                         (map (fn [row] (gui/observable-list (->> row
+                                                                                  (map (fn [el]
+                                                                                         (SimpleStringProperty. el)))))))))
+    )
+  (read-data [this]
+    {:arity (.getValue arity-property)
+     :name  (.getValue name-property)
+     :items (->> items-list
+                 (mapv (fn [row]
+                         (mapv
+                           (fn [^SimpleStringProperty item]
+                             (.getValue item))
+                           row))))}
+    ))
+
+(defn make-view []
+  (let [name-property (SimpleStringProperty. "")
+        arity-property (SimpleLongProperty. 0)
+        items-list (gui/observable-list)]
+    (->RelationView
+      name-property
+      arity-property
+      items-list
+      (build-relation-edit-widget name-property arity-property items-list))))
+
 (comment
   (require '[clojure.java.io :as io])
   (defn test-fn []
-    (let [widget (build-relation-edit-widget {:name  "dzial"
-                                              :arity 6
-                                              :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
-                                                      ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
-                                                      ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
-                                                      ["4" "marketing" "lipowa" "1" "2" "bialystok"]
-                                                      ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
-                                                      ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
-                                                      ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
-                                                      ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]})]
-      (.. widget getStylesheets (add (.toExternalForm (io/resource "main.css"))))
-      widget
+    (let [view (make-view)
+          data {:name  "dzial"
+                :arity 6
+                :items [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
+                        ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
+                        ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
+                        ["4" "marketing" "lipowa" "1" "2" "bialystok"]
+                        ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
+                        ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
+                        ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
+                        ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}]
+      (.. view main-widget getStylesheets (add (.toExternalForm (io/resource "main.css"))))
+      (gui/update-widget view data)
+      (println (= (gui/read-data view) data))
+      (gui/main-widget view)
       ))
 
   (fx/sandbox #'test-fn))

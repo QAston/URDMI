@@ -141,17 +141,6 @@
                                          (HBox/setHgrow Priority/NEVER)))
                          (VBox/setVgrow Priority/NEVER))
                        )]
-    ; update file menu in place
-    ;(update-main-file-menu view)
-    (go
-      (while true
-
-        (<! file-events)
-        ))
-
-    (go
-      (let [^javafx.event.ActionEvent e (<! menu-events)]
-        ))
 
     (def main-view view)
     view

@@ -12,19 +12,12 @@
 
 (import 'java.io.File)
 
-(defprotocol View
-  (main-widget [this])
-  (update-widget [this project data])
-  (read-data [this]))
-
 (defprotocol Plugin
   "All urdmi plugins must implement this protocol"
-  (new-project-creation-view ^View [this app-event-in-channel] "returns a view for creating a ")
   (run [this project] "Run datamining engine associated to this plugin. Updates output menu entries.")
   (update-working-dir [this project name-keys] "Updates working dir files for given entry change")
   (rebuild-working-dir [this project])
-  (new-entry-view ^View [this project entry to-app-channel] "Returns a view for editing/display of a menu entry"))
-
+  )
 
 (defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])
 

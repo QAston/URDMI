@@ -17,23 +17,14 @@
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
     (.load loader)))
 
-(defn create-view []
-  (let [click-ch (chan)
-        btn (fx/button :#my-btn {:on-action click-ch        ;; You can bind a core.async channel directly to an event
-                                 :text      "Next"})
+(defprotocol View
+  (main-widget [this])
+  (update-widget [this data])
+  (read-data [this]))
 
-        txt (fx/text "Initial text")
-        view (fx/v-box txt btn)]
-
-    (go
-      (<! click-ch)
-      (fx/run<! (fx/pset! txt "Next text"))
-      (<! click-ch)
-      (fx/run<!
-        (fx/pset! txt "Last text")
-        (fx/pset! btn {:text "Done"}))
-      (println "Done listening to clicks"))
-    view))
+(defprotocol PluginGui
+  (new-project-creation-view ^View [this app-event-in-channel] "returns a view for creating a ")
+  (new-entry-view ^View [this project entry to-app-channel] "Returns a view for editing/display of a menu entry"))
 
 (ValueExtractor/addObservableValueExtractor (reify Predicate
                                               (test [this control]
