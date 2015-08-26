@@ -14,6 +14,7 @@
                            [org.apache.directory.studio/org.apache.commons.io "2.4"]
                            [org.apache.commons/commons-lang3 "3.4"]
                            [potemkin "0.3.13"]
+                           [org.fxmisc.richtext/richtextfx "0.6.6"]
                            [me.raynes/fs "1.4.6" :exclusions [potemkin]]
                            [org.clojars.ato/clojure-jsr223 "1.5.1" :exclusions [org.clojure/clojure]]
                            ]

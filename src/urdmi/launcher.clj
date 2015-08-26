@@ -14,8 +14,7 @@
   (require 'urdmi.gui)
   (let [ args (into-array String (-> app .getParameters .getRaw))
          main-view ((var-get (resolve (symbol "urdmi.gui" "create-main-view"))))]
-    ; My app loads "scene" from .fxml here but do whatever to init window here...
     (doto stage
-      (.setTitle "Hi I'm a window!")
+      (.setTitle "URDMI")
       (.setScene (Scene. main-view))
       (.show))))

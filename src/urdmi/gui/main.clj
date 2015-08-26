@@ -12,11 +12,6 @@
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)))
 
-;additions edition:
-;just a large text area
-;there's undo/redo support
-;http://fxexperience.com/controlsfx/ the best control lib so far
-
 (defn- file-names-recursively [zipiter proj-key]
   (let [path (into [proj-key] (conj (mapv :name (rest (zip/path zipiter))) (:name (zip/node zipiter))))
         name (:name (zip/node zipiter))]

@@ -435,20 +435,21 @@
       (.. getChildren (setAll (gui/observable-list widget))))
     ))
 
-(require '[clojure.java.io :as io])
-(defn test-fn []
-  (let [widget (build-relation-edit-widget {:name  "dzial"
-                                            :arity 6
-                                            :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
-                                                    ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
-                                                    ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
-                                                    ["4" "marketing" "lipowa" "1" "2" "bialystok"]
-                                                    ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
-                                                    ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
-                                                    ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
-                                                    ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]})]
-    (.. widget getStylesheets (add (.toExternalForm (io/resource "main.css"))))
-    widget
-    ))
+(comment
+  (require '[clojure.java.io :as io])
+  (defn test-fn []
+    (let [widget (build-relation-edit-widget {:name  "dzial"
+                                              :arity 6
+                                              :data  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
+                                                      ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
+                                                      ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
+                                                      ["4" "marketing" "lipowa" "1" "2" "bialystok"]
+                                                      ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
+                                                      ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
+                                                      ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
+                                                      ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]})]
+      (.. widget getStylesheets (add (.toExternalForm (io/resource "main.css"))))
+      widget
+      ))
 
-(fx/sandbox #'test-fn)
+  (fx/sandbox #'test-fn))
