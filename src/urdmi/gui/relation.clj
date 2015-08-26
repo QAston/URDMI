@@ -24,26 +24,6 @@
 
 (def term-validation-msg "Text must be a valid term.")
 
-(defn- rel-ast-to-table [rel-asts]
-  (let [op-manager (:op-manager (prolog/parser-context []))]
-    (->> rel-asts
-         (mapv (fn [ast]
-                 (->> ast
-                      :children
-                      rest
-                      (mapv (fn [ast]
-                              (let [writer (StringWriter.)]
-                                (prolog/pretty-print ast op-manager writer)
-                                (.toString writer))))))))))
-
-(defn generate-viewmodel [rel]
-  (let [rel-asts (:ast rel)
-        [rel-name rel-arity] (:rel rel)]
-    {:name  rel-name
-     :arity rel-arity
-     :items (rel-ast-to-table rel-asts)}
-    ))
-
 (defn- calc-cell-bounds [cells]
   (if (<= (count cells) 1)
     [(.getColumn (first cells)) (.getRow (first cells)) (.getColumn (first cells)) (.getRow (first cells))]

@@ -1,12 +1,12 @@
-(ns urdmi.gui-test
+(ns urdmi.gui-app-test
   (:use midje.sweet)
   (:require [me.raynes.fs :as fs]
             [urdmi.core :as core]
-            [urdmi.gui :as gui]))
+            [urdmi.gui-app :as gui-app]))
 
 (fact "generate-menu-entries works on example data"
       (let [proj (core/load-base-project (fs/file "dev-resources/projects/aleph_default/"))]
-        (gui/generate-menu-viewmodel proj) =>
+        (gui-app/generate-menu-viewmodel proj) =>
         [{:name "Project", :path []}
          [{:name "Relations", :path [:relations]}
           {:name "towar_6.pl", :path [:relations "towar_6.pl"]}
@@ -31,3 +31,17 @@
           {:name "result.edn", :path [:output "result.edn"]}]
          [{:name "Settings", :path [:output]}
           {:name "result.edn", :path [:output "result.edn"]}]]))
+
+(fact "generate-menu-entries works on example data"
+      (let [proj (core/load-base-project (fs/file "dev-resources/projects/aleph_default/"))]
+        (gui-app/generate-relations-viewmodel (core/get-relation-data proj ["dzial" 6])) =>
+        {:name  "dzial"
+         :arity 6
+         :items  [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
+                 ["2" "sprzedaz" "lipowa" "1" "1" "bialystok"]
+                 ["3" "kontrolajakosci" "produkcyjna" "1" "1" "lapy"]
+                 ["4" "marketing" "lipowa" "1" "2" "bialystok"]
+                 ["5" "ksiegowosc" "lipowa" "1" "3" "bialystok"]
+                 ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
+                 ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
+                 ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}))

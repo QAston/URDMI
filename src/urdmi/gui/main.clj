@@ -1,48 +1,16 @@
-(ns urdmi.gui
-  (:require [clojure.core.async :refer [chan go <! >!]]
+(ns urdmi.gui.main
+  (:require [clojure.core.async :refer [chan go <! >! put!]]
             [fx-clj.core :as fx]
             [urdmi.core :as core]
+            [urdmi.gui :as gui]
             [clojure.zip :as zip])
   (:import
     (javafx.scene.layout AnchorPane Region VBox Priority HBox)
     (javafx.geometry Pos Insets)
     (javafx.scene.text Font TextAlignment)
     (javafx.scene.paint Color)
-    (urdmi.core Project)
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)))
-
-(defn- file-names-recursively [zipiter proj-key]
-  (let [path (into [proj-key] (conj (mapv :name (rest (zip/path zipiter))) (:name (zip/node zipiter))))
-        name (:name (zip/node zipiter))]
-    (if (zip/branch? zipiter)
-      (vector
-        (keep identity (cons [:name (:name (zip/node zipiter)) :path path]
-                             (if-let [childiter (zip/down zipiter)]
-                               (loop [iter childiter
-                                      children []
-                                      ]
-                                 (if-not (nil? iter)
-                                   (recur (zip/right iter) (conj children (file-names-recursively iter proj-key)))
-                                   children))
-
-                               (list)
-                               ))))
-      {:name name :path path})))
-
-(defn- get-file-names [^Project p proj-key display-name]
-  (vec (cons {:name display-name :path [proj-key]}
-             (rest (first (file-names-recursively (core/file-model-zipper (get-in p (core/dir-keys proj-key))) proj-key))))))
-
-(defn generate-menu-viewmodel [^Project p]
-  (let [
-        relations (get-file-names p core/relations-keyname "Relations")
-        working-dir (get-file-names p core/workdir-keyname "Working dir")
-        outputs (get-file-names p core/output-keyname "Output")
-        additions (get-file-names p core/output-keyname "Additions")
-        settings (get-file-names p core/output-keyname "Settings")
-        ]
-    [{:name "Project" :path []} relations working-dir outputs additions settings]))
 
 (defn- build-file-menu-entry-widget [data]
   (if-not (vector? data)
@@ -55,70 +23,51 @@
                 (build-file-menu-entry-widget entry))))
         ))))
 
-(defn update-main-file-menu
-  [view]
-  (set-widget-children (fx/lookup view :#file-selection)
-                       (list (doto (fx/tree-view
-                                     {:cell-factory (reify
-                                                      Callback
-                                                      (call [this tree-view]
-                                                        (TextFieldTreeCell. (proxy
-                                                                              [StringConverter] []
-                                                                              (toString [obj]
-                                                                                (:name obj)
-                                                                                )))))
-                                      :root         (doto (build-file-menu-entry-widget [{:name "Project", :path []}
-                                                                                         [{:name "Relations", :path [:relations]}
-                                                                                          {:name "towar_6.pl", :path [:relations "towar_6.pl"]}
-                                                                                          {:name "produkcja_5.pl", :path [:relations "produkcja_5.pl"]}
-                                                                                          {:name "pracownik_7.pl", :path [:relations "pracownik_7.pl"]}
-                                                                                          {:name "pracownikpersonalia_8.pl",
-                                                                                           :path [:relations "pracownikpersonalia_8.pl"]}
-                                                                                          {:name "klient_9.pl", :path [:relations "klient_9.pl"]}
-                                                                                          {:name "zamowienieszczegoly_4.pl",
-                                                                                           :path [:relations "zamowienieszczegoly_4.pl"]}
-                                                                                          {:name "pracownikprodukcja_7.pl",
-                                                                                           :path [:relations "pracownikprodukcja_7.pl"]}
-                                                                                          {:name "zamowienie_5.pl", :path [:relations "zamowienie_5.pl"]}
-                                                                                          {:name "dzial_6.pl", :path [:relations "dzial_6.pl"]}]
-                                                                                         [{:name "Working dir", :path [:working-dir]}
-                                                                                          {:name "pracownik.b", :path [:working-dir "pracownik.b"]}
-                                                                                          {:name "pracownik.f", :path [:working-dir "pracownik.f"]}
-                                                                                          {:name "pracownik.n", :path [:working-dir "pracownik.n"]}]
-                                                                                         [{:name "Output", :path [:output]}
-                                                                                          {:name "result.edn", :path [:output "result.edn"]}]
-                                                                                         [{:name "Additions", :path [:output]}
-                                                                                          {:name "result.edn", :path [:output "result.edn"]}]
-                                                                                         [{:name "Settings", :path [:output]}
-                                                                                          {:name "result.edn", :path [:output "result.edn"]}]])
-                                                      (.setExpanded true))}
-                                     )
-                               (VBox/setVgrow Priority/ALWAYS))))
-  )
+(defn- build-file-menu-widget[files-view-model]
+  (doto (fx/tree-view
+          {:cell-factory (reify
+                           Callback
+                           (call [this tree-view]
+                             (TextFieldTreeCell. (proxy
+                                                   [StringConverter] []
+                                                   (toString [obj]
+                                                     (:name obj)
+                                                     )))))
+           :root         (doto (build-file-menu-entry-widget files-view-model)
+                           (.setExpanded true))}
+          )
+    (VBox/setVgrow Priority/ALWAYS)))
 
-(defn new-main-view []
+(defn- build-main-screen [ui-events]
   (let [font (Font/font 11.0)
         text-fill (Color/color 0.625 0.625 0.625)
-        menu-events (chan)
-        file-events (chan)
 
-        view (fx/v-box {:pref-height 600
-                        :pref-width  900
-                        }
+        put-ui-event-fn (fn [event-data]
+                           (fn [e]
+                             (put! ui-events event-data)))
+
+        file-menu-container (fx/v-box :#file-selection {:focus-traversable true})
+
+        content-container (fx/scroll-pane :#content {:fit-to-height true
+                                                     :fit-to-width  true})
+
+        main-screen (fx/v-box {:pref-height 600
+                        :pref-width  900}
                        (doto (fx/menu-bar
                                (fx/menu {:text "Project"}
-                                        (fx/menu-item {:text "New" :on-action menu-events})
-                                        (fx/menu-item {:text "Open..." :on-action menu-events})))
+                                        (fx/menu-item {:text "New" :on-action (put-ui-event-fn :new-proj)})
+                                        (fx/menu-item {:text "Open..." :on-action (put-ui-event-fn :open-proj)})
+                                        (fx/menu-item {:text "Build" :on-action (put-ui-event-fn :build)})
+                                        (fx/menu-item {:text "Run" :on-action (put-ui-event-fn :run)})
+                                        (fx/menu-item {:text "Build and run" :on-action (put-ui-event-fn :build-run)})
+                                        )
+                               (fx/menu {:text "File"}
+                                        (fx/menu-item {:text "Save" :on-action (put-ui-event-fn :save-file)})))
                          (VBox/setVgrow Priority/NEVER))
                        (doto (fx/split-pane {:divider-positions (double-array [0.25])
-                                             :focus-traversable true
-                                             }
-
-                                            (fx/v-box :#file-selection {:focus-traversable true})
-
-                                            (fx/scroll-pane :#content {:fit-to-height true
-                                                                       :fit-to-width  true}
-                                                            ))
+                                             :focus-traversable true}
+                                            file-menu-container
+                                            content-container)
 
                          (VBox/setVgrow Priority/ALWAYS))
                        (doto (fx/h-box :#hbox {:alignment Pos/CENTER_LEFT
@@ -141,12 +90,22 @@
                                          (HBox/setHgrow Priority/NEVER)))
                          (VBox/setVgrow Priority/NEVER))
                        )]
+    [main-screen file-menu-container content-container]))
 
-    (def main-view view)
-    view
-    ))
+(deftype MainScreen [widget file-menu-container content-container ui-events-chan])
 
-(def create-main-view new-main-view)
+(defn make-main-screen [ui-events]
+  (let [[main-screen file-menu-container content-container] (build-main-screen ui-events)]
+    (->MainScreen main-screen file-menu-container content-container ui-events)))
 
-(fx/sandbox #'create-main-view)
-(update-main-file-menu main-view)
+(defn set-file-menu-data![^MainScreen screen file-view-model]
+   (gui/set-widget-children (.file_menu_container screen)
+                            (list (build-file-menu-widget file-view-model))))
+
+(defn set-content-widget![^MainScreen screen widget]
+  (gui/set-widget-children (.content_container screen)
+                           (list widget)))
+
+(defn get-widget[^MainScreen screen]
+  (.widget screen))
+
