@@ -26,6 +26,7 @@
                                                                         {:name "X", :type :ast-variable}),
                                                         :type     :ast-functor})
         (parse-string parser-context "'1as d'.") => (list {:name "1as d", :type :ast-atom})
+        (parse-string parser-context "\"1as d\".") => (list {:value "1as d", :type :ast-string})
         (parse-string parser-context "q(+-\\Y).") => (list {:children (list {:name "q", :type :ast-atom}
                                                                             {:children (list {:name "+-\\", :type :ast-atom},
                                                                                              {:name "Y", :type :ast-variable}),
@@ -108,7 +109,9 @@
                               (prolog/->Operator 200 "fy" "-\\")
                               (prolog/->Operator 200 "yf" "+-")
                               (prolog/->Operator 200 "yf" "+-\\")])
-            test-sentences ["'1asd'."
+            test-sentences ["\"1asd\"."
+                            "\"1a\"\"sd\"."
+                            "'1asd'."
                             "hello :- world."
                             "p(X)."
                             "p(+X)."
@@ -197,6 +200,13 @@
              (prolog/quote-atom "as\\d") => "as\\\\d"
              (prolog/quote-atom "as'd") => "as''d"
              (prolog/quote-atom "as\\'d") => "as\\\\''d"))
+
+(facts prolog/quote-string
+       (fact "quotes a string for use in prolog string (\")"
+             (prolog/quote-string "asd") => "asd"
+             (prolog/quote-string "as\\d") => "as\\\\d"
+             (prolog/quote-string "as\"d") => "as\"\"d"
+             (prolog/quote-string "as\\\"d") => "as\\\\\"\"d"))
 
 (facts prolog/parse-single-sentence
        (let [context (prolog/parser-context[])]

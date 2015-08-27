@@ -1,5 +1,5 @@
 (ns urdmi.prolog
-  (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader JIPDebugger PrologObject ConsCell Functor List Clause Atom Expression Variable)
+  (:import (com.ugos.jiprolog.engine OperatorManager PrologParser JIPEngine ParserReader JIPDebugger PrologObject ConsCell Functor List Clause Atom Expression Variable PString)
            (java.io Reader Writer StringWriter StringReader)
            (org.apache.commons.io.input ReaderInputStream)
            (com.ugos.io PushbackLineNumberInputStream)
@@ -17,14 +17,19 @@
 (defn parser-context ^ParserContext [^ISeq operators]
   (let [jip-engine (JIPEngine.)
         op-manager (.getOperatorManager jip-engine)]
+    (.setEnvVariable jip-engine "double_quotes" "chars")
     (doseq [^Operator op operators]
       (.put op-manager (.preference op) (.type op) (.name op)))
     (->ParserContext jip-engine op-manager
                      )))
 
 (defn quote-atom
-  "quotes string for use in prolog literals" [^String s]
+  "quotes string for use in prolog atom" [^String s]
   (.replace (.replace s "'" "''") "\\" "\\\\"))
+
+(defn quote-string
+  "quotes string for use in prolog strings" [^String s]
+  (.replace (.replace s "\"" "\"\"") "\\" "\\\\"))
 
 (defn create-parser ^PrologParser [^ParserContext context, ^Reader rdr]
   (PrologParser. (ParserReader. (PushbackLineNumberInputStream. (ReaderInputStream. rdr (Charset/forName "US-ASCII"))))
@@ -55,6 +60,7 @@
 (def ast-variable "prolog variable" :ast-variable)
 (def ast-functor "prolog functor or operator" :ast-functor)
 (def ast-list "prolog list" :ast-list)
+(def ast-string "prolog string" :ast-string)
 
 (def ast
   (let [parent-to-child [
@@ -63,6 +69,7 @@
                          [ast-object ast-cell]
                          [ast-object ast-atom]
                          [ast-object ast-expression]
+                         [ast-expression ast-string]
                          [ast-object ast-variable]]]
 
     (loop [h (make-hierarchy) mapping parent-to-child]
@@ -199,6 +206,14 @@
                          :name (.getName obj)}
                         )))
 
+(extend-type PString
+  PAstConvertible
+  (to-ast [^PString obj]
+    (with-file-metadata obj
+                        {:type ast-string
+                         :value (.getString obj)}
+                        )))
+
 (extend-type Expression
   PAstConvertible
   (to-ast [^Expression obj]
@@ -331,6 +346,13 @@ root is the root node."
   (.append builder "]")
   )
 
+(defmethod pretty-print ast-string [obj op-manager ^Writer builder]
+  (.append builder "\"")
+  (.append builder ^String (quote-string (:value obj)))
+  (.append builder "\"")
+  )
+
+
 (defmethod pretty-print ast-cell [obj op-manager ^Writer builder]
   ;todo: determine if parens should be printed or not based on operator manager
   ;take "parent operator" as a param, when "," priority bigger than parent-operator param don't print parens
@@ -345,7 +367,7 @@ root is the root node."
   ; if atom cannot be parsed - quote it
   (if (parse-single-atom simple-parser (:name obj))
     (.append builder ^String (:name obj))
-    (.append builder ^String (str \' (:name obj) \'))))
+    (.append builder ^String (str \' (quote-atom (:name obj)) \'))))
 
 (defmethod pretty-print ast-expression [obj _ ^Writer builder]
   (.append builder ^String (.toString (:value obj)))
