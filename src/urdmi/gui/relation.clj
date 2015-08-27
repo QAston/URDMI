@@ -399,11 +399,11 @@
     ))
 
 
-(deftype RelationView [name-property arity-property items-list widget]
-  gui/View
-  (main-widget [this]
+(deftype RelationWidget [name-property arity-property items-list widget]
+  gui/DataWidget
+  (get-node [this]
     widget)
-  (update-widget [this data]
+  (set-data! [this data]
     (.setValue arity-property (:arity data))
     (.setValue name-property (:name data))
     (.setAll items-list ^Collection (->> (:items data)
@@ -411,7 +411,7 @@
                                                                                   (map (fn [el]
                                                                                          (SimpleStringProperty. el)))))))))
     )
-  (read-data [this]
+  (get-data [this]
     {:arity (.getValue arity-property)
      :name  (.getValue name-property)
      :items (->> items-list
@@ -422,11 +422,11 @@
                            row))))}
     ))
 
-(defn make-view []
+(defn make-widget []
   (let [name-property (SimpleStringProperty. "")
         arity-property (SimpleLongProperty. 0)
         items-list (gui/observable-list)]
-    (->RelationView
+    (->RelationWidget
       name-property
       arity-property
       items-list
@@ -435,7 +435,7 @@
 (comment
   (require '[clojure.java.io :as io])
   (defn test-fn []
-    (let [view (make-view)
+    (let [widget (make-widget)
           data {:name  "dzial"
                 :arity 6
                 :items [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]
@@ -446,10 +446,10 @@
                         ["6" "informatyka" "lipowa" "1" "4" "bialystok"]
                         ["7" "reklamacja" "lipowa" "1" "5" "bialystok"]
                         ["8" "informatyka" "produkcyjna" "1" "1" "lapy"]]}]
-      (.. view main-widget getStylesheets (add (.toExternalForm (io/resource "main.css"))))
-      (gui/update-widget view data)
-      (println (= (gui/read-data view) data))
-      (gui/main-widget view)
+      (.. widget widget getStylesheets (add (.toExternalForm (io/resource "main.css"))))
+      (gui/set-data! widget data)
+      (println (= (gui/get-data widget) data))
+      (gui/get-node widget)
       ))
 
   (fx/sandbox #'test-fn))

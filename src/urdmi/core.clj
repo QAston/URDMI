@@ -94,9 +94,6 @@
                                            (conv-fn p)
                                            element))) name-keys))))
 
-#_(defn file-to-name-keys
-  [])
-
 (defn file-model-branch? [m]
   (:dir m))
 
@@ -255,16 +252,6 @@
 (defn get-relations [^Project p]
   (map second (get-in p (dir-keys relations-keyname :dir))))
 
-(defn load-project [^App app ^File dir]
-  (let [app-with-project (load-settings (assoc app :project (base-project dir)))]
-    (assoc app-with-project :project
-                            (-> app-with-project
-                                (:project)
-                                (load-additions)
-                                (load-relations)
-                                (load-working-dir)
-                                (load-output)))))
-
 (def entries-to-displaynames {
                               [project-keyname]                   "Project"
                               [project-keyname relations-keyname] "Relations"
@@ -289,7 +276,4 @@
     (vec (cons dirname
                (for [file files]
                  (subdir-map-to-vec file))))))
-
-(defn model-map-to-menu-entries [m]
-  )
 

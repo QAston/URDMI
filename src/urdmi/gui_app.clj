@@ -2,9 +2,13 @@
   (:require [clojure.core.async :refer [chan go <! >!]]
             [urdmi.core :as core]
             [clojure.zip :as zip]
+            [urdmi.gui.relation :as relation-gui]
             [urdmi.gui.main :as main-gui]
             [urdmi.prolog :as prolog]
-            [fx-clj.core :as fx])
+            [urdmi.app :as app]
+            [fx-clj.core :as fx]
+            [me.raynes.fs :as fs]
+            [urdmi.gui :as gui])
   (:import (urdmi.core Project)
            (java.io StringWriter)))
 
@@ -60,7 +64,7 @@
         ]
     [{:name "Project" :path []} relations working-dir outputs additions settings]))
 
-(defn test-fn[]
+(defn test-fn []
   (let [ui-events (chan)
         main-screen (main-gui/make-main-screen ui-events)
         files-view-model [{:name "Project", :path []}
@@ -90,4 +94,64 @@
     (main-gui/set-file-menu-data! main-screen files-view-model)
     (main-gui/get-widget main-screen)))
 
-(fx/sandbox #'test-fn)
+(deftype RelationPage [widget data-key]
+  gui/ContentPage
+  (container-node [this]
+    (gui/get-node widget))
+  (show-data [this project]
+    (let [rel-view-model (generate-relations-viewmodel (get-in project (apply core/dir-keys data-key)))]
+      (gui/set-data! widget rel-view-model)))
+  (read-data [this]
+    ))
+
+(defn make-relation-page [data-key]
+  (->RelationPage (relation-gui/make-widget) data-key))
+
+;cascading dispatch
+(defmulti generate-page (fn [cascade-key orig-key app]
+                          cascade-key))
+
+(defmethod generate-page [:relations] [cascade-key orig-key app]
+  (make-relation-page orig-key))
+
+(defmethod generate-page :default [cascade-key orig-key app]
+  (generate-page (vec (butlast cascade-key)) cascade-key app))
+
+(defmethod generate-page nil [cascade-key orig-key app]
+  nil)
+
+(defn init-app []
+  (let [app (app/init-app)
+        pages {}
+        ui-requests (chan)]
+    (-> app
+        (assoc :pages pages)
+        (assoc :ui-requests ui-requests)
+        (assoc :main-screen (main-gui/make-main-screen ui-requests))
+        )))
+
+(defn load-project [app dir]
+  (let [app (app/load-project app dir)
+        proj (:project app)
+        files-view-model (generate-menu-viewmodel proj)]
+    (main-gui/set-file-menu-data! (:main-screen app) files-view-model)
+    app))
+
+(defn get-or-gen-page[app key]
+  (get-in app [:pages key] (generate-page key key app)))
+
+(defn switch-page [app key]
+  (let [page (get-or-gen-page app key)]
+    (gui/show-data page (:project app))
+    (main-gui/set-content-widget! (:main-screen app) (gui/container-node page))
+    (assoc-in app [:pages key] page))
+  )
+
+(defn test-app []
+  (let [app (->
+              (init-app)
+              (load-project (fs/file "dev-resources/projects/aleph_default/"))
+              (switch-page [:relations "dzial_6.pl"]))]
+    (main-gui/get-widget (:main-screen app))))
+
+(fx/sandbox #'test-app)

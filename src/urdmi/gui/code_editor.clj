@@ -54,24 +54,24 @@
     (.setContextMenu code-area (build-context-menu code-area))
     code-area))
 
-(deftype CodeEditorView [^CodeArea widget]
-  gui/View
-  (main-widget [this]
+(deftype CodeEditorWidget [^CodeArea widget]
+  gui/DataWidget
+  (get-node [this]
     widget)
-  (update-widget [this data]
+  (set-data![this data]
     (.replaceText widget data))
-  (read-data [this]
+  (get-data [this]
     (.getValue (.textProperty widget))))
 
-(defn make-view []
-  (->CodeEditorView (build-code-editor)))
+(defn make-widget []
+  (->CodeEditorWidget (build-code-editor)))
 
 (comment
   (defn test-fn[]
-    (let [view (make-view)
+    (let [view (make-widget)
           data "teststring"]
-      (gui/update-widget view data)
-      (println (= (gui/read-data view) data))
-      (gui/main-widget view))
+      (gui/set-data! view data)
+      (println (= (gui/get-data view) data))
+      (gui/get-node view))
     )
   (fx/sandbox #'test-fn))

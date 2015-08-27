@@ -6,7 +6,8 @@
             [urdmi.core :as core]
             [clojure.java.io :as io]
             [urdmi.prolog :as prolog]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [urdmi.app :as app])
   (:import (urdmi.core App)
            (java.io File)))
 
@@ -24,7 +25,7 @@
         (extends? core/Plugin (class (get-in app [:project :plugin]))) => truthy))
 
 (fact "load project populates project fields"
-      (let [proj (:project (core/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/")))]
+      (let [proj (:project (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/")))]
         (< 0 (count (get-in proj (core/dir-keys core/relations-keyname :dir)))) => truthy
         (< 0 (count (get-in proj (core/dir-keys core/additions-keyname :dir)))) => truthy
         (< 0 (count (get-in proj (core/dir-keys core/workdir-keyname :dir)))) => truthy
@@ -37,7 +38,7 @@
         (try
           (core/move-file workdir-dir backup-dir)
           (fs/mkdir workdir-dir)
-          (let [app (core/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))
+          (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))
                 parser-context (prolog/aleph-parser-context)]
             (build-working-dir (:project app))
             (fact "pracownik.f"
@@ -71,7 +72,7 @@
         (try
           (core/move-file workdir-dir backup-working-dir)
           (fs/mkdir workdir-dir)
-          (let [app (core/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))]
+          (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))]
             (build-working-dir (:project app))
             (let [result (run-learning (:project app))]
               (:exit result) => 0
@@ -82,7 +83,7 @@
             ))))
 
 (fact "build project generates expected working_dir output for ace"
-      (let [app (core/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))
+      (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))
             parser-context (prolog/ace-parser-context)
             workdir-dir (core/get-working-dir (:project app))]
         (build-working-dir (:project app))
@@ -108,7 +109,7 @@
                                                                                                 "zamowienieszczegoly"}))))))
 
 (fact "build project generates expected working_dir output for ace"
-      (let [app (core/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
+      (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
         (build-working-dir (:project app))
         (let [result (run-learning (:project app))]
           (:exit result) => 0

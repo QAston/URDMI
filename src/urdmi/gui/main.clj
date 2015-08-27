@@ -38,13 +38,13 @@
           )
     (VBox/setVgrow Priority/ALWAYS)))
 
-(defn- build-main-screen [ui-events]
+(defn- build-main-screen [>app-requests]
   (let [font (Font/font 11.0)
         text-fill (Color/color 0.625 0.625 0.625)
 
         put-ui-event-fn (fn [event-data]
                            (fn [e]
-                             (put! ui-events event-data)))
+                             (put! >app-requests event-data)))
 
         file-menu-container (fx/v-box :#file-selection {:focus-traversable true})
 
@@ -92,19 +92,19 @@
                        )]
     [main-screen file-menu-container content-container]))
 
-(deftype MainScreen [widget file-menu-container content-container ui-events-chan])
+(deftype MainScreen [widget file-menu-container content-container])
 
-(defn make-main-screen [ui-events]
-  (let [[main-screen file-menu-container content-container] (build-main-screen ui-events)]
-    (->MainScreen main-screen file-menu-container content-container ui-events)))
+(defn make-main-screen [>app-requests]
+  (let [[main-screen file-menu-container content-container] (build-main-screen >app-requests)]
+    (->MainScreen main-screen file-menu-container content-container)))
 
 (defn set-file-menu-data![^MainScreen screen file-view-model]
    (gui/set-widget-children (.file_menu_container screen)
                             (list (build-file-menu-widget file-view-model))))
 
 (defn set-content-widget![^MainScreen screen widget]
-  (gui/set-widget-children (.content_container screen)
-                           (list widget)))
+  (.setContent (.content_container screen)
+                           widget))
 
 (defn get-widget[^MainScreen screen]
   (.widget screen))

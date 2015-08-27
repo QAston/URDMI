@@ -13,7 +13,7 @@
   [app ^javafx.stage.Stage stage]
   (require 'urdmi.gui)
   (let [ args (into-array String (-> app .getParameters .getRaw))
-         main-view ((var-get (resolve (symbol "urdmi.gui" "create-main-view"))))]
+         main-view ((var-get (resolve (symbol "urdmi.gui-app" "test-app"))))]
     (doto stage
       (.setTitle "URDMI")
       (.setScene (Scene. main-view))

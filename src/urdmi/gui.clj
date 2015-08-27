@@ -17,14 +17,21 @@
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
     (.load loader)))
 
-(defprotocol View
-  (main-widget [this])
-  (update-widget [this data])
+;application level abstraction, implements presenting data from app model
+(defprotocol ContentPage
+  (container-node [this])
+  (show-data [this data])
   (read-data [this]))
 
+;implementation level abstraction, gui taking viewmodel
+(defprotocol DataWidget
+  (get-node [this])
+  (set-data! [this data])
+  (get-data [this]))
+
 (defprotocol PluginGui
-  (new-project-creation-view ^View [this app-event-in-channel] "returns a view for creating a ")
-  (new-entry-view ^View [this project entry to-app-channel] "Returns a view for editing/display of a menu entry"))
+  (new-project-creation-view ^ContentPage [this app-event-in-channel] "returns a view for creating a ")
+  (new-entry-view ^ContentPage [this project entry to-app-channel] "Returns a view for editing/display of a menu entry"))
 
 (ValueExtractor/addObservableValueExtractor (reify Predicate
                                               (test [this control]
