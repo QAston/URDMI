@@ -12,6 +12,10 @@
   (:import (urdmi.core Project)
            (java.io StringWriter)))
 
+(defn- unwrap-urdmi-edit[ast]
+  (when (and (= (:type ast) :ast-functor) (= "urdmi_edit"(:name (first (:children ast)))))
+    (:name (second (:children ast)))))
+
 (defn- rel-ast-to-table [rel-asts]
   (let [op-manager (:op-manager (prolog/parser-context []))]
     (->> rel-asts
@@ -20,9 +24,11 @@
                       :children
                       rest
                       (mapv (fn [ast]
-                              (let [writer (StringWriter.)]
-                                (prolog/pretty-print ast op-manager writer)
-                                (.toString writer))))))))))
+                              (if-let [unwrapped (unwrap-urdmi-edit ast)]
+                                unwrapped
+                                (let [writer (StringWriter.)]
+                                  (prolog/pretty-print ast op-manager writer)
+                                  (.toString writer)))))))))))
 
 (defn relations-model-to-viewmodel [rel]
   (let [rel-asts (:ast rel)
@@ -79,7 +85,7 @@
         ]
     [{:name "Project" :path []} relations working-dir outputs additions settings]))
 
-(deftype RelationPage [widget data-key]
+(deftype RelationPage [widget data-key parser-context]
   gui/ContentPage
   (container-node [this]
     (gui/get-node widget))
@@ -87,11 +93,11 @@
     (let [rel-view-model (relations-model-to-viewmodel (get-in project (apply core/dir-keys data-key)))]
       (gui/set-data! widget rel-view-model)))
   (read-data [this]
-    (relations-viewmodel-to-model (gui/get-data widget))
+    (relations-viewmodel-to-model parser-context (gui/get-data widget))
     ))
 
 (defn make-relation-page [data-key]
-  (->RelationPage (relation-gui/make-widget) data-key))
+  (->RelationPage (relation-gui/make-widget) data-key (prolog/parser-context [])))
 
 ;cascading dispatch
 (defmulti generate-page (fn [cascade-key orig-key app]

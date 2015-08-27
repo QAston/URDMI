@@ -82,7 +82,7 @@
           working-dir (api/get-working-dir project)
           dbname (get-db-name project)]
       (shell/sh swiprolog-location "-g" "true"
-                :in (StringReader. (str "consult('" (prolog/quote aleph-location) "').\nread_all(" (prolog/quote dbname) ").\n.\ninduce.\nhalt.\n"))
+                :in (StringReader. (str "consult('" (prolog/quote-atom aleph-location) "').\nread_all(" (prolog/quote-atom dbname) ").\n.\ninduce.\nhalt.\n"))
                 :dir working-dir
                 )))
   (rebuild-working-dir [this project]

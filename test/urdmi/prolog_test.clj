@@ -25,6 +25,7 @@
         (parse-string parser-context "p(X).") => (list {:children (list {:name "p", :type :ast-atom}
                                                                         {:name "X", :type :ast-variable}),
                                                         :type     :ast-functor})
+        (parse-string parser-context "'1as d'.") => (list {:name "1as d", :type :ast-atom})
         (parse-string parser-context "q(+-\\Y).") => (list {:children (list {:name "q", :type :ast-atom}
                                                                             {:children (list {:name "+-\\", :type :ast-atom},
                                                                                              {:name "Y", :type :ast-variable}),
@@ -107,7 +108,8 @@
                               (prolog/->Operator 200 "fy" "-\\")
                               (prolog/->Operator 200 "yf" "+-")
                               (prolog/->Operator 200 "yf" "+-\\")])
-            test-sentences ["hello :- world."
+            test-sentences ["'1asd'."
+                            "hello :- world."
                             "p(X)."
                             "p(+X)."
                             "q(Y+-)."
@@ -189,12 +191,12 @@
         (prolog/ast-make-node atoms (list {:name "r", :type :ast-atom} {:name "s", :type :ast-atom})) => (list {:name "r", :type :ast-atom} {:name "s", :type :ast-atom})
         ))
 
-(facts prolog/quote
-       (fact "quotes a string for use in prolog quote"
-             (prolog/quote "asd") => "asd"
-             (prolog/quote "as\\d") => "as\\\\d"
-             (prolog/quote "as'd") => "as''d"
-             (prolog/quote "as\\'d") => "as\\\\''d"))
+(facts prolog/quote-atom
+       (fact "quotes a string for use in prolog atom (')"
+             (prolog/quote-atom "asd") => "asd"
+             (prolog/quote-atom "as\\d") => "as\\\\d"
+             (prolog/quote-atom "as'd") => "as''d"
+             (prolog/quote-atom "as\\'d") => "as\\\\''d"))
 
 (facts prolog/parse-single-sentence
        (let [context (prolog/parser-context[])]

@@ -22,6 +22,10 @@
     (->ParserContext jip-engine op-manager
                      )))
 
+(defn quote-atom
+  "quotes string for use in prolog literals" [^String s]
+  (.replace (.replace s "'" "''") "\\" "\\\\"))
+
 (defn create-parser ^PrologParser [^ParserContext context, ^Reader rdr]
   (PrologParser. (ParserReader. (PushbackLineNumberInputStream. (ReaderInputStream. rdr (Charset/forName "US-ASCII"))))
                  (get context :op-manager)
@@ -335,9 +339,13 @@ root is the root node."
   ;(.append builder ")")
   )
 
+(def simple-parser (parser-context []))
+
 (defmethod pretty-print ast-atom [obj _ ^Writer builder]
-  (.append builder ^String (:name obj))
-  )
+  ; if atom cannot be parsed - quote it
+  (if (parse-single-atom simple-parser (:name obj))
+    (.append builder ^String (:name obj))
+    (.append builder ^String (str \' (:name obj) \'))))
 
 (defmethod pretty-print ast-expression [obj _ ^Writer builder]
   (.append builder ^String (.toString (:value obj)))
@@ -359,7 +367,3 @@ root is the root node."
      (pretty-print-sentences context prolog-sentences writer)
      (.toString writer)
      )))
-
-(defn quote
-  "quotes string for use in prolog literals" [^String s]
-  (.replace (.replace s "'" "''") "\\" "\\\\"))
