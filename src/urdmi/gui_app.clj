@@ -24,13 +24,28 @@
                                 (prolog/pretty-print ast op-manager writer)
                                 (.toString writer))))))))))
 
-(defn generate-relations-viewmodel [rel]
+(defn relations-model-to-viewmodel [rel]
   (let [rel-asts (:ast rel)
         [rel-name rel-arity] (:rel rel)]
     {:name  rel-name
      :arity rel-arity
      :items (rel-ast-to-table rel-asts)}
     ))
+
+(defn relations-viewmodel-to-model [parser-context viewmodel]
+  {:rel [(:name viewmodel) (:arity viewmodel)]
+   :ast (let [items (:items viewmodel)
+              head {:type :ast-atom :name (:name viewmodel)}]
+          (for [row items]
+            {:type     :ast-functor
+             :children (doall
+                         (cons head
+                               (for [item row
+                                     :let [term (prolog/parse-single-term parser-context item)]]
+                                 (if term
+                                   term
+                                   {:type     :ast-functor
+                                    :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))}))})
 
 (defn- file-names-recursively [zipiter proj-key]
   (let [path (into [proj-key] (conj (mapv :name (rest (zip/path zipiter))) (:name (zip/node zipiter))))
@@ -64,44 +79,15 @@
         ]
     [{:name "Project" :path []} relations working-dir outputs additions settings]))
 
-(defn test-fn []
-  (let [ui-events (chan)
-        main-screen (main-gui/make-main-screen ui-events)
-        files-view-model [{:name "Project", :path []}
-                          [{:name "Relations", :path [:relations]}
-                           {:name "towar_6.pl", :path [:relations "towar_6.pl"]}
-                           {:name "produkcja_5.pl", :path [:relations "produkcja_5.pl"]}
-                           {:name "pracownik_7.pl", :path [:relations "pracownik_7.pl"]}
-                           {:name "pracownikpersonalia_8.pl",
-                            :path [:relations "pracownikpersonalia_8.pl"]}
-                           {:name "klient_9.pl", :path [:relations "klient_9.pl"]}
-                           {:name "zamowienieszczegoly_4.pl",
-                            :path [:relations "zamowienieszczegoly_4.pl"]}
-                           {:name "pracownikprodukcja_7.pl",
-                            :path [:relations "pracownikprodukcja_7.pl"]}
-                           {:name "zamowienie_5.pl", :path [:relations "zamowienie_5.pl"]}
-                           {:name "dzial_6.pl", :path [:relations "dzial_6.pl"]}]
-                          [{:name "Working dir", :path [:working-dir]}
-                           {:name "pracownik.b", :path [:working-dir "pracownik.b"]}
-                           {:name "pracownik.f", :path [:working-dir "pracownik.f"]}
-                           {:name "pracownik.n", :path [:working-dir "pracownik.n"]}]
-                          [{:name "Output", :path [:output]}
-                           {:name "result.edn", :path [:output "result.edn"]}]
-                          [{:name "Additions", :path [:output]}
-                           {:name "result.edn", :path [:output "result.edn"]}]
-                          [{:name "Settings", :path [:output]}
-                           {:name "result.edn", :path [:output "result.edn"]}]]]
-    (main-gui/set-file-menu-data! main-screen files-view-model)
-    (main-gui/get-widget main-screen)))
-
 (deftype RelationPage [widget data-key]
   gui/ContentPage
   (container-node [this]
     (gui/get-node widget))
   (show-data [this project]
-    (let [rel-view-model (generate-relations-viewmodel (get-in project (apply core/dir-keys data-key)))]
+    (let [rel-view-model (relations-model-to-viewmodel (get-in project (apply core/dir-keys data-key)))]
       (gui/set-data! widget rel-view-model)))
   (read-data [this]
+    (relations-viewmodel-to-model (gui/get-data widget))
     ))
 
 (defn make-relation-page [data-key]
@@ -115,7 +101,7 @@
   (make-relation-page orig-key))
 
 (defmethod generate-page :default [cascade-key orig-key app]
-  (generate-page (vec (butlast cascade-key)) cascade-key app))
+  (generate-page (vec (butlast cascade-key)) orig-key app))
 
 (defmethod generate-page nil [cascade-key orig-key app]
   nil)
@@ -137,15 +123,14 @@
     (main-gui/set-file-menu-data! (:main-screen app) files-view-model)
     app))
 
-(defn get-or-gen-page[app key]
+(defn get-or-gen-page [app key]
   (get-in app [:pages key] (generate-page key key app)))
 
 (defn switch-page [app key]
   (let [page (get-or-gen-page app key)]
     (gui/show-data page (:project app))
     (main-gui/set-content-widget! (:main-screen app) (gui/container-node page))
-    (assoc-in app [:pages key] page))
-  )
+    (assoc-in app [:pages key] page)))
 
 (defn test-app []
   (let [app (->

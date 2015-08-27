@@ -180,10 +180,7 @@
                           (let [node (zip/node zipiter)]
                             (if (:dir node)
                               (recur (zip/next zipiter))
-                              (recur (zip/next (read-edn-data-into-iter-node p zipiter node))))
-                            )
-                          )
-                        ))))
+                              (recur (zip/next (read-edn-data-into-iter-node p zipiter node))))))))))
 
 ;todo: add update variants which work with diffs to filesystem
 
