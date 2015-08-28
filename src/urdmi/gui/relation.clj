@@ -242,7 +242,7 @@
                                                       getColumns) new-size column-factory)))
     ))
 
-(defn- build-name-arity-widget [^SimpleStringProperty name-property ^SimpleLongProperty arity-property ^ValidationSupport validation]
+(defn- build-name-arity-widget [^SimpleStringProperty name-property ^SimpleLongProperty arity-property ^ValidationSupport validation parser-context]
   (let [widget (doto (fx/h-box {:padding   (Insets. 5 5 5 5)
                                 :alignment (Pos/CENTER_LEFT)}
                                (fx/label {:padding (Insets. 3 3 3 3)} "Name:")
@@ -262,7 +262,7 @@
                                                  (fn [obs old new]
                                                    (when (not= old new)
                                                      (.setText text-field new))))
-                                 (gui/validate-control validation text-field (fn [s] (prolog/parse-single-atom (prolog/parser-context []) s))
+                                 (gui/validate-control validation text-field (fn [s] (prolog/parse-single-atom parser-context s))
                                                        "Name must be a valid prolog atom")
                                  text-field)
                                (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
@@ -371,20 +371,19 @@
 ; edit table when typing
 ;todo: on file save expressions that are not valid prolog should be put in urdmi_editor("expr") to be safely saved
 
-(defn build-relation-edit-widget [name-property arity-property items-list]
+(defn build-relation-edit-widget [name-property arity-property items-list parser-context]
   (let [column-widths (gui/observable-list)
         _ (gui/on-changed arity-property
                           (fn [obs old-size new-size]
                             (gui/resize-observable-list column-widths new-size (fn [i]
                                                                                  (SimpleLongProperty. 0)))))
         validation (gui/validation-support (StyleClassValidationDecoration.))
-        parser-context (prolog/parser-context [])
         validate-term-fn (fn [s]
                            (if s
                              (prolog/parse-single-term parser-context s)
                              true))
 
-        widget (list (build-name-arity-widget name-property arity-property validation)
+        widget (list (build-name-arity-widget name-property arity-property validation parser-context)
                      (build-new-row-widget arity-property column-widths validation validate-term-fn items-list)
                      (build-table-widget items-list arity-property column-widths validation validate-term-fn))]
 
@@ -422,7 +421,7 @@
                            row))))}
     ))
 
-(defn make-widget []
+(defn make-widget [parser-context]
   (let [name-property (SimpleStringProperty. "")
         arity-property (SimpleLongProperty. 0)
         items-list (gui/observable-list)]
@@ -430,12 +429,12 @@
       name-property
       arity-property
       items-list
-      (build-relation-edit-widget name-property arity-property items-list))))
+      (build-relation-edit-widget name-property arity-property items-list parser-context))))
 
 (comment
   (require '[clojure.java.io :as io])
   (defn test-fn []
-    (let [widget (make-widget)
+    (let [widget (make-widget (prolog/parser-context []))
           data {:name  "dzial"
                 :arity 6
                 :items [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]

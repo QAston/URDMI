@@ -3,6 +3,7 @@
             [urdmi.core :as core]
             [clojure.zip :as zip]
             [urdmi.gui.relation :as relation-gui]
+            [urdmi.gui.code-editor :as code-editor-gui]
             [urdmi.gui.main :as main-gui]
             [urdmi.prolog :as prolog]
             [urdmi.app :as app]
@@ -10,10 +11,11 @@
             [me.raynes.fs :as fs]
             [urdmi.gui :as gui])
   (:import (urdmi.core Project)
-           (java.io StringWriter)))
+           (java.io StringWriter)
+           (javafx.scene.layout Pane)))
 
-(defn- unwrap-urdmi-edit[ast]
-  (when (and (= (:type ast) :ast-functor) (= "urdmi_edit"(:name (first (:children ast)))))
+(defn- unwrap-urdmi-edit [ast]
+  (when (and (= (:type ast) :ast-functor) (= "urdmi_edit" (:name (first (:children ast)))))
     (:name (second (:children ast)))))
 
 (defn- rel-ast-to-table [rel-asts]
@@ -91,26 +93,62 @@
     (gui/get-node widget))
   (show-data [this project]
     (let [rel-view-model (relations-model-to-viewmodel (get-in project (apply core/dir-keys data-key)))]
-      (gui/set-data! widget rel-view-model)))
+      (fx/run! (gui/set-data! widget rel-view-model))))
   (read-data [this]
     (relations-viewmodel-to-model parser-context (gui/get-data widget))
     ))
 
 (defn make-relation-page [data-key]
-  (->RelationPage (relation-gui/make-widget) data-key (prolog/parser-context [])))
+  (let [parser-context (prolog/parser-context [])]
+        (->RelationPage (relation-gui/make-widget parser-context) data-key parser-context)))
+
+(deftype CodeEditorPage [widget data-key]
+  gui/ContentPage
+  (container-node [this]
+    (gui/get-node widget))
+  (show-data [this project]
+    (gui/set-data! widget (.toString (get-in project (apply core/dir-keys data-key)))))
+  (read-data [this]
+    (gui/get-data widget)
+    ))
+
+(defn make-code-editor-page [data-key]
+  (->CodeEditorPage (code-editor-gui/make-widget) data-key))
+
+(extend-type Pane
+  gui/ContentPage
+  (container-node [this]
+    this)
+  (show-data [this project]
+    nil)
+  (read-data [this]
+    nil))
+
+(def empty-page
+  (Pane.))
+
+(defn make-relation-list-page []
+  empty-page)
 
 ;cascading dispatch
 (defmulti generate-page (fn [cascade-key orig-key app]
                           cascade-key))
 
 (defmethod generate-page [:relations] [cascade-key orig-key app]
-  (make-relation-page orig-key))
+  (if (= cascade-key orig-key)
+    (make-relation-list-page)
+    (make-relation-page orig-key)))
 
 (defmethod generate-page :default [cascade-key orig-key app]
   (generate-page (vec (butlast cascade-key)) orig-key app))
 
-(defmethod generate-page nil [cascade-key orig-key app]
-  nil)
+(defmethod generate-page [] [cascade-key orig-key app]
+  (let [proj (:project app)
+        data (get-in proj (apply core/dir-keys orig-key))]
+    (if (:dir data)
+     empty-page
+     (make-code-editor-page orig-key)
+     )))
 
 (defn init-app []
   (let [app (app/init-app)
@@ -129,20 +167,44 @@
     (main-gui/set-file-menu-data! (:main-screen app) files-view-model)
     app))
 
-(defn get-or-gen-page [app key]
-  (get-in app [:pages key] (generate-page key key app)))
-
 (defn switch-page [app key]
-  (let [page (get-or-gen-page app key)]
+  (let [page (get-in app [:pages key] nil)
+        page (if page page
+                      (generate-page key key app))]
     (gui/show-data page (:project app))
-    (main-gui/set-content-widget! (:main-screen app) (gui/container-node page))
+    (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node page)))
     (assoc-in app [:pages key] page)))
+
+(defmulti handle-request (fn [{:keys [type data]} app]
+                           type))
+
+(defmethod handle-request :switch-page [{:keys [type target]} app]
+   (switch-page app target))
+
+(defmethod handle-request :modified-page [{:keys [type]} app]
+  app)
+
+(defmethod handle-request :save-page [{:keys [type]} app]
+  app)
+
+(defmethod handle-request :load-project [{:keys [type]} app]
+  app)
+
+(defn app-main []
+  (let [app (->
+              (init-app)
+              (load-project (fs/file "dev-resources/projects/aleph_default/")))
+        requests-chan (:ui-requests app)]
+    (go
+      (loop [app app]
+        (recur (handle-request (<! requests-chan) app))))
+    (main-gui/get-widget (:main-screen app))))
 
 (defn test-app []
   (let [app (->
               (init-app)
               (load-project (fs/file "dev-resources/projects/aleph_default/"))
-              (switch-page [:relations "dzial_6.pl"]))]
+              )]
     (main-gui/get-widget (:main-screen app))))
 
-(fx/sandbox #'test-app)
+(fx/sandbox #'app-main)
