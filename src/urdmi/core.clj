@@ -133,12 +133,6 @@
                (.write writer data)
                (recur)))))))))
 
-(defn save-entry [^Project p name-keys]
-  )
-
-(defn load-entry [^Project p name-keys]
-  )
-
 (defn- generate-model-map
   [dir root-node-name]
   (let [subdir-files (map
@@ -249,15 +243,6 @@
 (defn get-relations [^Project p]
   (map second (get-in p (dir-keys relations-keyname :dir))))
 
-(def entries-to-displaynames {
-                              [project-keyname]                   "Project"
-                              [project-keyname relations-keyname] "Relations"
-                              [project-keyname workdir-keyname]   "Working Dir"
-                              [output-keyname workdir-keyname]    "Output"
-                              [settings-keyname workdir-keyname]  "Settings"
-                              [additions-keyname workdir-keyname] "Additions"
-                              })
-
 (defn load-base-project[^File dir]
   (->
     (base-project dir)
@@ -265,12 +250,3 @@
     load-output
     load-working-dir
     load-relations))
-
-(defn- subdir-map-to-vec [subdir-entry]
-  (let [dirname (first subdir-entry)
-        files (second subdir-entry)
-        ]
-    (vec (cons dirname
-               (for [file files]
-                 (subdir-map-to-vec file))))))
-

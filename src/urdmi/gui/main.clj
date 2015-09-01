@@ -11,7 +11,8 @@
     (javafx.scene.paint Color)
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)
-    (javafx.scene.control TreeView TreeItem)))
+    (javafx.scene.control TreeView TreeItem)
+    (javafx.stage FileChooser DirectoryChooser)))
 
 (defn- build-file-menu-entry-widget [data]
   (if-not (vector? data)
@@ -62,8 +63,8 @@
                                :pref-width  900}
                               (doto (fx/menu-bar
                                       (fx/menu {:text "Project"}
-                                               (fx/menu-item {:text "New" :on-action (put-ui-event-fn {:type :new-proj})})
-                                               (fx/menu-item {:text "Open..." :on-action (put-ui-event-fn {:type :open-proj})})
+                                               (fx/menu-item {:text "New" :on-action (put-ui-event-fn {:type :new-project})})
+                                               (fx/menu-item {:text "Open..." :on-action (put-ui-event-fn {:type :open-project})})
                                                (fx/menu-item {:text "Build" :on-action (put-ui-event-fn {:type :build})})
                                                (fx/menu-item {:text "Run" :on-action (put-ui-event-fn {:type :run})})
                                                (fx/menu-item {:text "Build and run" :on-action (put-ui-event-fn {:type :build-run})})
@@ -115,4 +116,11 @@
 
 (defn get-widget [^MainScreen screen]
   (.widget screen))
+
+(defn open-project-dialog [stage]
+  (.showDialog
+    (doto (DirectoryChooser.)
+      (.setTitle "Select project.edn file")
+      )
+    stage))
 

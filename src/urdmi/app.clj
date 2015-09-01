@@ -7,6 +7,7 @@
   (:import (urdmi.core App Project)
            (java.io File)))
 
+;plugins should be loaded from a ./settings/plugins dir
 (defn register-plugins [^App app]
   (-> app
       (register-plugin :ace #'ace/create)
