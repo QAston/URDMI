@@ -246,7 +246,7 @@
   [node]
   (if (seq? node)
     node
-    (:children node)))
+    (seq (:children node))))
 
 (defn ast-make-node
   "given an existing node and a seq of

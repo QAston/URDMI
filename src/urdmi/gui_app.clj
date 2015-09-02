@@ -84,8 +84,8 @@
         relations (get-file-names p core/relations-keyname "Relations")
         working-dir (get-file-names p core/workdir-keyname "Working dir")
         outputs (get-file-names p core/output-keyname "Output")
-        additions (get-file-names p core/output-keyname "Additions")
-        settings (get-file-names p core/output-keyname "Settings")
+        additions (get-file-names p core/additions-keyname "Additions")
+        settings (get-file-names p core/settings-keyname "Settings")
         ]
     (flatten [{:name "Project" :path []} relations working-dir outputs additions settings])))
 
@@ -109,7 +109,7 @@
   (container-node [this]
     (gui/get-node widget))
   (show-data [this project]
-    (gui/set-data! widget (.toString (get-in project (apply core/dir-keys data-key)))))
+    (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key)))))
   (read-data [this]
     (gui/get-data widget)
     ))
@@ -147,7 +147,7 @@
 (defmethod generate-page [] [cascade-key orig-key app]
   (let [proj (:project app)
         data (get-in proj (apply core/dir-keys orig-key))]
-    (if (:dir data)
+    (if-not (:text data)
       empty-page
       (make-code-editor-page orig-key)
       )))

@@ -31,10 +31,11 @@
           {:name "pracownik.n", :path [:working-dir "pracownik.n"]}
           {:name "Output", :path [:output]}
           {:name "result.edn", :path [:output "result.edn"]}
-          {:name "Additions", :path [:output]}
-          {:name "result.edn", :path [:output "result.edn"]}
-          {:name "Settings", :path [:output]}
-          {:name "result.edn", :path [:output "result.edn"]})))
+          {:name "Additions", :path [:additions]}
+          {:name "pracownik.b", :path [:additions "pracownik.b"]}
+          {:name "Settings", :path [:settings]}
+          {:name "project.edn", :path [:settings "project.edn"]}
+)))
 
 (fact gui-app/relations-model-to-viewmodel
       (fact "converts valid relations"

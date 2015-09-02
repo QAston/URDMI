@@ -2,7 +2,6 @@
   (:use midje.sweet)
   (:use urdmi.prolog-test)
   (:use urdmi.app)
-  (:refer-clojure :exclude [load-file])
   (:require [me.raynes.fs :as fs]
             [urdmi.core :as core]
             [clojure.java.io :as io]

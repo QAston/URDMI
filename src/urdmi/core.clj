@@ -98,7 +98,7 @@
   (:dir m))
 
 (defn file-model-children [m]
-  (map second (:dir m)))
+  (seq (map second (:dir m))))
 
 (defn file-model-make-node [node children]
   (assoc node :dir (into {} (map (fn [child]

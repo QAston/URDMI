@@ -2,7 +2,6 @@
   "stuff depending both on core and plugins namespace
   mainly plugin loading and app init."
   (:use urdmi.core)
-  (:refer-clojure :exclude [load-file])
   (:require [urdmi.plugin.ace :as ace]
             [urdmi.plugin.aleph :as aleph]
             [clojure.java.io :as io]
@@ -55,7 +54,7 @@
 (defmethod file-to-model [core/settings-keyname "project.edn"] [cascade-key orig-key project ^Reader reader]
   (let [data (edn/read (java.io.PushbackReader. reader))]
     {:data (update data :working-dir (fn [workdir]
-                                 (io/file workdir)))}
+                                       (io/file workdir)))}
     ))
 
 (defmethod file-to-model [core/settings-keyname] [cascade-key orig-key project ^Reader reader]
@@ -63,40 +62,48 @@
     {:data data}
     ))
 
-(defn model-to-file [^Writer writer data]
-  (let [data (update data :working-dir (fn [workdir-file]
-                                         (.toString workdir-file)))]
+(defmethod file-to-model [core/relations-keyname] [cascade-key orig-key project ^Reader reader]
+  (let [parser-context (prolog/parser-context nil)
+        asts (doall (prolog/prolog-sentence-seq parser-context reader))
+        [_ name arity]  (re-find #"(.*)_(.*)\.pl"  (last orig-key))]
+    {:rel [name (Integer/valueOf ^String arity)]
+     :ast asts}
     ))
 
-(defn load-working-dir [^Project p]
-  (assoc-in p (dir-keys workdir-keyname)
-            (generate-model-map (get-working-dir p) workdir-keyname)))
+(defn text-file-to-model [^Project p name-key]
+  {:text (delay
+           (slurp (name-keys-to-file p name-key)))})
 
-(defn load-additions [^Project p]
-  (assoc-in p (dir-keys additions-keyname)
-            (generate-model-map (get-additions-dir p) additions-keyname)))
+(defmethod file-to-model [core/additions-keyname] [cascade-key orig-key project ^Reader reader]
+  (text-file-to-model project orig-key))
 
-(defn load-file [project name-key]
+(defmethod file-to-model [core/workdir-keyname] [cascade-key orig-key project ^Reader reader]
+  (text-file-to-model project orig-key))
+
+(defmethod file-to-model [core/output-keyname] [cascade-key orig-key project ^Reader reader]
+  (text-file-to-model project orig-key))
+
+(defn load-model-from-file [project name-key]
   (let [file-entry (get-in project (apply dir-keys name-key))
         ^File file (name-keys-to-file project name-key)]
     (with-open [reader (io/reader file)]
       (merge file-entry
-        (file-to-model name-key name-key project reader))
+             (file-to-model name-key name-key project reader))
       )))
 
 #_(defn save-file [project name-key]
-  (let [file-entry (get-in project (apply dir-keys name-key))
-        ^File file (name-keys-to-file project name-key)]
-    (with-open [writer (io/writer file)]
+    (let [file-entry (get-in project (apply dir-keys name-key))
+          ^File file (name-keys-to-file project name-key)]
+      (with-open [writer (io/writer file)]
 
-      )))
+        )))
 
 (defn zipiter-to-name-keys [zipiter]
-  (into (list (:name (zip/node zipiter))) (map :name (zip/path zipiter))))
+  (into (list (:name (zip/node zipiter))) (reverse (map :name (zip/path zipiter)))))
 
 (defn- load-file-into-iter-node [^Project p zipiter base-name-keys]
   (zip/replace zipiter
-               (load-file p (zipiter-to-name-keys zipiter))))
+               (load-model-from-file p (zipiter-to-name-keys zipiter))))
 
 (defn load-files [^Project p name-keys]
   (let [keys (apply dir-keys name-keys)]
@@ -125,28 +132,23 @@
         (assoc :project proj-with-settings)
         (load-plugin))))
 
-(defn load-output [^Project p]
-  (assoc-in p
-            (dir-keys output-keyname)
-            (generate-model-map (get-output-dir p) output-keyname)))
+(defn load-model-files [model-key ^Project p]
+  (let [dir (name-keys-to-file p [model-key])]
+    (fs/mkdir dir)
+    (-> p
+        (assoc-in (dir-keys model-key)
+                  (generate-model-map dir model-key))
+        (load-files [model-key]))))
 
-(defn load-relations [^Project p]
-  (let [toread (fs/glob (get-relations-dir p) "*.pl")
-        parser-context (prolog/parser-context nil)]
-    (assoc-in p (dir-keys relations-keyname)
-              {:dir (into {} (map (fn [file] (let [base-name (fs/base-name file ".pl")
-                                                   name (string/join (butlast (string/split base-name #"_")))
-                                                   arity (Integer/valueOf ^String (last (string/split base-name #"_")))
-                                                   filename (.getName file)
-                                                   asts (with-open [reader (io/reader file)]
-                                                          (doall (prolog/prolog-sentence-seq parser-context reader))
-                                                          )]
-                                               [filename {:name filename
-                                                          :rel  [name arity]
-                                                          :ast  asts}]))
-                                  toread))})))
+(def load-output (partial load-model-files output-keyname))
 
-(defn load-base-project[^File dir]
+(def load-working-dir (partial load-model-files workdir-keyname))
+
+(def load-additions (partial load-model-files additions-keyname))
+
+(def load-relations (partial load-model-files relations-keyname))
+
+(defn load-base-project [^File dir]
   (->
     (base-project dir)
     load-additions
