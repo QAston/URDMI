@@ -216,7 +216,7 @@ pracownikpersonalia(48,kazimierz,wysocki,4.404907226E9,jasminowa,32,44,bielskpod
 pracownikpersonalia(49,jacek,wrona,4.423217773E9,piasta,12,32,bialystok).
 pracownikpersonalia(50,grazyna,tomczyk,4.442138671E9,wiejska,17,43,bialystok).
 
- % relation: pracownikprodukcja/7
+ % relation: pracownikprodukcja/6
 pracownikprodukcja(100,20,100102,100112,20.0,6).
 pracownikprodukcja(100,7,100102,100112,10.0,null).
 pracownikprodukcja(100,9,100105,100110,10.0,null).

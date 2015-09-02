@@ -87,7 +87,7 @@
         additions (get-file-names p core/output-keyname "Additions")
         settings (get-file-names p core/output-keyname "Settings")
         ]
-    [{:name "Project" :path []} relations working-dir outputs additions settings]))
+    (flatten [{:name "Project" :path []} relations working-dir outputs additions settings])))
 
 (deftype RelationPage [widget data-key parser-context]
   gui/ContentPage
@@ -167,17 +167,19 @@
   (let [app (app/load-project app dir)
         proj (:project app)
         files-view-model (generate-menu-viewmodel proj)]
-    (main-gui/set-file-menu-data! (:main-screen app) files-view-model)
+    (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model))
     app))
 
 (defn switch-page [app key]
-  (let [page (get-in app [:pages key] nil)
+  (let [page (get-in app [:pages key :page] nil)
         page (if page page
                       (doto
                         (generate-page key key app)
                         (gui/show-data (:project app))))]
     (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node page)))
-    (assoc-in app [:pages key] page)))
+    (-> app
+        (assoc-in [:pages key :page] page)
+        (assoc :current-page-key key))))
 
 (defmulti handle-request (fn [{:keys [type data]} app]
                            type))
@@ -186,13 +188,22 @@
   (switch-page app target))
 
 (defmethod handle-request :modified-page [{:keys [type]} app]
-  app)
+  (let [page-key (:current-page-key app)]
+    (fx/run! (main-gui/mark-file-modified! (:main-screen app) page-key))
+    (-> app
+        (assoc-in [:pages page-key :modified] true)
+        )))
 
 (defmethod handle-request :save-page [{:keys [type]} app]
-  app)
+  (let [page-key (:current-page-key app)
+        page (get-in app [:pages page-key :page])
+        page-data (gui/read-data page)]
+    (-> app
+        (assoc-in [:pages page-key :modified] false)
+        )))
 
 (defmethod handle-request :open-project [event app]
-  (if-let [location (fx/run<!!(main-gui/open-project-dialog (:stage app)))]
+  (if-let [location (fx/run<!! (main-gui/open-project-dialog (:stage app) (fs/file ".")))]
     (-> app
         (load-project location)
         (dissoc :pages)
@@ -225,7 +236,7 @@
 (defn show-on-test-stage [show-fn]
   (fx/run!
     (let [^Stage stage (fx/stage)]
-     (.setScene stage (show-fn stage))
-     (.show stage))))
+      (.setScene stage (show-fn stage))
+      (.show stage))))
 
 (show-on-test-stage #'main-scene)

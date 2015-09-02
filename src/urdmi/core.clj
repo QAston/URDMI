@@ -7,7 +7,7 @@
             [clojure.edn :as edn]
             [clojure.string :as string]
             [urdmi.prolog :as prolog])
-  (:import (java.io Writer)
+  (:import (java.io Writer Reader)
            (java.nio.file Files CopyOption)))
 
 (import 'java.io.File)
@@ -38,7 +38,7 @@
 (def relations-dir-name "relations")
 (def working-dir-default-folder "working_dir")
 
-(defn move-file[^File src ^File dst]
+(defn move-file [^File src ^File dst]
   (Files/move (.toPath src) (.toPath dst) (into-array CopyOption [])))
 
 (defn base-project [project-dir]
@@ -117,10 +117,6 @@
   (map #(clojure.core/update % 0 (fn [dirname]
                                    (io/file "." (relativize-path subdir dirname)))) (fs/iterate-dir subdir)))
 
-(defn read-edn-data [^File file]
-  (with-open [i (io/reader file)]
-    (edn/read (java.io.PushbackReader. i))))
-
 (defn append-addition
   "appends addition file to the working directory file, creates files if not present"
   ([^Project p ^File addition-file-rel ^Writer writer]
@@ -132,101 +128,6 @@
              (when-not (== data -1)
                (.write writer data)
                (recur)))))))))
-
-(defn- generate-model-map
-  [dir root-node-name]
-  (let [subdir-files (map
-                       (fn [subdir]
-                         (let [path-parts (vec (iterator-seq (.iterator (.toPath (first subdir)))))]
-                           [path-parts (nth subdir 2)]))
-                       (iterate-subdir dir))
-
-        subdir-map (loop [files subdir-files res {}]
-                     (if (seq files)
-                       (let [[subdir-path file-set] (first files)
-                             tree-path (take (* 2 (count subdir-path)) (interleave (mapv (memfn toString) subdir-path) (repeat :dir)))
-                             files-in-dir (into {} (map (fn [filename] [filename {:name filename}]) file-set))
-                             ]
-                         (recur (rest files) (assoc-in (assoc-in res tree-path files-in-dir)
-                                                       (conj (vec (butlast tree-path)) :name) (.toString (last subdir-path)))))
-                       res
-                       ))
-        ]
-    (assoc (get subdir-map ".") :name root-node-name)))
-
-(defn load-working-dir [^Project p]
-  (assoc-in p (dir-keys workdir-keyname) (generate-model-map (get-working-dir p) workdir-keyname)))
-
-(defn load-additions [^Project p]
-  (assoc-in p (dir-keys additions-keyname) (generate-model-map (get-additions-dir p) additions-keyname)))
-
-(defn zipiter-to-name-keys [zipiter]
-  (into (list (:name (zip/node zipiter))) (map :name (zip/path zipiter))))
-
-(defn- read-edn-data-into-iter-node [^Project p zipiter node]
-  (zip/replace zipiter (assoc node :data (read-edn-data (name-keys-to-file p (zipiter-to-name-keys zipiter))))))
-
-(defn load-files [^Project p]
-  (assoc-in p (dir-keys settings-keyname)
-            (zip/root (loop [zipiter (file-model-zipper (get-in p (dir-keys settings-keyname)))]
-                        (if (zip/end? zipiter)
-                          zipiter
-                          (let [node (zip/node zipiter)]
-                            (if (:dir node)
-                              (recur (zip/next zipiter))
-                              (recur (zip/next (read-edn-data-into-iter-node p zipiter node))))))))))
-
-;todo: add update variants which work with diffs to filesystem
-
-(defn deserialize-project-edn [data]
-  (update data :working-dir (fn [workdir]
-                              (io/file workdir))))
-
-(defn serialize-project-edn [data]
-  (update data :working-dir (fn [workdir-file]
-                              (.toString workdir-file))))
-
-(defn- load-plugin [^App app]
-  {:pre [(not (nil? (:project app)))]}
-  (let [plugin-key (:active-plugin (get-project-settings (:project app)))
-        plugin-map (:plugins app)
-        app (assoc-in app [:project :plugin] ((get plugin-map plugin-key (fn [] nil))))]
-    app))
-
-(defn- load-project-edn [^App app]
-  (let [p (:project app)
-        proj-settings-keys [settings-keyname "project.edn"]]
-    (assoc-in app
-              (cons :project (conj (apply dir-keys proj-settings-keys) :data))
-              (deserialize-project-edn (read-edn-data (name-keys-to-file p proj-settings-keys))))))
-
-(defn load-settings [^App app]
-  (let [p (:project app)
-        proj-with-settings (assoc-in p (dir-keys settings-keyname) (generate-model-map (get-settings-dir p) settings-keyname))
-        proj-with-settings (load-files proj-with-settings)
-        ]
-    (-> app
-        (assoc :project proj-with-settings)
-        (load-project-edn)
-        (load-plugin))))
-
-(defn load-output [^Project p]
-  (assoc-in p (dir-keys output-keyname) (generate-model-map (get-output-dir p) output-keyname)))
-
-(defn load-relations [^Project p]
-  (let [toread (fs/glob (get-relations-dir p) "*.pl")
-        parser-context (prolog/parser-context nil)]
-    (assoc-in p (dir-keys relations-keyname)
-              {:dir (into {} (map (fn [file] (let [base-name (fs/base-name file ".pl")
-                                                   name (string/join (butlast (string/split base-name #"_")))
-                                                   arity (Integer/valueOf ^String (last (string/split base-name #"_")))
-                                                   filename (.getName file)
-                                                   asts (with-open [rel-rdr (io/reader file)]
-                                                          (doall (prolog/prolog-sentence-seq parser-context rel-rdr)))]
-                                               [filename {:name filename
-                                                          :rel  [name arity]
-                                                          :ast  asts}]))
-                                  toread))})))
 
 (defn relation-to-filename [[relname relarity]]
   (str relname "_" relarity ".pl"))
@@ -242,11 +143,3 @@
 
 (defn get-relations [^Project p]
   (map second (get-in p (dir-keys relations-keyname :dir))))
-
-(defn load-base-project[^File dir]
-  (->
-    (base-project dir)
-    load-additions
-    load-output
-    load-working-dir
-    load-relations))

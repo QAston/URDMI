@@ -11,32 +11,24 @@
     (javafx.scene.paint Color)
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)
-    (javafx.scene.control TreeView TreeItem)
-    (javafx.stage FileChooser DirectoryChooser)))
+    (javafx.scene.control TreeView TreeItem ScrollPane)
+    (javafx.stage FileChooser DirectoryChooser)
+    (java.io File)))
 
-(defn- build-file-menu-entry-widget [data]
-  (if-not (vector? data)
-    (fx/tree-item {:value data})
-    (let [dir-data (first data)]
-      (doto (fx/tree-item {:value dir-data})
-        (.. getChildren
-            (setAll
-              (for [entry (rest data)]
-                (build-file-menu-entry-widget entry))))
-        ))))
-
-(defn- build-file-menu-widget [files-view-model >app-requests]
+(defn- build-file-menu-widget [>app-requests]
   (let [tree-view ^TreeView (fx/tree-view
-                              {:cell-factory (reify
-                                               Callback
-                                               (call [this tree-view]
-                                                 (TextFieldTreeCell. (proxy
-                                                                       [StringConverter] []
-                                                                       (toString [obj]
-                                                                         (:name obj)
-                                                                         )))))
-                               :root         (doto (build-file-menu-entry-widget files-view-model)
-                                               (.setExpanded true))})]
+                              {:cell-factory
+                               (reify
+                                 Callback
+                                 (call [this tree-view]
+                                   (TextFieldTreeCell. (proxy
+                                                         [StringConverter] []
+                                                         (toString [obj]
+
+                                                           (str (:name obj)
+                                                                (when (:modified obj)
+                                                                  "*"))
+                                                           )))))})]
     (-> tree-view
         (.getSelectionModel)
         (.selectedItemProperty)
@@ -44,7 +36,7 @@
           (fn [obs old ^TreeItem new]
             (put! >app-requests {:type :switch-page :target (:path (.getValue new))}))))
     (VBox/setVgrow tree-view Priority/ALWAYS)
-    tree-view))
+    {:view tree-view :items (atom {})}))
 
 (defn- build-main-screen [>app-requests]
   (let [font (Font/font 11.0)
@@ -54,7 +46,7 @@
                           (fn [e]
                             (put! >app-requests event-data)))
 
-        file-menu-container (fx/v-box :#file-selection {:focus-traversable true})
+        file-menu (build-file-menu-widget >app-requests)
 
         content-container (fx/scroll-pane :#content {:fit-to-height true
                                                      :fit-to-width  true})
@@ -74,7 +66,8 @@
                                 (VBox/setVgrow Priority/NEVER))
                               (doto (fx/split-pane {:divider-positions (double-array [0.25])
                                                     :focus-traversable true}
-                                                   file-menu-container
+                                                   (fx/v-box {:focus-traversable true}
+                                                             (:view file-menu))
                                                    content-container)
 
                                 (VBox/setVgrow Priority/ALWAYS))
@@ -98,29 +91,51 @@
                                                 (HBox/setHgrow Priority/NEVER)))
                                 (VBox/setVgrow Priority/NEVER))
                               )]
-    [main-screen file-menu-container content-container]))
+    [main-screen file-menu content-container]))
 
-(deftype MainScreen [widget file-menu-container content-container app-requests])
+(deftype MainScreen [widget file-menu content-container app-requests])
 
 (defn make-main-screen [>app-requests]
-  (let [[main-screen file-menu-container content-container] (build-main-screen >app-requests)]
-    (->MainScreen main-screen file-menu-container content-container >app-requests)))
+  (let [[main-screen file-menu content-container] (build-main-screen >app-requests)]
+    (->MainScreen main-screen file-menu content-container >app-requests)))
 
-(defn set-file-menu-data! [^MainScreen screen file-view-model]
-  (gui/set-widget-children (.file_menu_container screen)
-                           (list (build-file-menu-widget file-view-model (.app_requests screen)))))
+(defn add-menu-files! [^MainScreen screen files-model]
+  (let [{:keys [view items]} (.file_menu screen)]
+    (doseq [{:keys [path name] :as data} files-model]
+      (let [item (doto (fx/tree-item {:value data})
+                   (.setExpanded true))]
+        (if (= path [])
+          (.setRoot view item)
+          (.add (.getChildren (get @items (vec (butlast path)))) item))
+        (swap! items assoc path item)))))
+
+(defn mark-file-modified! [^MainScreen screen path]
+  (let [^TreeItem tree-item (get @(:items (.file_menu screen)) path)]
+    (.setValue tree-item (assoc (.getValue tree-item) :modified true))))
+
+(defn remove-file! [^MainScreen screen path]
+  (let [^TreeItem item (get @(:items (.file_menu screen)) path)]
+    (swap! (:items (.file_menu screen)) dissoc path)
+    (.remove (.getChildren (.getParent item)) item)
+    ))
+
+(defn set-menu-files! [^MainScreen screen files-model]
+  (.setRoot (:view (.file_menu screen)) nil)
+  (swap! (:items (.file_menu screen)) {})
+  (add-menu-files! screen files-model))
 
 (defn set-content-widget! [^MainScreen screen widget]
-  (.setContent (.content_container screen)
+  (.setContent ^ScrollPane (.content_container screen)
                widget))
 
 (defn get-widget [^MainScreen screen]
   (.widget screen))
 
-(defn open-project-dialog [stage]
+(defn open-project-dialog [stage ^File dir]
   (.showDialog
     (doto (DirectoryChooser.)
-      (.setTitle "Select project.edn file")
+      (.setInitialDirectory dir)
+      (.setTitle "Select project dir")
       )
     stage))
 
