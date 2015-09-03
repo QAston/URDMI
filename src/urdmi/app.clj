@@ -65,7 +65,7 @@
 (defmethod file-to-model [core/relations-keyname] [cascade-key orig-key project ^Reader reader]
   (let [parser-context (prolog/parser-context nil)
         asts (doall (prolog/prolog-sentence-seq parser-context reader))
-        [_ name arity]  (re-find #"(.*)_(.*)\.pl"  (last orig-key))]
+        [_ name arity] (re-find #"(.*)_(.*)\.pl" (last orig-key))]
     {:rel [name (Integer/valueOf ^String arity)]
      :ast asts}
     ))
@@ -91,22 +91,63 @@
              (file-to-model name-key name-key project reader))
       )))
 
-#_(defn save-file [project name-key]
-    (let [file-entry (get-in project (apply dir-keys name-key))
-          ^File file (name-keys-to-file project name-key)]
-      (with-open [writer (io/writer file)]
+(defmulti model-to-file (fn [cascade-key orig-key project ^Writer writer]
+                          cascade-key))
 
-        )))
+(defmethod model-to-file :default [cascade-key orig-key project ^Writer writer]
+  (model-to-file (vec (butlast cascade-key)) orig-key project writer))
+
+(defmethod model-to-file [] [cascade-key orig-key project ^Writer writer])
+
+(defmethod model-to-file [core/settings-keyname "project.edn"] [cascade-key orig-key project ^Writer writer]
+  (let [data (->
+               (get-in project (apply dir-keys orig-key))
+               (:data)
+               (update :working-dir #(.toString %)))]
+    (binding [*out* writer]
+      (prn data))))
+
+(defmethod model-to-file [core/settings-keyname] [cascade-key orig-key project ^Writer writer]
+  (let [data (:data (get-in project (apply dir-keys orig-key)))]
+    (binding [*out* writer]
+      (pr data))))
+
+(defmethod model-to-file [core/relations-keyname] [cascade-key orig-key project ^Writer writer]
+  (let [parser-context (prolog/parser-context nil)
+        ast (:ast (get-in project (apply dir-keys orig-key)))]
+    (prolog/pretty-print-sentences parser-context ast writer)
+    ))
+
+(defn text-model-to-file [^Project p name-key ^Writer writer]
+  (let [text @(:text (get-in p (apply dir-keys name-key)))]
+    (binding [*out* writer]
+      (print text))))
+
+(defmethod model-to-file [core/additions-keyname] [cascade-key orig-key project ^Writer writer]
+  (text-model-to-file project orig-key writer))
+
+(defmethod model-to-file [core/workdir-keyname] [cascade-key orig-key project ^Writer writer]
+  (text-model-to-file project orig-key writer))
+
+(defmethod model-to-file [core/output-keyname] [cascade-key orig-key project ^Writer writer]
+  (text-model-to-file project orig-key writer))
+
+(defn save-model-to-file [project name-key]
+  (let [^File file (name-keys-to-file project name-key)]
+    (fs/mkdirs (fs/parent file))
+    (with-open [writer (io/writer file)]
+      (model-to-file name-key name-key project writer)
+      )))
 
 (defn zipiter-to-name-keys [zipiter]
-  (into (list (:name (zip/node zipiter))) (reverse (map :name (zip/path zipiter)))))
+  (vec (into (list (:name (zip/node zipiter))) (reverse (map :name (zip/path zipiter))))))
 
 (defn- load-file-into-iter-node [^Project p zipiter base-name-keys]
   (zip/replace zipiter
                (load-model-from-file p (zipiter-to-name-keys zipiter))))
 
-(defn load-files [^Project p name-keys]
-  (let [keys (apply dir-keys name-keys)]
+(defn load-files [^Project p dir-name-key]
+  (let [keys (apply dir-keys dir-name-key)]
     (assoc-in p keys
               (zip/root (loop [zipiter (file-model-zipper (get-in p keys))]
                           (if (zip/end? zipiter)
@@ -114,7 +155,21 @@
                             (let [node (zip/node zipiter)]
                               (if (:dir node)
                                 (recur (zip/next zipiter))
-                                (recur (zip/next (load-file-into-iter-node p zipiter name-keys)))))))))))
+                                (recur (zip/next (load-file-into-iter-node p zipiter dir-name-key)))))))))))
+
+(defn get-model-files [^Project p]
+  (apply concat (for [base-key [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
+     (loop [zipiter (file-model-zipper (get-in p (dir-keys base-key))) ret []]
+       (if (zip/end? zipiter)
+         ret
+         (let [node (zip/node zipiter)]
+           (if (:dir node)
+             (recur (zip/next zipiter) ret)
+             (recur (zip/next zipiter) (conj ret (zipiter-to-name-keys zipiter))))))))))
+
+(defn save-files [^Project p file-name-keys]
+  (doseq [name-key file-name-keys]
+    (save-model-to-file p name-key)))
 
 (defn- load-plugin [^App app]
   {:pre [(not (nil? (:project app)))]}
@@ -134,7 +189,7 @@
 
 (defn load-model-files [model-key ^Project p]
   (let [dir (name-keys-to-file p [model-key])]
-    (fs/mkdir dir)
+    (fs/mkdirs dir)
     (-> p
         (assoc-in (dir-keys model-key)
                   (generate-model-map dir model-key))

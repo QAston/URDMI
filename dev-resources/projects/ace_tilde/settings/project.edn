@@ -1,2 +1,1 @@
-{:working-dir "working_dir"
- :active-plugin :ace}
+{:working-dir "working_dir", :active-plugin :ace}

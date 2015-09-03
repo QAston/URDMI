@@ -1,7 +1,7 @@
 /** -------------------------------------------------
  ** Algorithm:   Tilde
  ** Output type: out
- ** Date:        9/2/2015 18:26:36
+ ** Date:        9/3/2015 15:49:50
  ** ACE version: 1.2.15
  ** Hardware:    QASTON-PC running 'Windows NT 6.2'
  ** -------------------------------------------------
@@ -124,7 +124,7 @@
  **/
 
 Average discretization time: 0.0
-Average induction time: 0.03
+Average induction time: 0.02
 
 Model:
     Complexity: 1.0 nodes, 1.0 literals

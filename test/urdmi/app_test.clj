@@ -159,4 +159,56 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
           (:exit result) => 0
           (string/blank? (:out result)) => false)))
 
+(facts get-model-files
+       (fact "returns file-name-keys for example project"
+             (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
+               (get-model-files (:project app))) => (just #{[:additions "pracownik.s"]
+                                                            [:settings "project.edn"]
+                                                            [:settings "ace.edn"]
+                                                            [:working-dir "pracownik.bg.w"]
+                                                            [:working-dir "pracownik.kb"]
+                                                            [:working-dir "pracownik.s"]
+                                                            [:working-dir "pracownik.bg"]
+                                                            [:working-dir ".pracownik.keycode"]
+                                                            [:working-dir "pracownik.kb.w"]
+                                                            [:working-dir ".pracownik.keycode.w"]
+                                                            [:working-dir "tilde" "pracownik.ptree"]
+                                                            [:working-dir "tilde" "pracownik.progress"]
+                                                            [:working-dir "tilde" "pracownik.out"]
+                                                            [:relations "towar_6.pl"]
+                                                            [:relations "pracownikprodukcja_6.pl"]
+                                                            [:relations "produkcja_5.pl"]
+                                                            [:relations "pracownik_7.pl"]
+                                                            [:relations "pracownikpersonalia_8.pl"]
+                                                            [:relations "klient_9.pl"]
+                                                            [:relations "zamowienieszczegoly_4.pl"]
+                                                            [:relations "zamowienie_5.pl"]
+                                                            [:relations "dzial_6.pl"]})))
+
+(defn dir-equals [proj-a proj-b]
+  (let [files (get-model-files proj-a)]
+    (doseq [file files]
+      (with-open [file-a (io/reader (core/name-keys-to-file proj-a file))
+                  file-b (io/reader (core/name-keys-to-file proj-b file))]
+        (while (let [a (.read file-a)
+                     b (.read file-b)]
+                 (when-not (= a b)
+                   (throw (Exception. (str "files" (core/name-keys-to-file proj-a file) (core/name-keys-to-file proj-b file) " differ"))))
+                 (not= a -1)))))))
+
+(fact "saving a copy of project in another place produces an exact copy"
+      (let [copy-proj-dir (fs/file "dev-resources/projects/ace_tilde_copy/")]
+        (try
+          (let [orig-app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))
+                _ (fs/mkdir copy-proj-dir)
+                app (assoc-in orig-app [:project :project-dir] copy-proj-dir)
+                _ (save-files (:project app) (get-model-files (:project app)))
+                copy-app (app/load-project (init-app) copy-proj-dir)]
+            (get-model-files (:project orig-app)) => (get-model-files (:project copy-app))
+            (dir-equals (:project orig-app) (:project copy-app))
+            )
+          (finally
+            (fs/delete-dir copy-proj-dir)))
+        ))
+
 (future-fact "provide [apply] button for settings, settings until 'applied' are stored locally on screen")

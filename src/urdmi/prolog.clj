@@ -382,7 +382,9 @@ root is the root node."
   ([^ParserContext context, ^ISeq prolog-sentences ^Writer writer]
    (doseq [sentence prolog-sentences]
      (pretty-print sentence (:op-manager context) writer)
-     (.append writer ".\n")
+     (binding [*out* writer]
+       (.append writer \.)
+       (newline))
      ))
   ([^ParserContext context, ^ISeq prolog-sentences]
    (let [writer (StringWriter.)]
