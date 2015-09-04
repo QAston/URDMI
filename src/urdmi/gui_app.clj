@@ -113,7 +113,7 @@
   (show-data [this project data-key]
     (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key))) data-key))
   (read-data [this]
-    (gui/get-data widget)
+    {:text (delay (gui/get-data widget))}
     ))
 
 (defn make-code-editor-page [app]
@@ -200,7 +200,9 @@
   (let [page-key (:current-page-key app)
         app-page (get-in app [:pages page-key])
         page (:page app-page)
-        page-data (gui/read-data page)
+        old-page-data (get-in (:project app) (apply core/dir-keys page-key))
+        page-data (merge old-page-data
+                         (gui/read-data page))
         new-page-key (conj (vec (butlast page-key)) (:name page-data))
         proj (-> (:project app)
                  (dissoc-in (apply core/dir-keys page-key))

@@ -17,7 +17,7 @@
 
 (defn- build-file-menu-widget [>app-requests]
   (let [tree-view ^TreeView (fx/tree-view
-                              {:focus-traversable false
+                              {:focus-traversable true
                                :cell-factory
                                (reify
                                  Callback
@@ -66,8 +66,8 @@
                                                (fx/menu-item {:text "Save" :on-action (put-ui-event-fn {:type :save-file})})))
                                 (VBox/setVgrow Priority/NEVER))
                               (doto (fx/split-pane {:divider-positions (double-array [0.25])
-                                                    :focus-traversable false}
-                                                   (fx/v-box {:focus-traversable false}
+                                                    :focus-traversable true}
+                                                   (fx/v-box {:focus-traversable true}
                                                              (:view file-menu))
                                                    content-container)
 
