@@ -20,13 +20,13 @@
 ;application level abstraction, implements presenting data from app model
 (defprotocol ContentPage
   (container-node [this])
-  (show-data [this data])
+  (show-data [this data data-key])
   (read-data [this]))
 
 ;implementation level abstraction, gui taking viewmodel
 (defprotocol DataWidget
   (get-node [this])
-  (set-data! [this data])
+  (set-data! [this data data-key])
   (get-data [this]))
 
 (defprotocol PluginGui
@@ -88,10 +88,12 @@
   "registers a change callback on an observable value
   callback is a (fn [observable old-val new-val])"
   [^ObservableValue val callback]
-  (.addListener val
-                (reify ChangeListener
-                  (changed [this obs old new]
-                    (callback obs old new)))))
+  (let [listener (reify ChangeListener
+                   (changed [this obs old new]
+                     (callback obs old new)))]
+    (.addListener val
+                  listener)
+    listener))
 
 (defn observable-list
   "creates a new instance of observable array list from given collection"

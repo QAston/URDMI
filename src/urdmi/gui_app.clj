@@ -1,4 +1,5 @@
 (ns urdmi.gui-app
+  (:use clojure.core.incubator)
   (:require [clojure.core.async :refer [chan go <! >!]]
             [urdmi.core :as core]
             [clojure.zip :as zip]
@@ -43,19 +44,20 @@
     ))
 
 (defn relations-viewmodel-to-model [parser-context viewmodel]
-  {:rel [(:name viewmodel) (:arity viewmodel)]
-   :ast (let [items (:items viewmodel)
-              head {:type :ast-atom :name (:name viewmodel)}]
-          (for [row items]
-            {:type     :ast-functor
-             :children (doall
-                         (cons head
-                               (for [item row
-                                     :let [term (prolog/parse-single-term parser-context item)]]
-                                 (if term
-                                   term
-                                   {:type     :ast-functor
-                                    :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))}))})
+  {:name (str (:name viewmodel) "_" (:arity viewmodel) ".pl")
+   :rel  [(:name viewmodel) (:arity viewmodel)]
+   :ast  (let [items (:items viewmodel)
+               head {:type :ast-atom :name (:name viewmodel)}]
+           (for [row items]
+             {:type     :ast-functor
+              :children (doall
+                          (cons head
+                                (for [item row
+                                      :let [term (prolog/parse-single-term parser-context item)]]
+                                  (if term
+                                    term
+                                    {:type     :ast-functor
+                                     :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))}))})
 
 (defn- file-names-recursively [zipiter proj-key]
   (let [path (into [proj-key] (conj (mapv :name (rest (zip/path zipiter))) (:name (zip/node zipiter))))
@@ -89,39 +91,39 @@
         ]
     (flatten [{:name "Project" :path []} relations working-dir outputs additions settings])))
 
-(deftype RelationPage [widget data-key parser-context]
+(deftype RelationPage [widget parser-context]
   gui/ContentPage
   (container-node [this]
     (gui/get-node widget))
-  (show-data [this project]
+  (show-data [this project data-key]
     (let [rel-view-model (relations-model-to-viewmodel (get-in project (apply core/dir-keys data-key)))]
-      (fx/run! (gui/set-data! widget rel-view-model))))
+      (fx/run! (gui/set-data! widget rel-view-model data-key))))
   (read-data [this]
     (relations-viewmodel-to-model parser-context (gui/get-data widget))
     ))
 
-(defn make-relation-page [data-key]
+(defn make-relation-page [app]
   (let [parser-context (prolog/parser-context [])]
-    (->RelationPage (relation-gui/make-widget parser-context) data-key parser-context)))
+    (->RelationPage (relation-gui/make-widget parser-context (:ui-requests app)) parser-context)))
 
-(deftype CodeEditorPage [widget data-key]
+(deftype CodeEditorPage [widget]
   gui/ContentPage
   (container-node [this]
     (gui/get-node widget))
-  (show-data [this project]
-    (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key)))))
+  (show-data [this project data-key]
+    (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key))) data-key))
   (read-data [this]
     (gui/get-data widget)
     ))
 
-(defn make-code-editor-page [data-key]
-  (->CodeEditorPage (code-editor-gui/make-widget) data-key))
+(defn make-code-editor-page [app]
+  (->CodeEditorPage (code-editor-gui/make-widget (:ui-requests app))))
 
 (extend-type Pane
   gui/ContentPage
   (container-node [this]
     this)
-  (show-data [this project]
+  (show-data [this project key]
     nil)
   (read-data [this]
     nil))
@@ -139,7 +141,7 @@
 (defmethod generate-page [:relations] [cascade-key orig-key app]
   (if (= cascade-key orig-key)
     (make-relation-list-page)
-    (make-relation-page orig-key)))
+    (make-relation-page app)))
 
 (defmethod generate-page :default [cascade-key orig-key app]
   (generate-page (vec (butlast cascade-key)) orig-key app))
@@ -149,7 +151,7 @@
         data (get-in proj (apply core/dir-keys orig-key))]
     (if-not (:text data)
       empty-page
-      (make-code-editor-page orig-key)
+      (make-code-editor-page app)
       )))
 
 (defn init-app [stage]
@@ -175,7 +177,7 @@
         page (if page page
                       (doto
                         (generate-page key key app)
-                        (gui/show-data (:project app))))]
+                        (gui/show-data (:project app) key)))]
     (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node page)))
     (-> app
         (assoc-in [:pages key :page] page)
@@ -189,17 +191,36 @@
 
 (defmethod handle-request :modified-page [{:keys [type]} app]
   (let [page-key (:current-page-key app)]
-    (fx/run! (main-gui/mark-file-modified! (:main-screen app) page-key))
+    (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified true)))
     (-> app
         (assoc-in [:pages page-key :modified] true)
         )))
 
-(defmethod handle-request :save-page [{:keys [type]} app]
+(defmethod handle-request :save-file [{:keys [type]} app]
   (let [page-key (:current-page-key app)
-        page (get-in app [:pages page-key :page])
-        page-data (gui/read-data page)]
+        app-page (get-in app [:pages page-key])
+        page (:page app-page)
+        page-data (gui/read-data page)
+        new-page-key (conj (vec (butlast page-key)) (:name page-data))
+        proj (-> (:project app)
+                 (dissoc-in (apply core/dir-keys page-key))
+                 (assoc-in (apply core/dir-keys new-page-key) page-data))
+        ]
+    (app/save-model-to-file proj new-page-key)
+    (fx/run! (main-gui/update-file-viewmodel!
+               (:main-screen app) page-key #(-> %
+                                                (assoc :modified false)
+                                                (assoc :path new-page-key)
+                                                (assoc :name (last new-page-key)))))
+    ; delete file if renamed
+    (when-not (= page-key new-page-key)
+      (fs/delete (core/name-keys-to-file proj page-key)))
+
     (-> app
-        (assoc-in [:pages page-key :modified] false)
+        (dissoc-in [:pages page-key])
+        (assoc-in [:pages page-key] (-> app-page
+                                        (assoc :modified false)))
+        (assoc :project proj)
         )))
 
 (defmethod handle-request :open-project [event app]
@@ -225,7 +246,8 @@
 
 (defn main-scene [stage]
   (let [app (->
-              (init-app stage))
+              (init-app stage)
+              (load-project (fs/file "dev-resources/projects/aleph_default/")))
         requests-chan (:ui-requests app)]
     (go
       (loop [app app]

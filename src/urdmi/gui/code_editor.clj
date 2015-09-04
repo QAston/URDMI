@@ -1,5 +1,5 @@
 (ns urdmi.gui.code-editor
-  (:require [clojure.core.async :refer [chan go <! >!]]
+  (:require [clojure.core.async :refer [put! chan go <! >!]]
             [fx-clj.core :as fx]
             [clojure.string :as string]
             [urdmi.util :as util]
@@ -12,7 +12,7 @@
 
 ; https://github.com/TomasMikula/RichTextFX CodeArea
 
-(defn build-context-menu[^CodeArea code-area]
+(defn build-context-menu [^CodeArea code-area]
   (doto (ContextMenu.)
     (.. getItems
         (add (fx/menu-item {:text        "Cut"
@@ -30,16 +30,16 @@
                             :on-action   (fn [e]
                                            (.paste code-area))})))
     (.. getItems
-        (add (let [undo-item (fx/menu-item {:disable true
+        (add (let [undo-item (fx/menu-item {:disable     true
                                             :text        "Undo"
-                                       :accelerator (KeyCodeCombination. KeyCode/Z (into-array (list KeyCodeCombination/SHORTCUT_DOWN)))
-                                       :on-action   (fn [e]
-                                                      (.undo code-area))})]
+                                            :accelerator (KeyCodeCombination. KeyCode/Z (into-array (list KeyCodeCombination/SHORTCUT_DOWN)))
+                                            :on-action   (fn [e]
+                                                           (.undo code-area))})]
                (.bind (.disableProperty undo-item) (.not (BooleanExpression/booleanExpression (.undoAvailableProperty code-area))))
                undo-item
                )))
     (.. getItems
-        (add (let [redo-item (fx/menu-item {:disable true
+        (add (let [redo-item (fx/menu-item {:disable     true
                                             :text        "Redo"
                                             :accelerator (KeyCodeCombination. KeyCode/Y (into-array (list KeyCodeCombination/SHORTCUT_DOWN)))
                                             :on-action   (fn [e]
@@ -54,23 +54,36 @@
     (.setContextMenu code-area (build-context-menu code-area))
     code-area))
 
-(deftype CodeEditorWidget [^CodeArea widget]
+(defn- register-data-change-listeners [>ui-requests text-property shown-data-key]
+    (gui/on-changed text-property
+                    (fn [obs old new]
+                      (if-let [data-key @shown-data-key]
+                        (put! >ui-requests {:type :modified-page
+                                            :data-key data-key})))))
+
+(deftype CodeEditorWidget [^CodeArea widget shown-data-key]
   gui/DataWidget
   (get-node [this]
     widget)
-  (set-data![this data]
-    (.replaceText widget data))
+  (set-data! [this data data-key]
+    (reset! shown-data-key nil)
+    (.replaceText widget data)
+    (reset! shown-data-key data-key))
   (get-data [this]
     (.getValue (.textProperty widget))))
 
-(defn make-widget []
-  (->CodeEditorWidget (build-code-editor)))
+(defn make-widget [>ui-requests]
+  (let [widget (build-code-editor)
+        text-property (.textProperty widget)
+        shown-data-key (atom nil)]
+    (register-data-change-listeners >ui-requests text-property shown-data-key)
+    (->CodeEditorWidget widget shown-data-key)))
 
 (comment
-  (defn test-fn[]
-    (let [view (make-widget)
+  (defn test-fn []
+    (let [view (make-widget (chan))
           data "teststring"]
-      (gui/set-data! view data)
+      (gui/set-data! view data nil)
       (println (= (gui/get-data view) data))
       (gui/get-node view))
     )

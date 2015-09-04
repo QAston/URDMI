@@ -1,5 +1,5 @@
 (ns urdmi.gui.relation
-  (:require [clojure.core.async :refer [chan go <! >!]]
+  (:require [clojure.core.async :refer [put! chan go <! >!]]
             [fx-clj.core :as fx]
             [urdmi.prolog :as prolog]
             [clojure.string :as string]
@@ -9,7 +9,7 @@
     (javafx.scene.layout Region VBox Priority HBox)
     (javafx.geometry Pos Insets)
     (javafx.scene.control TableColumn TableView SelectionMode ContextMenu MenuItem TablePosition TextField TableColumn$CellEditEvent)
-    (javafx.collections ObservableList ListChangeListener)
+    (javafx.collections ObservableList ListChangeListener ListChangeListener$Change)
     (java.util List Collection)
     (javafx.util Callback)
     (javafx.scene.control.cell TextFieldTableCell)
@@ -20,7 +20,8 @@
     (javafx.util.converter DefaultStringConverter)
     (org.apache.commons.lang3.reflect FieldUtils)
     (org.controlsfx.validation.decoration GraphicValidationDecoration StyleClassValidationDecoration)
-    (org.controlsfx.validation ValidationSupport)))
+    (org.controlsfx.validation ValidationSupport)
+    (javafx.beans.value ChangeListener)))
 
 (def term-validation-msg "Text must be a valid term.")
 
@@ -397,19 +398,21 @@
       (.. getChildren (setAll (gui/observable-list widget))))
     ))
 
-
-(deftype RelationWidget [name-property arity-property items-list widget]
+(deftype RelationWidget [name-property arity-property items-list widget shown-data-key]
   gui/DataWidget
   (get-node [this]
     widget)
-  (set-data! [this data]
+  (set-data! [this data data-key]
+    (reset! shown-data-key nil)
     (.setValue arity-property (:arity data))
     (.setValue name-property (:name data))
     (.setAll items-list ^Collection (->> (:items data)
-                                         (map (fn [row] (gui/observable-list (->> row
-                                                                                  (map (fn [el]
-                                                                                         (SimpleStringProperty. el)))))))))
-    )
+                                         (map (fn [row] (gui/observable-list
+                                                          (->> row
+                                                               (map (fn [el]
+                                                                      (SimpleStringProperty. el)))))))))
+    (reset! shown-data-key data-key))
+
   (get-data [this]
     {:arity (.getValue arity-property)
      :name  (.getValue name-property)
@@ -421,15 +424,51 @@
                            row))))}
     ))
 
-(defn make-widget [parser-context]
+(defn- register-data-change-listeners [>ui-requests name-property arity-property items-list shown-data-key]
+  (let [change-listener (reify ChangeListener
+                          (changed [this obs old new]
+                            (if-let [data-key @shown-data-key]
+                              (put! >ui-requests {:type     :modified-page
+                                                  :data-key data-key}))))]
+    (.addListener items-list
+                  (reify ListChangeListener
+                    (onChanged [this change]
+                      (while (.next change)
+                        (when (.wasAdded change)
+                          (doseq [^ObservableList row (.getAddedSubList change)]
+                            (doseq [^SimpleStringProperty cell row]
+                              (.addListener cell change-listener))
+                            (.addListener row
+                                          (reify ListChangeListener
+                                            (onChanged [this change]
+                                              (while (.next change) (when (.wasAdded change)
+                                                                      (doseq [^SimpleStringProperty cell (.getAddedSubList change)]
+                                                                        (.addListener cell change-listener))))
+                                              )))
+                            ))
+                        (when (.wasRemoved change)
+                          (if-let [data-key @shown-data-key]
+                            (put! >ui-requests {:type     :modified-page
+                                                :data-key data-key}))))
+                      )))
+    (.addListener name-property change-listener)
+    (.addListener arity-property change-listener)
+    ))
+
+(defn make-widget [parser-context >ui-requests]
   (let [name-property (SimpleStringProperty. "")
         arity-property (SimpleLongProperty. 0)
-        items-list (gui/observable-list)]
+        items-list (gui/observable-list)
+        shown-data-key (atom nil)
+        relation-edit-widget (build-relation-edit-widget name-property arity-property items-list parser-context)
+        ]
+    (register-data-change-listeners >ui-requests name-property arity-property items-list shown-data-key)
     (->RelationWidget
       name-property
       arity-property
       items-list
-      (build-relation-edit-widget name-property arity-property items-list parser-context))))
+      relation-edit-widget
+      shown-data-key)))
 
 (comment
   (require '[clojure.java.io :as io])

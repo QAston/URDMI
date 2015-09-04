@@ -9,6 +9,7 @@
                            [fx-clj "0.2.0-alpha1" :exclusions [org.clojure/core.async]]
                            [async-watch "0.1.1"]
                            [differ "0.2.1"]
+                           [org.clojure/core.incubator "0.1.3"]
                            [org.controlsfx/controlsfx "8.40.9"]
                            [com.stuartsierra/component "0.2.3"]
                            [org.apache.directory.studio/org.apache.commons.io "2.4"]

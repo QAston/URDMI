@@ -17,7 +17,8 @@
 
 (defn- build-file-menu-widget [>app-requests]
   (let [tree-view ^TreeView (fx/tree-view
-                              {:cell-factory
+                              {:focus-traversable false
+                               :cell-factory
                                (reify
                                  Callback
                                  (call [this tree-view]
@@ -65,8 +66,8 @@
                                                (fx/menu-item {:text "Save" :on-action (put-ui-event-fn {:type :save-file})})))
                                 (VBox/setVgrow Priority/NEVER))
                               (doto (fx/split-pane {:divider-positions (double-array [0.25])
-                                                    :focus-traversable true}
-                                                   (fx/v-box {:focus-traversable true}
+                                                    :focus-traversable false}
+                                                   (fx/v-box {:focus-traversable false}
                                                              (:view file-menu))
                                                    content-container)
 
@@ -109,9 +110,14 @@
           (.add (.getChildren (get @items (vec (butlast path)))) item))
         (swap! items assoc path item)))))
 
-(defn mark-file-modified! [^MainScreen screen path]
-  (let [^TreeItem tree-item (get @(:items (.file_menu screen)) path)]
-    (.setValue tree-item (assoc (.getValue tree-item) :modified true))))
+(defn update-file-viewmodel! [^MainScreen screen path update-fn]
+  (let [^TreeItem tree-item (get @(:items (.file_menu screen)) path)
+        new-model (update-fn (.getValue tree-item))
+        new-path (:path new-model)]
+    (.setValue tree-item new-model)
+    (when-not (= path new-path)
+      (swap! (:items (.file_menu screen)) dissoc path)
+      (swap! (:items (.file_menu screen)) assoc new-path tree-item))))
 
 (defn remove-file! [^MainScreen screen path]
   (let [^TreeItem item (get @(:items (.file_menu screen)) path)]
