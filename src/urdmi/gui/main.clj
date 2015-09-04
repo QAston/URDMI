@@ -11,25 +11,26 @@
     (javafx.scene.paint Color)
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)
-    (javafx.scene.control TreeView TreeItem ScrollPane)
+    (javafx.scene.control TreeView TreeItem ScrollPane MenuItem)
     (javafx.stage FileChooser DirectoryChooser)
-    (java.io File)))
+    (java.io File)
+    (javafx.scene.input KeyCodeCombination KeyCode)))
 
 (defn- build-file-menu-widget [>app-requests]
   (let [tree-view ^TreeView (fx/tree-view
                               {:focus-traversable true
                                :cell-factory
-                               (reify
-                                 Callback
-                                 (call [this tree-view]
-                                   (TextFieldTreeCell. (proxy
-                                                         [StringConverter] []
-                                                         (toString [obj]
+                                                  (reify
+                                                    Callback
+                                                    (call [this tree-view]
+                                                      (TextFieldTreeCell. (proxy
+                                                                            [StringConverter] []
+                                                                            (toString [obj]
 
-                                                           (str (:name obj)
-                                                                (when (:modified obj)
-                                                                  "*"))
-                                                           )))))})]
+                                                                              (str (:name obj)
+                                                                                   (when (:modified obj)
+                                                                                     "*"))
+                                                                              )))))})]
     (-> tree-view
         (.getSelectionModel)
         (.selectedItemProperty)
@@ -52,18 +53,28 @@
         content-container (fx/scroll-pane :#content {:fit-to-height true
                                                      :fit-to-width  true})
 
+        menu-items {:new-project  (fx/menu-item {:text "New" :disable true :on-action (put-ui-event-fn {:type :new-project}) :accelerator (gui/ctrl-key-accelerator KeyCode/N)})
+                    :open-project (fx/menu-item {:text "Open..." :on-action (put-ui-event-fn {:type :open-project}) :accelerator (gui/ctrl-key-accelerator KeyCode/O)})
+                    :build        (fx/menu-item {:text "Build" :disable true :on-action (put-ui-event-fn {:type :build}) :accelerator (gui/ctrl-key-accelerator KeyCode/B)})
+                    :run          (fx/menu-item {:text "Run" :disable true :on-action (put-ui-event-fn {:type :run}) :accelerator (gui/ctrl-key-accelerator KeyCode/R)})
+                    :build-run    (fx/menu-item {:text "Build and run" :disable true :on-action (put-ui-event-fn {:type :build-run})})
+                    :save-file    (fx/menu-item {:text "Save" :disable true :on-action  (put-ui-event-fn {:type :save-file}) :accelerator (gui/ctrl-key-accelerator KeyCode/S)})
+                    :revert-file  (fx/menu-item {:text "Revert" :disable true :on-action (put-ui-event-fn {:type :revert-file})})
+                    }
+
         main-screen (fx/v-box {:pref-height 600
                                :pref-width  900}
                               (doto (fx/menu-bar
                                       (fx/menu {:text "Project"}
-                                               (fx/menu-item {:text "New" :on-action (put-ui-event-fn {:type :new-project})})
-                                               (fx/menu-item {:text "Open..." :on-action (put-ui-event-fn {:type :open-project})})
-                                               (fx/menu-item {:text "Build" :on-action (put-ui-event-fn {:type :build})})
-                                               (fx/menu-item {:text "Run" :on-action (put-ui-event-fn {:type :run})})
-                                               (fx/menu-item {:text "Build and run" :on-action (put-ui-event-fn {:type :build-run})})
+                                               (:new-project menu-items)
+                                               (:open-project menu-items)
+                                               (:build menu-items)
+                                               (:run menu-items)
+                                               (:build-run menu-items)
                                                )
                                       (fx/menu {:text "File"}
-                                               (fx/menu-item {:text "Save" :on-action (put-ui-event-fn {:type :save-file})})))
+                                               (:save-file menu-items)
+                                               (:revert-file menu-items)))
                                 (VBox/setVgrow Priority/NEVER))
                               (doto (fx/split-pane {:divider-positions (double-array [0.25])
                                                     :focus-traversable true}
@@ -92,13 +103,13 @@
                                                 (HBox/setHgrow Priority/NEVER)))
                                 (VBox/setVgrow Priority/NEVER))
                               )]
-    [main-screen file-menu content-container]))
+    [main-screen file-menu content-container menu-items]))
 
-(deftype MainScreen [widget file-menu content-container app-requests])
+(deftype MainScreen [widget file-menu content-container menu-items app-requests])
 
 (defn make-main-screen [>app-requests]
-  (let [[main-screen file-menu content-container] (build-main-screen >app-requests)]
-    (->MainScreen main-screen file-menu content-container >app-requests)))
+  (let [[main-screen file-menu content-container menu-items] (build-main-screen >app-requests)]
+    (->MainScreen main-screen file-menu content-container menu-items >app-requests)))
 
 (defn add-menu-files! [^MainScreen screen files-model]
   (let [{:keys [view items]} (.file_menu screen)]
@@ -129,6 +140,9 @@
   (.setRoot (:view (.file_menu screen)) nil)
   (swap! (:items (.file_menu screen)) {})
   (add-menu-files! screen files-model))
+
+(defn set-menu-item-enabled![^MainScreen screen menu-key enabled]
+  (.setDisable ^MenuItem (menu-key (.menu-items screen)) (not enabled)))
 
 (defn set-content-widget! [^MainScreen screen widget]
   (.setContent ^ScrollPane (.content_container screen)

@@ -11,7 +11,8 @@
            (java.util.function Predicate)
            (clojure.lang IFn)
            (javafx.util Callback)
-           (org.controlsfx.tools ValueExtractor)))
+           (org.controlsfx.tools ValueExtractor)
+           (javafx.scene.input KeyCodeCombination KeyCode)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -101,6 +102,9 @@
    (FXCollections/observableArrayList))
   ([^Collection col]
   (FXCollections/observableArrayList col)))
+
+(defn ctrl-key-accelerator[^KeyCode code]
+  (KeyCodeCombination. code (into-array (list KeyCodeCombination/SHORTCUT_DOWN))))
 
 
 

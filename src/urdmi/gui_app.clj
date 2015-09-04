@@ -165,23 +165,34 @@
         (assoc :main-screen (main-gui/make-main-screen ui-requests))
         )))
 
-(defn load-project [app dir]
-  (let [app (app/load-project app dir)
-        proj (:project app)
-        files-view-model (generate-menu-viewmodel proj)]
-    (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model))
-    app))
+(defn update-gui-for-modified [app]
+  (let [modified (get-in app [:pages (:current-page-key app) :modified] false)]
+    (main-gui/set-menu-item-enabled! (:main-screen app) :save-file modified)
+    (main-gui/set-menu-item-enabled! (:main-screen app) :revert-file modified)))
 
 (defn switch-page [app key]
   (let [page (get-in app [:pages key :page] nil)
         page (if page page
                       (doto
                         (generate-page key key app)
-                        (gui/show-data (:project app) key)))]
-    (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node page)))
+                        (gui/show-data (:project app) key)))
+        app (-> app
+                (assoc-in [:pages key :page] page)
+                (assoc :current-page-key key))]
+    (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node page))
+             (update-gui-for-modified app))
+    app))
+
+(defn load-project [app dir]
+  (let [app (app/load-project app dir)
+        proj (:project app)
+        files-view-model (generate-menu-viewmodel proj)]
+    (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
+             (doseq [menu [:build :build-run :run]]
+               (main-gui/set-menu-item-enabled! (:main-screen app) menu true)))
     (-> app
-        (assoc-in [:pages key :page] page)
-        (assoc :current-page-key key))))
+        (dissoc :pages)
+        (switch-page []))))
 
 (defmulti handle-request (fn [{:keys [type data]} app]
                            type))
@@ -189,12 +200,19 @@
 (defmethod handle-request :switch-page [{:keys [type target]} app]
   (switch-page app target))
 
-(defmethod handle-request :modified-page [{:keys [type]} app]
-  (let [page-key (:current-page-key app)]
-    (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified true)))
-    (-> app
-        (assoc-in [:pages page-key :modified] true)
-        )))
+(defmethod handle-request :modified-page [{:keys [type data-key]} app]
+  (let [app (assoc-in app [:pages data-key :modified] true)]
+    (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) data-key #(assoc % :modified true))
+             (update-gui-for-modified app))
+    app))
+
+(defmethod handle-request :revert-file [{:keys [type]} app]
+  (let [page-key (:current-page-key app)
+        app (assoc-in app [:pages page-key :modified] false)]
+    (gui/show-data (get-in app [:pages page-key :page]) (:project app) page-key)
+    (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified false))
+             (update-gui-for-modified app))
+    app))
 
 (defmethod handle-request :save-file [{:keys [type]} app]
   (let [page-key (:current-page-key app)
@@ -227,10 +245,7 @@
 
 (defmethod handle-request :open-project [event app]
   (if-let [location (fx/run<!! (main-gui/open-project-dialog (:stage app) (fs/file ".")))]
-    (-> app
-        (load-project location)
-        (dissoc :pages)
-        (switch-page []))
+    (load-project app location)
     app))
 
 (defmethod handle-request :build [event app]
