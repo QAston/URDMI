@@ -7,7 +7,6 @@
                            [clj-antlr "0.2.2"]
                            [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                            [fx-clj "0.2.0-alpha1" :exclusions [org.clojure/core.async]]
-                           [async-watch "0.1.1"]
                            [differ "0.2.1"]
                            [org.clojure/core.incubator "0.1.3"]
                            [org.controlsfx/controlsfx "8.40.9"]
