@@ -8,7 +8,7 @@
             [urdmi.app :as app]))
 
 (fact "generate-menu-entries works on example data"
-      (let [proj (app/load-base-project (fs/file "dev-resources/projects/aleph_default/"))]
+      (let [proj (:project (app/load-project (app/init-app) (fs/file "dev-resources/projects/aleph_default/")))]
         (gui-app/generate-menu-viewmodel proj) =>
         (list
           {:name "Project", :path []}
@@ -39,7 +39,7 @@
 
 (fact gui-app/relations-model-to-viewmodel
       (fact "converts valid relations"
-            (let [proj (app/load-base-project (fs/file "dev-resources/projects/aleph_default/"))]
+            (let [proj (:project (app/load-project (app/init-app) (fs/file "dev-resources/projects/aleph_default/")))]
               (gui-app/relations-model-to-viewmodel (core/get-relation-data proj ["dzial" 6])) =>
               {:name  "dzial"
                :arity 6

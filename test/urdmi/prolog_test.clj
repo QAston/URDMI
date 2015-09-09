@@ -139,10 +139,10 @@
                             "rmode(N: #(const_generator(V):[vars=[V],models=m,subst=s,preprocessing=off],conj(V)))."
                             ]]
         (doseq [sentence test-sentences]
-          (str/join (remove #{ \space \newline }
+          (str/join (remove #{ \space \newline \return }
                             (prolog/pretty-print-sentences
                               parser-context
-                              (parse-string parser-context sentence)))) => (str/join (remove #{\space \newline } sentence)))))
+                              (parse-string parser-context sentence)))) => (str/join (remove #{\space \newline \return } sentence)))))
 
 (fact "zipper queries are defined according to specs"
       (let [context (prolog/parser-context nil)

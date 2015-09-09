@@ -10,9 +10,17 @@
             [clojure.zip :as zip]
             [urdmi.app :as app]))
 
+(defn base-app [dir]
+  (->
+    (app/init-app)
+    (assoc :project (core/base-project dir))
+    (load-settings)))
+
 (fact "load-relations loads base relation data from disk"
-      (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
-            loaded (app/load-relations base)
+      (let [loaded (->
+                     (base-app (fs/file "dev-resources/projects/aleph_default/"))
+                     (app/load-relations)
+                     (:project))
             dzial-6-rel (parse-string (prolog/parser-context nil) "dzial(1,produkcja,produkcyjna,1,null,lapy).
 dzial(2,sprzedaz,lipowa,1,1,bialystok).
 dzial(3,kontrolajakosci,produkcyjna,1,1,lapy).
@@ -31,7 +39,9 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 
 
 (fact "load working dir loads base working dir data from disk"
-      (let [base (app/load-working-dir (core/base-project (fs/file "dev-resources/projects/ace_tilde/")))
+      (let [base (-> (base-app (fs/file "dev-resources/projects/ace_tilde/"))
+                     (app/load-working-dir)
+                     (:project))
             tildedir (get-in base (core/dir-keys core/workdir-keyname "tilde"))
             outfile (get-in base (core/dir-keys core/workdir-keyname "tilde" "pracownik.out"))]
         (:name tildedir) => "tilde"
@@ -39,20 +49,26 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
         (map first (:dir tildedir)) => (just #{"pracownik.out" "pracownik.progress" "pracownik.ptree"})))
 
 (fact "file-model-zipper allows moving among files"
-      (let [base (core/base-project (fs/file "dev-resources/projects/ace_tilde/"))
-            workdir (core/workdir-keyname (:dir (app/load-working-dir base)))]
+      (let [base (-> (base-app (fs/file "dev-resources/projects/ace_tilde/"))
+                     (app/load-working-dir)
+                     (:project))
+            workdir (core/workdir-keyname (:dir base))]
         (zip/node (zip/down (core/file-model-zipper workdir))) => truthy
         (get (:dir (zip/root (zip/append-child (core/file-model-zipper workdir) {:name "tyry"}))) "tyry") => {:name "tyry"}
         ))
 
 (fact "load additions loads additions data from disk"
-      (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
-            additions (get-in (app/load-additions base) (core/dir-keys core/additions-keyname :dir))]
+      (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
+                     (app/load-additions)
+                     (:project))
+            additions (get-in base (core/dir-keys core/additions-keyname :dir))]
         (map first additions) => (just #{"pracownik.b"})))
 
 (fact "load output"
-      (let [base (core/base-project (fs/file "dev-resources/projects/aleph_default/"))
-            additions (get-in (app/load-output base) (core/dir-keys core/output-keyname :dir))]
+      (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
+                     (app/load-output)
+                     (:project))
+            additions (get-in base (core/dir-keys core/output-keyname :dir))]
         (map first additions) => (just #{"result.edn"})))
 
 (fact "init-app loads plugins"
@@ -60,7 +76,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
         (map first (:plugins app)) => (just #{:ace :aleph})))
 
 (fact "load settings"
-      (let [app (app/load-settings (assoc (init-app) :project (core/base-project (fs/file "dev-resources/projects/aleph_default/"))))
+      (let [app (base-app (fs/file "dev-resources/projects/aleph_default/"))
             settings (get-in (:project app) (core/dir-keys core/settings-keyname :dir))]
         (map first settings) => (just #{"project.edn" "aleph.edn"})
         (get-in settings ["project.edn" :data]) => {:working-dir (io/file "working_dir") :active-plugin :aleph}
@@ -159,34 +175,44 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
           (:exit result) => 0
           (string/blank? (:out result)) => false)))
 
-(facts get-model-files
+(facts get-model-file-keys
        (fact "returns file-name-keys for example project"
              (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
-               (get-model-files (:project app))) => (just #{[:additions "pracownik.s"]
-                                                            [:settings "project.edn"]
-                                                            [:settings "ace.edn"]
-                                                            [:working-dir "pracownik.bg.w"]
-                                                            [:working-dir "pracownik.kb"]
-                                                            [:working-dir "pracownik.s"]
-                                                            [:working-dir "pracownik.bg"]
-                                                            [:working-dir ".pracownik.keycode"]
-                                                            [:working-dir "pracownik.kb.w"]
-                                                            [:working-dir ".pracownik.keycode.w"]
-                                                            [:working-dir "tilde" "pracownik.ptree"]
-                                                            [:working-dir "tilde" "pracownik.progress"]
-                                                            [:working-dir "tilde" "pracownik.out"]
-                                                            [:relations "towar_6.pl"]
-                                                            [:relations "pracownikprodukcja_6.pl"]
-                                                            [:relations "produkcja_5.pl"]
-                                                            [:relations "pracownik_7.pl"]
-                                                            [:relations "pracownikpersonalia_8.pl"]
-                                                            [:relations "klient_9.pl"]
-                                                            [:relations "zamowienieszczegoly_4.pl"]
-                                                            [:relations "zamowienie_5.pl"]
-                                                            [:relations "dzial_6.pl"]})))
+               (get-model-file-keys (:project app))) => (just #{[:additions "pracownik.s"]
+                                                                [:settings "project.edn"]
+                                                                [:settings "ace.edn"]
+                                                                [:working-dir "pracownik.bg.w"]
+                                                                [:working-dir "pracownik.kb"]
+                                                                [:working-dir "pracownik.s"]
+                                                                [:working-dir "pracownik.bg"]
+                                                                [:working-dir ".pracownik.keycode"]
+                                                                [:working-dir "pracownik.kb.w"]
+                                                                [:working-dir ".pracownik.keycode.w"]
+                                                                [:working-dir "tilde" "pracownik.ptree"]
+                                                                [:working-dir "tilde" "pracownik.progress"]
+                                                                [:working-dir "tilde" "pracownik.out"]
+                                                                [:relations "towar_6.pl"]
+                                                                [:relations "pracownikprodukcja_6.pl"]
+                                                                [:relations "produkcja_5.pl"]
+                                                                [:relations "pracownik_7.pl"]
+                                                                [:relations "pracownikpersonalia_8.pl"]
+                                                                [:relations "klient_9.pl"]
+                                                                [:relations "zamowienieszczegoly_4.pl"]
+                                                                [:relations "zamowienie_5.pl"]
+                                                                [:relations "dzial_6.pl"]})))
+
+(fact get-model-dirs
+      (let [proj-dir (fs/file "dev-resources/projects/ace_tilde/")
+            app (app/load-project (init-app) proj-dir)]
+        (get-model-dirs (:project app)) => (just #{(fs/file proj-dir "additions")
+                                                   (fs/file proj-dir "relations")
+                                                   (fs/file proj-dir "settings")
+                                                   (fs/file proj-dir "working_dir")
+                                                   (fs/file proj-dir "output")
+                                                   })))
 
 (defn dir-equals [proj-a proj-b]
-  (let [files (get-model-files proj-a)]
+  (let [files (get-model-file-keys proj-a)]
     (doseq [file files]
       (with-open [file-a (io/reader (core/name-keys-to-file proj-a file))
                   file-b (io/reader (core/name-keys-to-file proj-b file))]
@@ -202,13 +228,18 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
           (let [orig-app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))
                 _ (fs/mkdir copy-proj-dir)
                 app (assoc-in orig-app [:project :project-dir] copy-proj-dir)
-                _ (save-files (:project app) (get-model-files (:project app)))
+                app (save-files app (get-model-file-keys (:project app)))
                 copy-app (app/load-project (init-app) copy-proj-dir)]
-            (get-model-files (:project orig-app)) => (get-model-files (:project copy-app))
+            (get-model-file-keys (:project orig-app)) => (get-model-file-keys (:project copy-app))
             (dir-equals (:project orig-app) (:project copy-app))
             )
           (finally
             (fs/delete-dir copy-proj-dir)))
         ))
+
+(fact core/file-to-name-keys
+      (let [proj-dir (fs/file "dev-resources/projects/ace_tilde/")
+            app (app/load-project (init-app) proj-dir)]
+        (core/file-to-name-keys (:project app) (fs/file "dev-resources/projects/ace_tilde/relations/dzial_6.pl")) => [:relations "dzial_6.pl"]))
 
 (future-fact "provide [apply] button for settings, settings until 'applied' are stored locally on screen")

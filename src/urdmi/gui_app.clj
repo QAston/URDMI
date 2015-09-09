@@ -1,6 +1,6 @@
 (ns urdmi.gui-app
   (:use clojure.core.incubator)
-  (:require [clojure.core.async :refer [chan go <! >!]]
+  (:require [clojure.core.async :refer [chan go <! >! alt!]]
             [urdmi.core :as core]
             [clojure.zip :as zip]
             [urdmi.gui.relation :as relation-gui]
@@ -10,7 +10,8 @@
             [urdmi.app :as app]
             [fx-clj.core :as fx]
             [me.raynes.fs :as fs]
-            [urdmi.gui :as gui])
+            [urdmi.gui :as gui]
+            [urdmi.watch-fs :as watch-fs])
   (:import (urdmi.core Project)
            (java.io StringWriter)
            (javafx.scene.layout Pane)
@@ -162,6 +163,7 @@
         (assoc :stage stage)
         (assoc :pages pages)
         (assoc :ui-requests ui-requests)
+        (assoc :fs-changes (chan))
         (assoc :main-screen (main-gui/make-main-screen ui-requests))
         )))
 
@@ -190,7 +192,10 @@
     (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
              (doseq [menu [:build :build-run :run]]
                (main-gui/set-menu-item-enabled! (:main-screen app) menu true)))
+    (when-let [c (get app :fs-changes)]
+      (watch-fs/close! c))
     (-> app
+        (assoc :fs-changes (watch-fs/changes-chan (app/get-model-dirs (:project app))))
         (dissoc :pages)
         (switch-page []))))
 
@@ -225,8 +230,14 @@
         proj (-> (:project app)
                  (dissoc-in (apply core/dir-keys page-key))
                  (assoc-in (apply core/dir-keys new-page-key) page-data))
+        app (-> app
+                (dissoc-in [:pages page-key])
+                (assoc-in [:pages page-key] (-> app-page
+                                                (assoc :modified false)))
+                (assoc :project proj)
+                )
         ]
-    (app/save-model-to-file proj new-page-key)
+    (app/save-model-to-file app new-page-key)
     (fx/run! (main-gui/update-file-viewmodel!
                (:main-screen app) page-key #(-> %
                                                 (assoc :modified false)
@@ -235,13 +246,7 @@
     ; delete file if renamed
     (when-not (= page-key new-page-key)
       (fs/delete (core/name-keys-to-file proj page-key)))
-
-    (-> app
-        (dissoc-in [:pages page-key])
-        (assoc-in [:pages page-key] (-> app-page
-                                        (assoc :modified false)))
-        (assoc :project proj)
-        )))
+    ))
 
 (defmethod handle-request :open-project [event app]
   (if-let [location (fx/run<!! (main-gui/open-project-dialog (:stage app) (fs/file ".")))]
@@ -261,14 +266,54 @@
   (app/run-learning (:project app))
   )
 
+(defmulti handle-fs-change (fn [[event file time] app]
+                             event))
+
+(defmethod handle-fs-change :create [[event file time] app]
+  (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
+    (if (get-in (:project app) (apply core/dir-keys file-key))
+      app
+      (do
+        (app/load-file-to-model app file)
+        ))
+    ))
+
+(defmethod handle-fs-change :modify [[event file time] app]
+  ;todo: check if file modified
+  (let [{:keys [app needs-sync]} (app/update-fs-sync-status app
+                                                            (core/file-to-name-keys (:project app) file)
+                                                            time)]
+    (println "modify" file)
+    (if needs-sync
+      (app/load-file-to-model app file)
+      app
+      )))
+
+(defmethod handle-fs-change :delete [[event file time] app]
+  (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
+    (if-not (get-in (:project app) (apply core/dir-keys file-key))
+      app
+      (do
+        (app/delete-file-from-model app file)
+        ))))
+
+;updates :project model
+;update gui page associated with file (reload data)
+;called when to reload on prompt (when current-page is modified, but fs mod detected; when learning op used but files modified exist)
+;called when filesystem detects fs-modified file which is not modified in ui
+(defn load-modified-file [app file-key])
+
 (defn main-scene [stage]
   (let [app (->
               (init-app stage)
               (load-project (fs/file "dev-resources/projects/aleph_default/")))
-        requests-chan (:ui-requests app)]
+        ]
     (go
       (loop [app app]
-        (recur (handle-request (<! requests-chan) app))))
+        (recur
+          (alt! (:ui-requests app) ([ui-request] (handle-request ui-request app))
+                (:fs-changes app) ([change] (handle-fs-change change app))))))
+
     (Scene. (main-gui/get-widget (:main-screen app)))))
 
 

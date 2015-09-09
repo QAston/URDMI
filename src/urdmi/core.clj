@@ -25,7 +25,6 @@
 (defn register-plugin [^App app name ^clojure.lang.IFn plugin]
   (assoc-in app [:plugins name] plugin))
 
-(def project-keyname :project)
 (def relations-keyname :relations)
 (def workdir-keyname :working-dir)
 (def output-keyname :output)
@@ -94,6 +93,24 @@
                                            (conv-fn p)
                                            element))) name-keys))))
 
+(import 'java.nio.file.Path)
+(defn relativize-path [^File src ^File target]
+  (let [^Path src-path (.toPath src)
+        ^Path target-path (.toPath target)]
+    (.toFile (.relativize src-path target-path))))
+
+(defn file-to-name-keys
+  [^Project p ^File file]
+  (let [key-dir-pairs (for [k [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
+                        [k (name-keys-to-file p [k])])
+        ]
+    (first (mapcat (fn [[key ^File dir]]
+                   (let [^Path file-path (.toPath file)
+                         ^Path dir-path (.toPath dir)]
+                     (when (.startsWith file-path dir-path)
+                       (list (into [key] (fs/split (.toFile (.relativize dir-path file-path)))))
+                       ))) key-dir-pairs))))
+
 (defn file-model-branch? [m]
   (:dir m))
 
@@ -106,12 +123,6 @@
 
 (defn file-model-zipper [root]
   (zip/zipper file-model-branch? file-model-children file-model-make-node root))
-
-(import 'java.nio.file.Path)
-(defn relativize-path [^File src ^File target]
-  (let [^Path src-path (.toPath src)
-        ^Path target-path (.toPath target)]
-    (.toFile (.relativize src-path target-path))))
 
 (defn iterate-subdir [subdir]
   (map #(clojure.core/update % 0 (fn [dirname]
