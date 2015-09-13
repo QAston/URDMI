@@ -114,7 +114,7 @@
   (let [file-key (file-to-name-keys (:project app) file)]
     (-> app
         (dissoc-in [:fs-sync file-key])
-        (dissoc-in (apply dir-keys (cons :project (seq file-key)))))))
+        (dissoc-in (cons :project (seq (apply dir-keys file-key)))))))
 
 (defmulti model-to-file (fn [cascade-key orig-key ^App app ^Writer writer]
                           cascade-key))
@@ -183,15 +183,20 @@
           (recur (rest dirs) app))
         ))))
 
-(defn get-model-file-keys [^Project p]
-  (apply concat (for [base-key [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
-                  (loop [zipiter (file-model-zipper (get-in p (dir-keys base-key))) ret []]
-                    (if (zip/end? zipiter)
-                      ret
-                      (let [node (zip/node zipiter)]
-                        (if (:dir node)
-                          (recur (zip/next zipiter) ret)
-                          (recur (zip/next zipiter) (conj ret (zipiter-to-name-keys zipiter))))))))))
+(defn get-model-file-keys
+  ([^Project p with-dirs]
+   (apply concat (for [base-key [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
+                   (loop [zipiter (file-model-zipper (get-in p (dir-keys base-key))) ret []]
+                     (if (zip/end? zipiter)
+                       ret
+                       (let [node (zip/node zipiter)]
+                         (if (:dir node)
+                           (recur (zip/next zipiter) (if with-dirs
+                                                       (conj ret (zipiter-to-name-keys zipiter))
+                                                       ret))
+                           (recur (zip/next zipiter) (conj ret (zipiter-to-name-keys zipiter))))))))))
+  ([^Project p]
+   (get-model-file-keys p false)))
 
 (defn get-model-dirs [^Project p]
   (vec (for [k [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
@@ -201,8 +206,8 @@
   (loop [app app file-name-keys file-name-keys]
 
     (if (seq file-name-keys)
-        (recur (save-model-to-file app (first file-name-keys))
-              (rest file-name-keys))
+      (recur (save-model-to-file app (first file-name-keys))
+             (rest file-name-keys))
       app)))
 
 (defn- load-plugin [^App app]

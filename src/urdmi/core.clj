@@ -124,10 +124,6 @@
 (defn file-model-zipper [root]
   (zip/zipper file-model-branch? file-model-children file-model-make-node root))
 
-(defn iterate-subdir [subdir]
-  (map #(clojure.core/update % 0 (fn [dirname]
-                                   (io/file "." (relativize-path subdir dirname)))) (fs/iterate-dir subdir)))
-
 (defn append-addition
   "appends addition file to the working directory file, creates files if not present"
   ([^Project p ^File addition-file-rel ^Writer writer]

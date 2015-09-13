@@ -11,7 +11,7 @@
 (defn -start
   "Implements javafx.application.Application.start(javafx.stage.Stage)."
   [app ^javafx.stage.Stage stage]
-  (require 'urdmi.gui)
+  (require 'urdmi.gui-app)
   (let [ args (into-array String (-> app .getParameters .getRaw))
         main-scene ((var-get (resolve (symbol "urdmi.gui-app" "main-scene"))) stage)]
     (doto stage

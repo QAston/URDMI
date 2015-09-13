@@ -10,7 +10,7 @@
 (fact "generate-menu-entries works on example data"
       (let [proj (:project (app/load-project (app/init-app) (fs/file "dev-resources/projects/aleph_default/")))]
         (gui-app/generate-menu-viewmodel proj) =>
-        (list
+        (just #{
           {:name "Project", :path []}
           {:name "Relations", :path [:relations]}
           {:name "towar_6.pl", :path [:relations "towar_6.pl"]}
@@ -34,8 +34,7 @@
           {:name "Additions", :path [:additions]}
           {:name "pracownik.b", :path [:additions "pracownik.b"]}
           {:name "Settings", :path [:settings]}
-          {:name "project.edn", :path [:settings "project.edn"]}
-)))
+          {:name "project.edn", :path [:settings "project.edn"]}})))
 
 (fact gui-app/relations-model-to-viewmodel
       (fact "converts valid relations"

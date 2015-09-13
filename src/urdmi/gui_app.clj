@@ -60,37 +60,17 @@
                                     {:type     :ast-functor
                                      :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))}))})
 
-(defn- file-names-recursively [zipiter proj-key]
-  (let [path (into [proj-key] (conj (mapv :name (rest (zip/path zipiter))) (:name (zip/node zipiter))))
-        name (:name (zip/node zipiter))]
-    (if (zip/branch? zipiter)
-      (vector
-        (keep identity (cons [:name (:name (zip/node zipiter)) :path path]
-                             (if-let [childiter (zip/down zipiter)]
-                               (loop [iter childiter
-                                      children []
-                                      ]
-                                 (if-not (nil? iter)
-                                   (recur (zip/right iter) (conj children (file-names-recursively iter proj-key)))
-                                   children))
-
-                               (list)
-                               ))))
-      {:name name :path path})))
-
-(defn- get-file-names [^Project p proj-key display-name]
-  (vec (cons {:name display-name :path [proj-key]}
-             (rest (first (file-names-recursively (core/file-model-zipper (get-in p (core/dir-keys proj-key))) proj-key))))))
-
 (defn generate-menu-viewmodel [^Project p]
-  (let [
-        relations (get-file-names p core/relations-keyname "Relations")
-        working-dir (get-file-names p core/workdir-keyname "Working dir")
-        outputs (get-file-names p core/output-keyname "Output")
-        additions (get-file-names p core/additions-keyname "Additions")
-        settings (get-file-names p core/settings-keyname "Settings")
-        ]
-    (flatten [{:name "Project" :path []} relations working-dir outputs additions settings])))
+  (let [vm (for [file (app/get-model-file-keys p true)]
+             (case file
+               [:working-dir] {:name "Working dir" :path file}
+               [:additions] {:name "Additions" :path file}
+               [:output] {:name "Output" :path file}
+               [:relations] {:name "Relations" :path file}
+               [:settings] {:name "Settings" :path file}
+               {:name (last file) :path file})
+             )]
+    (into [{:name "Project" :path []}] vm)))
 
 (deftype RelationPage [widget parser-context]
   gui/ContentPage
@@ -173,15 +153,18 @@
     (main-gui/set-menu-item-enabled! (:main-screen app) :revert-file modified)))
 
 (defn switch-page [app key]
-  (let [page (get-in app [:pages key :page] nil)
-        page (if page page
-                      (doto
-                        (generate-page key key app)
-                        (gui/show-data (:project app) key)))
+  (let [page-data (get-in app [:pages key] nil)
+        page-data (if page-data
+                    page-data
+                    (do
+                      {:page     (doto
+                                   (generate-page key key app)
+                                   (gui/show-data (:project app) key))
+                       :modified false}))
         app (-> app
-                (assoc-in [:pages key :page] page)
+                (assoc-in [:pages key] page-data)
                 (assoc :current-page-key key))]
-    (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node page))
+    (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node (:page page-data)))
              (update-gui-for-modified app))
     app))
 
@@ -235,18 +218,26 @@
                 (assoc-in [:pages page-key] (-> app-page
                                                 (assoc :modified false)))
                 (assoc :project proj)
+                ;save is before delete, so that on crash the file is preserved
+                (app/save-model-to-file new-page-key)
                 )
         ]
-    (app/save-model-to-file app new-page-key)
-    (fx/run! (main-gui/update-file-viewmodel!
-               (:main-screen app) page-key #(-> %
-                                                (assoc :modified false)
-                                                (assoc :path new-page-key)
-                                                (assoc :name (last new-page-key)))))
+    (fx/run!
+      (main-gui/update-file-viewmodel!
+        (:main-screen app) page-key #(-> %
+                                         (assoc :modified false)
+                                         (assoc :path new-page-key)
+                                         (assoc :name (last new-page-key)))))
     ; delete file if renamed
     (when-not (= page-key new-page-key)
-      (fs/delete (core/name-keys-to-file proj page-key)))
-    ))
+      (fs/delete (core/name-keys-to-file proj page-key))
+      ; todo:
+      ; remove the need of tracing the key by the view
+      ; give it ref managed by framework, or add page-key to ui-requests from framework
+      ;todo:
+      ;disallow renaming file to an already existing one!
+      (gui/show-data page (:project app) new-page-key))
+    app))
 
 (defmethod handle-request :open-project [event app]
   (if-let [location (fx/run<!! (main-gui/open-project-dialog (:stage app) (fs/file ".")))]
@@ -255,15 +246,18 @@
 
 (defmethod handle-request :build [event app]
   (app/build-working-dir (:project app))
+  app
   )
 
 (defmethod handle-request :run [event app]
-  (app/run-learning (:project app))
+  (println (app/run-learning (:project app)))
+  app
   )
 
 (defmethod handle-request :build-run [event app]
   (app/build-working-dir (:project app))
   (app/run-learning (:project app))
+  app
   )
 
 (defmulti handle-fs-change (fn [[event file time] app]
@@ -274,45 +268,49 @@
     (if (get-in (:project app) (apply core/dir-keys file-key))
       app
       (do
+        (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key}))
         (app/load-file-to-model app file)
         ))
     ))
 
 (defmethod handle-fs-change :modify [[event file time] app]
   ;todo: check if file modified
-  (let [{:keys [app needs-sync]} (app/update-fs-sync-status app
-                                                            (core/file-to-name-keys (:project app) file)
-                                                            time)]
-    (println "modify" file)
-    (if needs-sync
-      (app/load-file-to-model app file)
-      app
-      )))
+  (if (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys (core/file-to-name-keys (:project app) file))))
+    (let [{:keys [app needs-sync]} (app/update-fs-sync-status app
+                                                              (core/file-to-name-keys (:project app) file)
+                                                              time)]
+      (if needs-sync
+        (app/load-file-to-model app file)
+        app
+        ))
+    app))
 
 (defmethod handle-fs-change :delete [[event file time] app]
   (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
     (if-not (get-in (:project app) (apply core/dir-keys file-key))
       app
       (do
-        (app/delete-file-from-model app file)
+        (main-gui/remove-file! (:main-screen app) file-key)
+        (->
+          (app/delete-file-from-model app file)
+          (dissoc-in [:pages file-key]))
         ))))
-
-;updates :project model
-;update gui page associated with file (reload data)
-;called when to reload on prompt (when current-page is modified, but fs mod detected; when learning op used but files modified exist)
-;called when filesystem detects fs-modified file which is not modified in ui
-(defn load-modified-file [app file-key])
 
 (defn main-scene [stage]
   (let [app (->
               (init-app stage)
-              (load-project (fs/file "dev-resources/projects/aleph_default/")))
+              ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
+              (load-project (fs/file "dev-resources/projects/ace_tilde/"))
+              )
         ]
     (go
       (loop [app app]
+        (println (class app))
         (recur
-          (alt! (:ui-requests app) ([ui-request] (handle-request ui-request app))
-                (:fs-changes app) ([change] (handle-fs-change change app))))))
+          (alt! (:ui-requests app) ([ui-request] (do (println ui-request)
+                                                     (handle-request ui-request app)))
+                (:fs-changes app) ([change] (do (println change)
+                                                (handle-fs-change change app)))))))
 
     (Scene. (main-gui/get-widget (:main-screen app)))))
 
