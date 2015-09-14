@@ -266,22 +266,22 @@ root is the root node."
 
 
 (defmulti pretty-print "Pretty prints a prolog ast node into builder."
-          (fn [node op-manager ^Writer builder] (:type node)))
+          (fn [node parser-context ^Writer builder] (:type node)))
 
-(defn- pretty-print-params [nodes-seq op-manager ^Writer builder]
+(defn- pretty-print-params [nodes-seq parser-context ^Writer builder]
   (loop [nodes nodes-seq]
     (when-let [head (first nodes)]
-      (pretty-print head, op-manager, builder)
+      (pretty-print head, parser-context, builder)
       (if-let [tail (seq (rest nodes))]
         (do
           (.append builder ",")
           (recur tail)))
       )))
 
-(defn- pretty-print-cons [obj op-manager ^Writer builder]
+(defn- pretty-print-cons [obj parser-context ^Writer builder]
   (loop [nodes (:children obj)]
     (when-let [head (first nodes)]
-      (pretty-print head, op-manager, builder)
+      (pretty-print head, parser-context, builder)
       (if-let [tail (seq (rest nodes))]
         (do
           (when-let [head (first tail)]
@@ -289,27 +289,27 @@ root is the root node."
           (recur tail)))
       )))
 
-(defn- pretty-print-operator [functor ^com.ugos.jiprolog.engine.Operator op op-manager ^Writer builder]
+(defn- pretty-print-operator [functor ^com.ugos.jiprolog.engine.Operator op parser-context ^Writer builder]
   (let [arity (get-functor-arity functor)
         head (first (:children functor))
         args (rest (:children functor))]
     (cond
       (and (== arity 1) (.getPrefix op)) (do
-                                           (pretty-print head op-manager builder)
+                                           (pretty-print head parser-context builder)
                                            (.append builder " ")
-                                           (pretty-print (first args) op-manager builder)
+                                           (pretty-print (first args) parser-context builder)
                                            )
       (and (== arity 1) (.getPostfix op)) (do
-                                            (pretty-print (first args) op-manager builder)
+                                            (pretty-print (first args) parser-context builder)
                                             (.append builder " ")
-                                            (pretty-print head op-manager builder)
+                                            (pretty-print head parser-context builder)
                                             )
       :else (do
-              (pretty-print (first args) op-manager builder)
+              (pretty-print (first args) parser-context builder)
               (.append builder " ")
-              (pretty-print head op-manager builder)
+              (pretty-print head parser-context builder)
               (.append builder " ")
-              (pretty-print (second args) op-manager builder)
+              (pretty-print (second args) parser-context builder)
               ))))
 
 (defn is-operator
@@ -325,47 +325,45 @@ root is the root node."
           op
           )))))
 
-(defmethod pretty-print ast-functor [functor op-manager ^Writer builder]
+(defmethod pretty-print ast-functor [functor parser-context ^Writer builder]
   (let [children (:children functor)
         head (first children)
         params (seq (rest children))]
     (if-not params
       (pretty-print head)
-      (if-let [op (is-operator functor op-manager)]
-        (pretty-print-operator functor op op-manager builder)
+      (if-let [op (is-operator functor (:op-manager parser-context))]
+        (pretty-print-operator functor op parser-context builder)
         (do
-          (pretty-print head op-manager builder)
+          (pretty-print head parser-context builder)
           (.append builder "(")
-          (pretty-print-params params op-manager builder)
+          (pretty-print-params params parser-context builder)
           (.append builder ")")))
       )))
 
-(defmethod pretty-print ast-list [obj op-manager ^Writer builder]
+(defmethod pretty-print ast-list [obj parser-context ^Writer builder]
   (.append builder "[")
-  (pretty-print-cons obj op-manager builder)
+  (pretty-print-cons obj parser-context builder)
   (.append builder "]")
   )
 
-(defmethod pretty-print ast-string [obj op-manager ^Writer builder]
+(defmethod pretty-print ast-string [obj parser-context ^Writer builder]
   (.append builder "\"")
   (.append builder ^String (quote-string (:value obj)))
   (.append builder "\"")
   )
 
 
-(defmethod pretty-print ast-cell [obj op-manager ^Writer builder]
+(defmethod pretty-print ast-cell [obj parser-context ^Writer builder]
   ;todo: determine if parens should be printed or not based on operator manager
   ;take "parent operator" as a param, when "," priority bigger than parent-operator param don't print parens
   ;(.append builder "(")
-  (pretty-print-cons obj op-manager builder)
+  (pretty-print-cons obj parser-context builder)
   ;(.append builder ")")
   )
 
-(def simple-parser (parser-context []))
-
-(defmethod pretty-print ast-atom [obj _ ^Writer builder]
+(defmethod pretty-print ast-atom [obj parser-context ^Writer builder]
   ; if atom cannot be parsed - quote it
-  (if (parse-single-atom simple-parser (:name obj))
+  (if (parse-single-atom parser-context (:name obj))
     (.append builder ^String (:name obj))
     (.append builder ^String (str \' (quote-atom (:name obj)) \'))))
 
@@ -381,7 +379,7 @@ root is the root node."
   "Pretty-prints a a seq of prolog ast nodes. Assumes these are in order."
   ([^ParserContext context, ^ISeq prolog-sentences ^Writer writer]
    (doseq [sentence prolog-sentences]
-     (pretty-print sentence (:op-manager context) writer)
+     (pretty-print sentence context writer)
      (binding [*out* writer]
        (.append writer \.)
        (newline))
