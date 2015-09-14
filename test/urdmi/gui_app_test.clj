@@ -83,6 +83,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
                    ]
                (gui-app/relations-viewmodel-to-model (prolog/parser-context []) viewmodel) =>
                {:rel ["dzial" 6]
+                :name "dzial_6.pl"
                 :ast ast}))
        (fact "invalid entries are wrapped in urdmi_edit()"
              (let [viewmodel {:name  "t"
@@ -92,4 +93,5 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
                    ast (parse-string (prolog/parser-context nil) "t(urdmi_edit(''),urdmi_edit('1atom')).t(1,Tyry).")]
                (gui-app/relations-viewmodel-to-model (prolog/parser-context []) viewmodel) =>
                {:rel ["t" 2]
+                :name "t_2.pl"
                 :ast ast})))

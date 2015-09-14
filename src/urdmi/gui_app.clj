@@ -169,7 +169,8 @@
     app))
 
 (defn load-project [app dir]
-  (let [app (app/load-project app dir)
+  (let [app (switch-page app [])
+        app (app/load-project app dir)
         proj (:project app)
         files-view-model (generate-menu-viewmodel proj)]
     (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
@@ -268,10 +269,10 @@
     (if (get-in (:project app) (apply core/dir-keys file-key))
       app
       (do
-        (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key}))
+        (fx/run!
+          (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
         (app/load-file-to-model app file)
-        ))
-    ))
+        ))))
 
 (defmethod handle-fs-change :modify [[event file time] app]
   ;todo: check if file modified
@@ -290,7 +291,8 @@
     (if-not (get-in (:project app) (apply core/dir-keys file-key))
       app
       (do
-        (main-gui/remove-file! (:main-screen app) file-key)
+        (fx/run!
+          (main-gui/remove-file! (:main-screen app) file-key))
         (->
           (app/delete-file-from-model app file)
           (dissoc-in [:pages file-key]))
@@ -300,17 +302,16 @@
   (let [app (->
               (init-app stage)
               ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
-              (load-project (fs/file "dev-resources/projects/ace_tilde/"))
+              ;(load-project (fs/file "dev-resources/projects/ace_tilde/"))
               )
         ]
     (go
       (loop [app app]
-        (println (class app))
         (recur
-          (alt! (:ui-requests app) ([ui-request] (do (println ui-request)
-                                                     (handle-request ui-request app)))
-                (:fs-changes app) ([change] (do (println change)
-                                                (handle-fs-change change app)))))))
+          (alt! (:ui-requests app) ([ui-request]
+                                     (handle-request ui-request app))
+                (:fs-changes app) ([change]
+                                    (handle-fs-change change app))))))
 
     (Scene. (main-gui/get-widget (:main-screen app)))))
 

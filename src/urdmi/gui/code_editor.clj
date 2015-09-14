@@ -43,7 +43,7 @@
                                             :text        "Redo"
                                             :accelerator (KeyCodeCombination. KeyCode/Y (into-array (list KeyCodeCombination/SHORTCUT_DOWN)))
                                             :on-action   (fn [e]
-                                                           (.undo code-area))})]
+                                                           (.redo code-area))})]
                (.bind (.disableProperty redo-item) (.not (BooleanExpression/booleanExpression (.redoAvailableProperty code-area))))
                redo-item
                )))))

@@ -3,7 +3,8 @@
             [fx-clj.core :as fx]
             [urdmi.core :as core]
             [urdmi.gui :as gui]
-            [clojure.zip :as zip])
+            [clojure.zip :as zip]
+            [clojure.java.io :as io])
   (:import
     (javafx.scene.layout AnchorPane Region VBox Priority HBox)
     (javafx.geometry Pos Insets)
@@ -103,6 +104,7 @@
                                                 (HBox/setHgrow Priority/NEVER)))
                                 (VBox/setVgrow Priority/NEVER))
                               )]
+    (.. main-screen getStylesheets (add (.toExternalForm (io/resource "main.css"))))
     [main-screen file-menu content-container menu-items]))
 
 (deftype MainScreen [widget file-menu content-container menu-items app-requests])
