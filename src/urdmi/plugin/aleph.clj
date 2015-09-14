@@ -3,7 +3,8 @@
             [clojure.java.shell :as shell]
             [urdmi.prolog :as prolog]
             [urdmi.core :as api]
-            [clojure.zip :as zip])
+            [clojure.zip :as zip]
+            [urdmi.core :as core])
   (:import (java.io StringReader)
            (urdmi.core Project)))
 
@@ -39,9 +40,9 @@
 (defn get-db-name [^Project p]
   (first (:target-rel (api/get-settings-data p settings-filename))))
 
-(defn build-b-file [^Project project]
+(defn build-b-file [plugin ^Project project]
   (let [
-        parser-context (prolog/parser-context nil)
+        parser-context (core/get-parser-context plugin)
         plugin-settings (api/get-settings-data project settings-filename)
         working-dir (api/get-working-dir project)
         background-relations (sort (vec (disj (set (map :rel (api/get-relations project))) (:target-rel plugin-settings))))
@@ -55,25 +56,25 @@
           ))
       (api/append-addition project (io/file filename) writer))))
 
-(defn build-f-file [^Project project]
+(defn build-f-file [plugin ^Project project]
   (let [working-dir (api/get-working-dir project)
         asts (first (get-training-examples project))
-        parser-context (prolog/parser-context nil)
+        parser-context (core/get-parser-context plugin)
         filename (str (get-db-name project) ".f")]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (prolog/pretty-print-sentences parser-context asts writer)
       (api/append-addition project (io/file filename) writer))))
 
-(defn build-n-file [^Project project]
+(defn build-n-file [plugin ^Project project]
   (let [working-dir (api/get-working-dir project)
         asts (second (get-training-examples project))
-        parser-context (prolog/parser-context nil)
+        parser-context (core/get-parser-context plugin)
         filename (str (get-db-name project) ".n")]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (prolog/pretty-print-sentences parser-context asts writer)
       (api/append-addition project (io/file filename) writer))))
 
-(defrecord AlephPlugin []
+(defrecord AlephPlugin [parser-context]
   api/Plugin
   (run [this project]
     (let [plugin-settings (api/get-settings-data project settings-filename)
@@ -86,9 +87,12 @@
                 :dir working-dir
                 )))
   (rebuild-working-dir [this project]
-    (build-b-file project)
-    (build-f-file project)
-    (build-n-file project)))
+    (build-b-file this project)
+    (build-f-file this project)
+    (build-n-file this project))
+  (get-parser-context [this]
+    parser-context
+    ))
 
 (defn create []
-  (->AlephPlugin))
+  (->AlephPlugin (prolog/aleph-parser-context)))

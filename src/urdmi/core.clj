@@ -16,6 +16,7 @@
   "All urdmi plugins must implement this protocol"
   (run [this project] "Run datamining engine associated to this plugin. Updates output menu entries.")
   (rebuild-working-dir [this project] "Rebuilds working directory of a datamining app")
+  (get-parser-context [this])
   )
 
 (defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])

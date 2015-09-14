@@ -2,7 +2,8 @@
   (:require [clojure.java.shell :as shell]
             [clojure.java.io :as io]
             [urdmi.core :as api]
-            [urdmi.prolog :as prolog])
+            [urdmi.prolog :as prolog]
+            [urdmi.core :as core])
   (:import (java.io StringReader)
            (urdmi.core Project)))
 
@@ -14,7 +15,7 @@
 
 (defn- build-bg-knowledge-file [plugin project]
   (let [
-        parser-context (prolog/parser-context nil)
+        parser-context (core/get-parser-context plugin)
         plugin-settings (api/get-settings-data project settings-filename)
         working-dir (api/get-working-dir project)
         background-relations (sort (vec (disj (set (map :rel (api/get-relations project))) (:target-rel plugin-settings))))
@@ -33,7 +34,7 @@
   (let [working-dir (api/get-working-dir project)
         plugin-settings (api/get-settings-data project settings-filename)
         target-rel-asts (:ast (api/get-relation-data project (:target-rel plugin-settings)))
-        parser-context (prolog/parser-context nil)
+        parser-context (core/get-parser-context plugin)
         filename (str (get-app-name project) ".kb")]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (prolog/pretty-print-sentences parser-context target-rel-asts writer)
@@ -45,7 +46,7 @@
     (with-open [writer (io/writer (io/file working-dir filename))]
       (api/append-addition project (io/file filename) writer))))
 
-(defrecord AcePlugin []
+(defrecord AcePlugin [parser-context]
   api/Plugin
   (run [this project]
     (let [
@@ -61,7 +62,10 @@
   (rebuild-working-dir [this project]
     (build-bg-knowledge-file this project)
     (build-knowledge-base-file this project)
-    (build-settings-file this project)))
+    (build-settings-file this project))
+  (get-parser-context [this]
+    parser-context
+    ))
 
 (defn create []
-  (->AcePlugin))
+  (->AcePlugin (prolog/ace-parser-context)))

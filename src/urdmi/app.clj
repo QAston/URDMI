@@ -22,6 +22,9 @@
       (register-plugin :ace #'ace/create)
       (register-plugin :aleph #'aleph/create)))
 
+(defn plugin-parser-context[^App app]
+  (core/get-parser-context (:plugin (:project app))))
+
 (defmulti file-to-model (fn [cascade-key orig-key ^App app ^Reader reader]
                           cascade-key))
 
@@ -43,7 +46,7 @@
     ))
 
 (defmethod file-to-model [core/relations-keyname] [cascade-key orig-key ^App app ^Reader reader]
-  (let [parser-context (prolog/parser-context nil)
+  (let [parser-context (plugin-parser-context app)
         asts (doall (prolog/prolog-sentence-seq parser-context reader))
         [_ name arity] (re-find #"(.*)_(.*)\.pl" (last orig-key))]
     {:rel [name (Integer/valueOf ^String arity)]
@@ -139,7 +142,7 @@
       (pr data))))
 
 (defmethod model-to-file [core/relations-keyname] [cascade-key orig-key ^App app ^Writer writer]
-  (let [parser-context (prolog/parser-context nil)
+  (let [parser-context (plugin-parser-context app)
         ast (:ast (get-in (:project app) (apply dir-keys orig-key)))]
     (prolog/pretty-print-sentences parser-context ast writer)))
 

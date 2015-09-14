@@ -22,8 +22,8 @@
   (when (and (= (:type ast) :ast-functor) (= "urdmi_edit" (:name (first (:children ast)))))
     (:name (second (:children ast)))))
 
-(defn- rel-ast-to-table [rel-asts]
-  (let [op-manager (:op-manager (prolog/parser-context []))]
+(defn- rel-ast-to-table [parser-context rel-asts]
+  (let [op-manager (:op-manager parser-context)]
     (->> rel-asts
          (mapv (fn [ast]
                  (->> ast
@@ -36,12 +36,12 @@
                                   (prolog/pretty-print ast op-manager writer)
                                   (.toString writer)))))))))))
 
-(defn relations-model-to-viewmodel [rel]
+(defn relations-model-to-viewmodel [parser-context rel]
   (let [rel-asts (:ast rel)
         [rel-name rel-arity] (:rel rel)]
     {:name  rel-name
      :arity rel-arity
-     :items (rel-ast-to-table rel-asts)}
+     :items (rel-ast-to-table parser-context rel-asts)}
     ))
 
 (defn relations-viewmodel-to-model [parser-context viewmodel]
@@ -77,14 +77,15 @@
   (container-node [this]
     (gui/get-node widget))
   (show-data [this project data-key]
-    (let [rel-view-model (relations-model-to-viewmodel (get-in project (apply core/dir-keys data-key)))]
+    (let [rel-view-model (relations-model-to-viewmodel parser-context
+                                                       (get-in project (apply core/dir-keys data-key)))]
       (fx/run! (gui/set-data! widget rel-view-model data-key))))
   (read-data [this]
     (relations-viewmodel-to-model parser-context (gui/get-data widget))
     ))
 
 (defn make-relation-page [app]
-  (let [parser-context (prolog/parser-context [])]
+  (let [parser-context (app/plugin-parser-context app)]
     (->RelationPage (relation-gui/make-widget parser-context (:ui-requests app)) parser-context)))
 
 (deftype CodeEditorPage [widget]
