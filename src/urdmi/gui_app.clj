@@ -11,6 +11,7 @@
             [fx-clj.core :as fx]
             [me.raynes.fs :as fs]
             [urdmi.gui :as gui]
+            [urdmi.gui.dialogs :as dialogs]
             [urdmi.watch-fs :as watch-fs])
   (:import (urdmi.core Project)
            (java.io StringWriter)
@@ -195,22 +196,27 @@
              (update-gui-for-modified app))
     app))
 
-(defmethod handle-request :revert-file [{:keys [type]} app]
-  (let [page-key (:current-page-key app)
-        app (assoc-in app [:pages page-key :modified] false)]
+(defn revert-model-page [app page-key]
+  (let [app (assoc-in app [:pages page-key :modified] false)]
     (gui/show-data (get-in app [:pages page-key :page]) (:project app) page-key)
     (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified false))
              (update-gui-for-modified app))
     app))
 
-(defmethod handle-request :save-file [{:keys [type]} app]
-  (let [page-key (:current-page-key app)
-        app-page (get-in app [:pages page-key])
+(defmethod handle-request :revert-file [{:keys [type]} app]
+  (revert-model-page app (:current-page-key app)))
+
+(defn save-model-page [app page-key]
+  (let [app-page (get-in app [:pages page-key])
         page (:page app-page)
         old-page-data (get-in (:project app) (apply core/dir-keys page-key))
         page-data (merge old-page-data
                          (gui/read-data page))
         new-page-key (conj (vec (butlast page-key)) (:name page-data))
+        update-current-page-if-needed (fn [app]
+                                        (if (= (:current-page-key app) page-key)
+                                          (assoc app :current-page-key new-page-key)
+                                          app))
         proj (-> (:project app)
                  (dissoc-in (apply core/dir-keys page-key))
                  (assoc-in (apply core/dir-keys new-page-key) page-data))
@@ -219,6 +225,7 @@
                 (assoc-in [:pages page-key] (-> app-page
                                                 (assoc :modified false)))
                 (assoc :project proj)
+                (update-current-page-if-needed)
                 ;save is before delete, so that on crash the file is preserved
                 (app/save-model-to-file new-page-key)
                 )
@@ -240,8 +247,12 @@
       (gui/show-data page (:project app) new-page-key))
     app))
 
+(defmethod handle-request :save-file [{:keys [type]} app]
+  (let [page-key (:current-page-key app)]
+    (save-model-page app page-key)))
+
 (defmethod handle-request :open-project [event app]
-  (if-let [location (fx/run<!! (main-gui/open-project-dialog (:stage app) (fs/file ".")))]
+  (if-let [location (fx/run<!! (dialogs/open-project (:stage app) (fs/file ".")))]
     (load-project app location)
     app))
 
@@ -274,16 +285,33 @@
         (app/load-file-to-model app file)
         ))))
 
+(defn- is-page-modified-or-current [app key]
+  (or (= key (:current-page-key app))
+      (get-in app [:pages key :modified])))
+
+(defn reload-page-from-file [app key]
+  (let [file (core/name-keys-to-file (:project app) key)
+        app (app/load-file-to-model app file)]
+    (if (get-in app [:pages key])
+      (revert-model-page app key)
+      app)))
+
 (defmethod handle-fs-change :modify [[event file time] app]
-  ;todo: check if file modified
-  (if (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys (core/file-to-name-keys (:project app) file))))
-    (let [{:keys [app needs-sync]} (app/update-fs-sync-status app
-                                                              (core/file-to-name-keys (:project app) file)
-                                                              time)]
-      (if needs-sync
-        (app/load-file-to-model app file)
-        app
-        ))
+  (let [file-key (core/file-to-name-keys (:project app) file)]
+    (if-not (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys file-key)))
+      app
+      (let [{:keys [app needs-sync]} (app/update-fs-sync-status app file-key time)]
+        (if (and
+              needs-sync
+              (is-page-modified-or-current app (core/file-to-name-keys (:project app) file))
+              (fx/run<!! (dialogs/reload-modified-file (:stage app) file))
+              )
+          (reload-page-from-file app file-key)
+          app)))))
+
+(defn close-page-if-open [app key]
+  (if (= key (:current-page-key app))
+    (switch-page app [])
     app))
 
 (defmethod handle-fs-change :delete [[event file time] app]
@@ -293,15 +321,16 @@
       (do
         (fx/run!
           (main-gui/remove-file! (:main-screen app) file-key))
-        (->
-          (app/delete-file-from-model app file)
-          (dissoc-in [:pages file-key]))
+        (-> app
+            (close-page-if-open file-key)
+            (app/delete-file-from-model file)
+            (dissoc-in [:pages file-key]))
         ))))
 
 (defn main-scene [stage]
   (let [app (->
               (init-app stage)
-              ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
+              (load-project (fs/file "dev-resources/projects/aleph_default/"))
               ;(load-project (fs/file "dev-resources/projects/ace_tilde/"))
               )
         ]

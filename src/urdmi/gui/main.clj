@@ -153,11 +153,3 @@
 (defn get-widget [^MainScreen screen]
   (.widget screen))
 
-(defn open-project-dialog [stage ^File dir]
-  (.showDialog
-    (doto (DirectoryChooser.)
-      (.setInitialDirectory dir)
-      (.setTitle "Select project dir")
-      )
-    stage))
-
