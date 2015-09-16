@@ -1,6 +1,7 @@
 (ns urdmi.watch-fs
   (:require [clojure.core.async :as async])
-  (:import (java.nio.file WatchService Paths FileSystems StandardWatchEventKinds)))
+  (:import (java.nio.file WatchService Paths FileSystems StandardWatchEventKinds)
+           (java.util Date)))
 
 (def ENTRY_CREATE java.nio.file.StandardWatchEventKinds/ENTRY_CREATE)
 (def ENTRY_DELETE java.nio.file.StandardWatchEventKinds/ENTRY_DELETE)
@@ -23,11 +24,11 @@
                                 []
                                 event-types)
 
-                  modifier  (try
-                              (let [c (Class/forName "com.sun.nio.file.SensitivityWatchEventModifier")
-                                    f (.getField c "HIGH")]
-                                (.get f c))
-                              (catch Exception e))
+                  modifier (try
+                             (let [c (Class/forName "com.sun.nio.file.SensitivityWatchEventModifier")
+                                   f (.getField c "HIGH")]
+                               (.get f c))
+                             (catch Exception e))
 
                   modifiers (when modifier
                               (doto (make-array java.nio.file.WatchEvent$Modifier 1)
@@ -40,16 +41,58 @@
               (assoc keys key [dir callback spec])))]
     (register-helper spec watcher keys)))
 
-(defn- remove-redundant-events [events]
-  (let [events-by-file (->> events
-                            (sort-by second)
-                            (partition-by second))]
-    (mapcat (fn [file-events]
-              (let [file-by-op (into {} file-events)]
-                (if (>= 1 (count file-by-op))
-                  (seq file-by-op)
-                  (seq (dissoc file-by-op :modify)))))
-            events-by-file)))
+(defn- kind-to-key [kind]
+  (case kind
+    "ENTRY_CREATE" :create
+    "ENTRY_MODIFY" :modify
+    "ENTRY_DELETE" :delete))
+
+(defn- add-path-event [paths-to-events [kind path time :as event] callback]
+  (let [prev-events (get paths-to-events path {:callback callback
+                                               :path path
+                                           :events (list)})]
+    (assoc paths-to-events path
+      (-> prev-events
+         (assoc :time time)
+         (update :events conj kind)))))
+
+(defn- reduce-to-single-event [{:keys [path events time] :as path-events}]
+  (let [priority-events (remove #{:modify} events)]
+    (if (empty? priority-events)
+      [:modify path time]
+      [(first priority-events) path time])))
+
+(defn- watch [^WatchService watcher keys paths-to-events]
+  (if-let [key (.poll watcher)]
+    (let [[dir callback spec] (@keys key)
+          event-time (Date.)
+          events (for [event (.pollEvents key)]
+                     (let [kind (kind-to-key (.. event kind name))
+                           name (->> event
+                                     .context
+                                     (.resolve dir)
+                                     (.toFile))]
+                       [kind name]))]
+      (doseq [[op file :as event] events]
+        ;add watch to newly created dirs
+        (when (and (.isDirectory file)
+                   (= op :create))
+          (swap! keys #(register (assoc spec :path (str file)) watcher %)))
+        (swap! paths-to-events add-path-event (conj event event-time) callback))
+      (.reset key)
+      (recur watcher keys paths-to-events))
+    (do
+      (doseq [[path path-events] (sort-by (fn [a]
+                                            (-> a
+                                                (second)
+                                                (:time))) (seq @paths-to-events))]
+        (when (> (- (System/currentTimeMillis) (.getTime ^Date (:time path-events)))
+                  1000)
+          (apply (:callback path-events) (reduce-to-single-event path-events))
+          (swap! paths-to-events dissoc path)))
+      (Thread/sleep 100)
+      (recur watcher keys paths-to-events)
+      )))
 
 (defn start-watch [specs]
   (letfn [(handle-recursive
@@ -79,36 +122,11 @@
     (let [specs (handle-recursive specs)
           watcher (.. FileSystems getDefault newWatchService)
           keys (atom (reduce (fn [keys spec]
-                          (register spec watcher keys)) {} specs))]
-      (letfn [(kind-to-key [kind]
-                           (case kind
-                             "ENTRY_CREATE" :create
-                             "ENTRY_MODIFY" :modify
-                             "ENTRY_DELETE" :delete))
-              (watch [watcher keys]
-                     (let [key (.take watcher)
-                           [dir callback spec] (@keys key)
-                           event-time (java.util.Date.)
-                           events (remove-redundant-events
-                                    (for [event (.pollEvents key)]
-                                      (let [kind (kind-to-key (.. event kind name))
-                                            name (->> event
-                                                      .context
-                                                      (.resolve dir)
-                                                      (.toFile))]
-                                        [kind name])))]
-                       (doseq [[op file :as event] events]
-                         (when (and (.isDirectory file)
-                                    (= op :create))
-                           (swap! keys #(register (assoc spec :path (str file)) watcher %))
-                           )
-                         (apply callback (conj event event-time)))
-                       (.reset key)
-                       (recur watcher keys)))
-              (close-watcher []
-                             (.close watcher))]
-        (future (watch watcher keys))
-        close-watcher))))
+                               (register spec watcher keys)) {} specs))
+          close-watcher (fn []
+                          (.close watcher))]
+      (future (watch watcher keys (atom {})))
+      close-watcher)))
 
 (def ^:private closing-fns-for-channels (atom {}))
 

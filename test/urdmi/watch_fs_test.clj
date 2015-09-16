@@ -20,8 +20,6 @@
         (fs/delete testfile)
         (is (= (async/<! c)
                nil)))
-
-
       (println "creating a file gives a single create event")
       (let [c (watch-fs/changes-chan base-dir)]
         ;(spit testfile "Tyryry")
@@ -38,15 +36,9 @@
       (println "deleting a file gives a delete event")
       (let [c (watch-fs/changes-chan base-dir)]
         (fs/delete testfile)
-        (let [ev (butlast (async/<! c))
-              ; skip modify event if present
-              ev (if-not (= (first ev) :modify)
-                   ev
-                   (butlast (async/<! c)))]
-          (is (= ev) [:delete testfile]))
+        (is (butlast (async/<! c)) [:delete testfile])
         (watch-fs/close! c)
         (is (= (async/<! c) nil)))
-
       (let [c (watch-fs/changes-chan base-dir)]
         (fs/mkdir subdir)
         (println "creating a dir gives a single create event")
@@ -54,8 +46,10 @@
         (println "creating a file in a newly created dir gives a single create event")
         (fs/create subdirtestfile)
         (is (= (butlast (async/<! c)) [:create subdirtestfile]))
+        (is (= (butlast (async/<! c)) [:modify subdir]))
         (watch-fs/close! c)
         (is (= (async/<! c) nil)))
       (finally
+        (println "done")
         (fs/delete-dir base-dir)))))
 
