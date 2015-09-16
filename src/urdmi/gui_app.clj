@@ -23,18 +23,17 @@
     (:name (second (:children ast)))))
 
 (defn- rel-ast-to-table [parser-context rel-asts]
-  (let [op-manager (:op-manager parser-context)]
-    (->> rel-asts
-         (mapv (fn [ast]
-                 (->> ast
-                      :children
-                      rest
-                      (mapv (fn [ast]
-                              (if-let [unwrapped (unwrap-urdmi-edit ast)]
-                                unwrapped
-                                (let [writer (StringWriter.)]
-                                  (prolog/pretty-print ast op-manager writer)
-                                  (.toString writer)))))))))))
+  (->> rel-asts
+       (mapv (fn [ast]
+               (->> ast
+                    :children
+                    rest
+                    (mapv (fn [ast]
+                            (if-let [unwrapped (unwrap-urdmi-edit ast)]
+                              unwrapped
+                              (let [writer (StringWriter.)]
+                                (prolog/pretty-print ast parser-context writer)
+                                (.toString writer))))))))))
 
 (defn relations-model-to-viewmodel [parser-context rel]
   (let [rel-asts (:ast rel)

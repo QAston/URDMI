@@ -104,9 +104,9 @@
           ;returns nil when nothing more to parse
           (when-not (.parseNext parser)
             (to-ast next))
-          (catch Exception e
+          (catch Throwable t
             )))
-      (catch Exception e
+      (catch Throwable t
         ))
     ))
 
@@ -119,7 +119,7 @@
                        (rest))]
         (when (= 1 (count terms))
           (first terms)))
-      (catch Exception e
+      (catch Throwable t
         ))))
 
 (defn parse-single-atom
@@ -128,7 +128,7 @@
     (try
       (when (= :ast-atom (:type sentence))
         sentence)
-      (catch Exception e
+      (catch Throwable t
         ))))
 
 (defn- with-file-metadata [^PrologObject obj m]
