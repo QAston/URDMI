@@ -148,10 +148,12 @@
         (assoc :main-screen (main-gui/make-main-screen ui-requests))
         )))
 
-(defn update-gui-for-modified [app]
+(defn update-menu-for-page [app]
   (let [modified (get-in app [:pages (:current-page-key app) :modified] false)]
     (main-gui/set-menu-item-enabled! (:main-screen app) :save-file modified)
-    (main-gui/set-menu-item-enabled! (:main-screen app) :revert-file modified)))
+    (main-gui/set-menu-item-enabled! (:main-screen app) :revert-file modified))
+  (let [dir (not (boolean (:dir (get-in (:project app) (apply core/dir-keys (:current-page-key app))))))]
+    (main-gui/set-menu-item-enabled! (:main-screen app) :reload-file dir)))
 
 (defn switch-page [app key]
   (let [page-data (get-in app [:pages key] nil)
@@ -166,7 +168,7 @@
                 (assoc-in [:pages key] page-data)
                 (assoc :current-page-key key))]
     (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node (:page page-data)))
-             (update-gui-for-modified app))
+             (update-menu-for-page app))
     app))
 
 (defn load-project [app dir]
@@ -193,14 +195,14 @@
 (defmethod handle-request :modified-page [{:keys [type data-key]} app]
   (let [app (assoc-in app [:pages data-key :modified] true)]
     (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) data-key #(assoc % :modified true))
-             (update-gui-for-modified app))
+             (update-menu-for-page app))
     app))
 
 (defn revert-model-page [app page-key]
   (let [app (assoc-in app [:pages page-key :modified] false)]
     (gui/show-data (get-in app [:pages page-key :page]) (:project app) page-key)
     (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified false))
-             (update-gui-for-modified app))
+             (update-menu-for-page app))
     app))
 
 (defmethod handle-request :revert-file [{:keys [type]} app]

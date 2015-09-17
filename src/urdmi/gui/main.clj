@@ -61,6 +61,7 @@
                     :build-run    (fx/menu-item {:text "Build and run" :disable true :on-action (put-ui-event-fn {:type :build-run})})
                     :save-file    (fx/menu-item {:text "Save" :disable true :on-action  (put-ui-event-fn {:type :save-file}) :accelerator (gui/ctrl-key-accelerator KeyCode/S)})
                     :revert-file  (fx/menu-item {:text "Revert" :disable true :on-action (put-ui-event-fn {:type :revert-file})})
+                    :reload-file  (fx/menu-item {:text "Reload" :disable true :on-action (put-ui-event-fn {:type :reload-file})})
                     }
 
         main-screen (fx/v-box {:pref-height 600
@@ -75,7 +76,8 @@
                                                )
                                       (fx/menu {:text "File"}
                                                (:save-file menu-items)
-                                               (:revert-file menu-items)))
+                                               (:revert-file menu-items)
+                                               (:reload-file menu-items)))
                                 (VBox/setVgrow Priority/NEVER))
                               (doto (fx/split-pane {:divider-positions (double-array [0.25])
                                                     :focus-traversable true}
