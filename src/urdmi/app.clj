@@ -66,6 +66,17 @@
 (defmethod file-to-model [core/output-keyname] [cascade-key orig-key ^App app ^Reader reader]
   (text-file-to-model app orig-key))
 
+(defn mark-file-desynced [^App app file-key]
+  (-> app
+      (dissoc-in [:fs-sync file-key])))
+
+(defn is-dir [app file-key]
+  (:dir (get-in (:project app) (apply core/dir-keys file-key))))
+
+(defn is-desynced [^App app file-key]
+  (and (not (is-dir app file-key))
+       (not (get-in app [:fs-sync file-key]))))
+
 (defn mark-file-read-synced [^App app file-key]
   (-> app
       (assoc-in [:fs-sync file-key] [:read (Date.)])))

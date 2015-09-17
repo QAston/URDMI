@@ -14,7 +14,7 @@
             [urdmi.gui.dialogs :as dialogs]
             [urdmi.watch-fs :as watch-fs])
   (:import (urdmi.core Project)
-           (java.io StringWriter)
+           (java.io StringWriter File)
            (javafx.scene.layout Pane)
            (javafx.scene Scene)
            (javafx.stage Stage)))
@@ -148,12 +148,21 @@
         (assoc :main-screen (main-gui/make-main-screen ui-requests))
         )))
 
-(defn update-menu-for-page [app]
-  (let [modified (get-in app [:pages (:current-page-key app) :modified] false)]
-    (main-gui/set-menu-item-enabled! (:main-screen app) :save-file modified)
-    (main-gui/set-menu-item-enabled! (:main-screen app) :revert-file modified))
-  (let [dir (not (boolean (:dir (get-in (:project app) (apply core/dir-keys (:current-page-key app))))))]
-    (main-gui/set-menu-item-enabled! (:main-screen app) :reload-file dir)))
+(defn is-page-modified [app page-key]
+  (get-in app [:pages page-key :modified] false))
+
+(defn is-page-modified-or-desynced [app page-key]
+  (or (app/is-desynced app page-key) (is-page-modified app page-key)))
+
+(defn update-main-menu-for-current-page! [app]
+  (main-gui/set-menu-item-enabled! (:main-screen app) :reload-file (not (app/is-dir app (:current-page-key app))))
+  (main-gui/set-menu-item-enabled! (:main-screen app) :save-file (is-page-modified-or-desynced app (:current-page-key app)))
+  (main-gui/set-menu-item-enabled! (:main-screen app) :revert-file (is-page-modified app (:current-page-key app)))
+  )
+
+(defn update-file-menu-for-page! [app page-key]
+  (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified (is-page-modified-or-desynced app page-key)))
+  )
 
 (defn switch-page [app key]
   (let [page-data (get-in app [:pages key] nil)
@@ -168,7 +177,7 @@
                 (assoc-in [:pages key] page-data)
                 (assoc :current-page-key key))]
     (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node (:page page-data)))
-             (update-menu-for-page app))
+             (update-main-menu-for-current-page! app))
     app))
 
 (defn load-project [app dir]
@@ -194,19 +203,29 @@
 
 (defmethod handle-request :modified-page [{:keys [type data-key]} app]
   (let [app (assoc-in app [:pages data-key :modified] true)]
-    (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) data-key #(assoc % :modified true))
-             (update-menu-for-page app))
+    (fx/run! (update-file-menu-for-page! app data-key)
+             (update-main-menu-for-current-page! app))
     app))
 
 (defn revert-model-page [app page-key]
   (let [app (assoc-in app [:pages page-key :modified] false)]
     (gui/show-data (get-in app [:pages page-key :page]) (:project app) page-key)
-    (fx/run! (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified false))
-             (update-menu-for-page app))
+    (fx/run! (update-file-menu-for-page! app page-key)
+             (update-main-menu-for-current-page! app))
     app))
+
+(defn reload-model-page [app key]
+  (let [file (core/name-keys-to-file (:project app) key)
+        app (app/load-file-to-model app file)]
+    (if (get-in app [:pages key])
+      (revert-model-page app key)
+      app)))
 
 (defmethod handle-request :revert-file [{:keys [type]} app]
   (revert-model-page app (:current-page-key app)))
+
+(defmethod handle-request :reload-file [{:keys [type]} app]
+  (reload-model-page app (:current-page-key app)))
 
 (defn save-model-page [app page-key]
   (let [app-page (get-in app [:pages page-key])
@@ -241,9 +260,10 @@
     (fx/run!
       (main-gui/update-file-viewmodel!
         (:main-screen app) page-key #(-> %
-                                         (assoc :modified false)
                                          (assoc :path new-page-key)
-                                         (assoc :name (last new-page-key)))))
+                                         (assoc :name (last new-page-key))))
+      (update-file-menu-for-page! app new-page-key)
+      (update-main-menu-for-current-page! app))
     ; delete file if renamed
     (when-not (= page-key new-page-key)
       (fs/delete (core/name-keys-to-file proj page-key))
@@ -295,30 +315,30 @@
 
 (defn- is-page-modified-or-current [app key]
   (or (= key (:current-page-key app))
-      (get-in app [:pages key :modified])))
+      (is-page-modified app key)))
 
-(defn reload-page-from-file [app key]
-  (let [file (core/name-keys-to-file (:project app) key)
-        app (app/load-file-to-model app file)]
-    (if (get-in app [:pages key])
-      (revert-model-page app key)
-      app)))
+(defn mark-page-desynced [app page-key]
+  (let [app (app/mark-file-desynced app page-key)]
+    (fx/run!
+             (update-main-menu-for-current-page! app)
+             (update-file-menu-for-page! app page-key))
+    app))
 
-(defmethod handle-fs-change :modify [[event file time] app]
+(defmethod handle-fs-change :modify [[event ^File file time] app]
   ; skip events on dirs
   (if (.isDirectory file)
     app
     (let [file-key (core/file-to-name-keys (:project app) file)]
-     (if-not (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys file-key)))
-       app
-       (let [{:keys [app needs-sync]} (app/update-fs-sync-status app file-key time)]
-         (if (and
-               needs-sync
-               (is-page-modified-or-current app (core/file-to-name-keys (:project app) file))
-               (fx/run<!! (dialogs/reload-modified-file (:stage app) file))
-               )
-           (reload-page-from-file app file-key)
-           app))))))
+      (if-not (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys file-key)))
+        app
+        (let [{:keys [app needs-sync]} (app/update-fs-sync-status app file-key time)]
+          (if (and
+                needs-sync
+                (is-page-modified-or-current app (core/file-to-name-keys (:project app) file)))
+            (if (fx/run<!! (dialogs/reload-modified-file (:stage app) file))
+              (reload-model-page app file-key)
+              (mark-page-desynced app file-key))
+            app))))))
 
 (defn close-page-if-open [app key]
   (if (= key (:current-page-key app))
