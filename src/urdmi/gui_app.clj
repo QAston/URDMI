@@ -217,6 +217,11 @@
                                         (if (= (:current-page-key app) page-key)
                                           (assoc app :current-page-key new-page-key)
                                           app))
+
+        delete-old-page-if-renamed (fn [app]
+                                     (if-not (= page-key new-page-key)
+                                       (app/delete-model-page app page-key)
+                                       app))
         proj (-> (:project app)
                  (dissoc-in (apply core/dir-keys page-key))
                  (assoc-in (apply core/dir-keys new-page-key) page-data))
@@ -225,6 +230,7 @@
                 (assoc-in [:pages page-key] (-> app-page
                                                 (assoc :modified false)))
                 (assoc :project proj)
+                (delete-old-page-if-renamed)
                 (update-current-page-if-needed)
                 ;save is before delete, so that on crash the file is preserved
                 (app/save-model-to-file new-page-key)
@@ -297,17 +303,20 @@
       app)))
 
 (defmethod handle-fs-change :modify [[event file time] app]
-  (let [file-key (core/file-to-name-keys (:project app) file)]
-    (if-not (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys file-key)))
-      app
-      (let [{:keys [app needs-sync]} (app/update-fs-sync-status app file-key time)]
-        (if (and
-              needs-sync
-              (is-page-modified-or-current app (core/file-to-name-keys (:project app) file))
-              (fx/run<!! (dialogs/reload-modified-file (:stage app) file))
-              )
-          (reload-page-from-file app file-key)
-          app)))))
+  ; skip events on dirs
+  (if (.isDirectory file)
+    app
+    (let [file-key (core/file-to-name-keys (:project app) file)]
+     (if-not (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys file-key)))
+       app
+       (let [{:keys [app needs-sync]} (app/update-fs-sync-status app file-key time)]
+         (if (and
+               needs-sync
+               (is-page-modified-or-current app (core/file-to-name-keys (:project app) file))
+               (fx/run<!! (dialogs/reload-modified-file (:stage app) file))
+               )
+           (reload-page-from-file app file-key)
+           app))))))
 
 (defn close-page-if-open [app key]
   (if (= key (:current-page-key app))
@@ -323,7 +332,7 @@
           (main-gui/remove-file! (:main-screen app) file-key))
         (-> app
             (close-page-if-open file-key)
-            (app/delete-file-from-model file)
+            (app/delete-model-page file-key)
             (dissoc-in [:pages file-key]))
         ))))
 

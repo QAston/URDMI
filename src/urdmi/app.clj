@@ -22,7 +22,7 @@
       (register-plugin :ace #'ace/create)
       (register-plugin :aleph #'aleph/create)))
 
-(defn plugin-parser-context[^App app]
+(defn plugin-parser-context [^App app]
   (core/get-parser-context (:plugin (:project app))))
 
 (defmulti file-to-model (fn [cascade-key orig-key ^App app ^Reader reader]
@@ -113,11 +113,10 @@
       (assoc :project project)
       (mark-file-read-synced file-key))))
 
-(defn delete-file-from-model [^App app ^File file]
-  (let [file-key (file-to-name-keys (:project app) file)]
-    (-> app
-        (dissoc-in [:fs-sync file-key])
-        (dissoc-in (cons :project (seq (apply dir-keys file-key)))))))
+(defn delete-model-page [^App app file-key]
+  (-> app
+      (dissoc-in [:fs-sync file-key])
+      (dissoc-in (cons :project (seq (apply dir-keys file-key))))))
 
 (defmulti model-to-file (fn [cascade-key orig-key ^App app ^Writer writer]
                           cascade-key))
