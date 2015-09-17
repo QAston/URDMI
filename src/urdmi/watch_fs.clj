@@ -130,6 +130,10 @@
 
 (def ^:private closing-fns-for-channels (atom {}))
 
+(defn stop-all-channel-watchers! []
+  (doseq [[key closing-fn] @closing-fns-for-channels]
+    (closing-fn)))
+
 (defn- stop-channel-watcher!
   "Stops all watches for given channel"
   [c]

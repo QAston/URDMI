@@ -284,21 +284,44 @@
     (load-project app location)
     app))
 
+(defn file-pages-seq [app]
+  (->> app
+       (:pages)
+       (keys)
+       (filter #(and (not (app/is-dir app %)) (not-empty %)))))
+
+(defn unsaved-pages [app]
+  (filter #(is-page-modified-or-desynced app %) (file-pages-seq app)))
+
+(defn save-model-pages [app keys]
+  (reduce save-model-page app keys))
+
+(defn do-with-saved-project [app operation app-fn]
+  (let [unsaved (unsaved-pages app)
+        proceed (or (empty? unsaved) (fx/run<!! (dialogs/confirm-saving-all (:stage app) operation)))]
+    (if proceed
+      (let [app (save-model-pages app unsaved)]
+        (app-fn app))
+      app)))
+
 (defmethod handle-request :build [event app]
-  (app/build-working-dir (:project app))
-  app
-  )
+  (do-with-saved-project app "build"
+                         (fn [app]
+                           (app/build-working-dir (:project app))
+                           app)))
 
 (defmethod handle-request :run [event app]
-  (println (app/run-learning (:project app)))
-  app
-  )
+  (do-with-saved-project app "run"
+                         (fn [app]
+                           (app/run-learning (:project app))
+                           app)))
 
 (defmethod handle-request :build-run [event app]
-  (app/build-working-dir (:project app))
-  (app/run-learning (:project app))
-  app
-  )
+  (do-with-saved-project app "build and run"
+                         (fn [app]
+                           (app/build-working-dir (:project app))
+                           (app/run-learning (:project app))
+                           app)))
 
 (defmulti handle-fs-change (fn [[event file time] app]
                              event))
@@ -320,8 +343,8 @@
 (defn mark-page-desynced [app page-key]
   (let [app (app/mark-file-desynced app page-key)]
     (fx/run!
-             (update-main-menu-for-current-page! app)
-             (update-file-menu-for-page! app page-key))
+      (update-main-menu-for-current-page! app)
+      (update-file-menu-for-page! app page-key))
     app))
 
 (defmethod handle-fs-change :modify [[event ^File file time] app]
@@ -382,4 +405,5 @@
       (.setScene stage (show-fn stage))
       (.show stage))))
 
+(watch-fs/stop-all-channel-watchers!)
 (show-on-test-stage #'main-scene)
