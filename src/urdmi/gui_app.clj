@@ -12,6 +12,7 @@
             [me.raynes.fs :as fs]
             [urdmi.gui :as gui]
             [urdmi.gui.dialogs :as dialogs]
+            [clojure.stacktrace :as stacktrace]
             [urdmi.watch-fs :as watch-fs])
   (:import (urdmi.core Project)
            (java.io StringWriter File)
@@ -391,10 +392,15 @@
     (go
       (loop [app app]
         (recur
-          (alt! (:ui-requests app) ([ui-request]
-                                     (handle-request ui-request app))
-                (:fs-changes app) ([change]
-                                    (handle-fs-change change app))))))
+          (try
+             (alt! (:ui-requests app) ([ui-request]
+                                      (handle-request ui-request app))
+                 (:fs-changes app) ([change]
+                                     (handle-fs-change change app)))
+             (catch Exception e
+               (stacktrace/print-cause-trace e)
+               app
+               )))))
 
     (Scene. (main-gui/get-widget (:main-screen app)))))
 
