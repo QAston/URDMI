@@ -6,16 +6,17 @@
             [clojure.zip :as zip]
             [clojure.java.io :as io])
   (:import
-    (javafx.scene.layout AnchorPane Region VBox Priority HBox)
-    (javafx.geometry Pos Insets)
+    (javafx.scene.layout AnchorPane Region VBox Priority HBox StackPane)
+    (javafx.geometry Pos Insets Orientation)
     (javafx.scene.text Font TextAlignment)
     (javafx.scene.paint Color)
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)
-    (javafx.scene.control TreeView TreeItem ScrollPane MenuItem)
+    (javafx.scene.control TreeView TreeItem ScrollPane MenuItem Tab Button TextArea)
     (javafx.stage FileChooser DirectoryChooser)
     (java.io File)
-    (javafx.scene.input KeyCodeCombination KeyCode)))
+    (javafx.scene.input KeyCodeCombination KeyCode)
+    (javafx.application Platform)))
 
 (defn- build-file-menu-widget [>app-requests]
   (let [tree-view ^TreeView (fx/tree-view
@@ -41,6 +42,43 @@
     (VBox/setVgrow tree-view Priority/ALWAYS)
     {:view tree-view :items (atom {})}))
 
+(defn build-log-tab [tab-name]
+  (let [text-area (fx/text-area {:editable false})
+        tab (doto (Tab. tab-name text-area)
+              (.setClosable false))
+        ]
+    [tab text-area])
+  )
+
+(defn build-logs-tabs []
+  (let [[application-tab ^TextArea app-log-text-area] (build-log-tab "Application")
+        [datamining-tab ^TextArea dm-log-text-area] (build-log-tab "Datamining")
+        pane (fx/tab-pane)
+        selected-tab (.selectedIndexProperty (.getSelectionModel pane))
+        widget (fx/stack-pane)
+        add-log-entry (fn [page-index text-area text]
+                        (.appendText text-area text)
+                        (.select (.getSelectionModel pane) page-index))]
+    (doto widget
+      (.. getChildren (add (doto pane
+                             (.. getTabs (add application-tab))
+                             (.. getTabs (add datamining-tab)))))
+      (.. getChildren (add (doto ^Button (fx/button
+                                           {:on-action (fn [e]
+                                                         (case (.getValue selected-tab)
+                                                           0 (.clear app-log-text-area)
+                                                           1 (.clear dm-log-text-area)
+                                                           ))}
+                                           "Clear")
+                             (StackPane/setAlignment Pos/TOP_RIGHT)
+                             (StackPane/setMargin (Insets. 4 8 0 0)))))
+      )
+    [widget
+     (fn [text]
+       (add-log-entry 0 app-log-text-area text))
+     (fn [text]
+       (add-log-entry 1 dm-log-text-area text))]))
+
 (defn- build-main-screen [>app-requests]
   (let [font (Font/font 11.0)
         text-fill (Color/color 0.625 0.625 0.625)
@@ -59,10 +97,12 @@
                     :build        (fx/menu-item {:text "Build" :disable true :on-action (put-ui-event-fn {:type :build}) :accelerator (gui/ctrl-key-accelerator KeyCode/B)})
                     :run          (fx/menu-item {:text "Run" :disable true :on-action (put-ui-event-fn {:type :run}) :accelerator (gui/ctrl-key-accelerator KeyCode/R)})
                     :build-run    (fx/menu-item {:text "Build and run" :disable true :on-action (put-ui-event-fn {:type :build-run})})
-                    :save-file    (fx/menu-item {:text "Save" :disable true :on-action  (put-ui-event-fn {:type :save-file}) :accelerator (gui/ctrl-key-accelerator KeyCode/S)})
+                    :save-file    (fx/menu-item {:text "Save" :disable true :on-action (put-ui-event-fn {:type :save-file}) :accelerator (gui/ctrl-key-accelerator KeyCode/S)})
                     :revert-file  (fx/menu-item {:text "Revert" :disable true :on-action (put-ui-event-fn {:type :revert-file})})
                     :reload-file  (fx/menu-item {:text "Reload" :disable true :on-action (put-ui-event-fn {:type :reload-file})})
                     }
+
+        [logs-tabs add-app-log-entry add-dm-log-entry] (build-logs-tabs)
 
         main-screen (fx/v-box {:pref-height 600
                                :pref-width  900}
@@ -79,12 +119,15 @@
                                                (:revert-file menu-items)
                                                (:reload-file menu-items)))
                                 (VBox/setVgrow Priority/NEVER))
-                              (doto (fx/split-pane {:divider-positions (double-array [0.25])
-                                                    :focus-traversable true}
-                                                   (fx/v-box {:focus-traversable true}
-                                                             (:view file-menu))
-                                                   content-container)
-
+                              (doto (fx/split-pane {:divider-positions (double-array [0.8])
+                                                    :focus-traversable true
+                                                    :orientation       Orientation/VERTICAL}
+                                                   (doto (fx/split-pane {:divider-positions (double-array [0.25])
+                                                                         :focus-traversable true}
+                                                                        (fx/v-box {:focus-traversable true}
+                                                                                  (:view file-menu))
+                                                                        content-container))
+                                                   logs-tabs)
                                 (VBox/setVgrow Priority/ALWAYS))
                               (doto (fx/h-box :#hbox {:alignment Pos/CENTER_LEFT
                                                       :spacing   5.0
@@ -107,13 +150,13 @@
                                 (VBox/setVgrow Priority/NEVER))
                               )]
     (.. main-screen getStylesheets (add (.toExternalForm (io/resource "main.css"))))
-    [main-screen file-menu content-container menu-items]))
+    [main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry]))
 
-(deftype MainScreen [widget file-menu content-container menu-items app-requests])
+(deftype MainScreen [widget file-menu content-container menu-items app-requests add-app-log-entry add-dm-log-entry])
 
 (defn make-main-screen [>app-requests]
-  (let [[main-screen file-menu content-container menu-items] (build-main-screen >app-requests)]
-    (->MainScreen main-screen file-menu content-container menu-items >app-requests)))
+  (let [[main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry] (build-main-screen >app-requests)]
+    (->MainScreen main-screen file-menu content-container menu-items >app-requests add-app-log-entry add-dm-log-entry)))
 
 (defn add-menu-files! [^MainScreen screen files-model]
   (let [{:keys [view items]} (.file_menu screen)]
@@ -145,13 +188,21 @@
   (swap! (:items (.file_menu screen)) {})
   (add-menu-files! screen files-model))
 
-(defn set-menu-item-enabled![^MainScreen screen menu-key enabled]
+(defn set-menu-item-enabled! [^MainScreen screen menu-key enabled]
   (.setDisable ^MenuItem (menu-key (.menu-items screen)) (not enabled)))
 
 (defn set-content-widget! [^MainScreen screen widget]
   (.setContent ^ScrollPane (.content_container screen)
                widget))
 
+(defn add-app-log-entry! [^MainScreen screen text]
+  ((.add-app-log-entry screen) text))
+
+(defn add-dm-log-entry! [^MainScreen screen text]
+  ((.add-dm-log-entry screen) text))
+
 (defn get-widget [^MainScreen screen]
   (.widget screen))
+
+;(fx/sandbox #'build-logs-tabs)
 

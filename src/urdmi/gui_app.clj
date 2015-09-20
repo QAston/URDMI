@@ -314,15 +314,17 @@
 (defmethod handle-request :run [event app]
   (do-with-saved-project app "run"
                          (fn [app]
-                           (app/run-learning (:project app))
-                           app)))
+                           (let [run-result (app/run-learning (:project app))]
+                             (fx/run! (main-gui/add-dm-log-entry! (:main-screen app) (:out run-result)))
+                             app))))
 
 (defmethod handle-request :build-run [event app]
   (do-with-saved-project app "build and run"
                          (fn [app]
                            (app/build-working-dir (:project app))
-                           (app/run-learning (:project app))
-                           app)))
+                           (let [run-result (app/run-learning (:project app))]
+                             (fx/run! (main-gui/add-dm-log-entry! (:main-screen app) (:out run-result)))
+                             app))))
 
 (defmulti handle-fs-change (fn [[event file time] app]
                              event))
@@ -393,14 +395,18 @@
       (loop [app app]
         (recur
           (try
-             (alt! (:ui-requests app) ([ui-request]
-                                      (handle-request ui-request app))
-                 (:fs-changes app) ([change]
-                                     (handle-fs-change change app)))
-             (catch Exception e
-               (stacktrace/print-cause-trace e)
-               app
-               )))))
+            (alt! (:ui-requests app) ([ui-request]
+                                       (handle-request ui-request app))
+                  (:fs-changes app) ([change]
+                                      (handle-fs-change change app)))
+            (catch Exception e
+              (let [writer (StringWriter.)]
+                (binding [*out* writer]
+                  (println "An application error occured:")
+                  (stacktrace/print-cause-trace e))
+                (main-gui/add-app-log-entry! (:screen app) (str writer)))
+              app
+              )))))
 
     (Scene. (main-gui/get-widget (:main-screen app)))))
 

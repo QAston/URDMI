@@ -92,7 +92,8 @@
     (build-n-file this project))
   (get-parser-context [this]
     parser-context
-    ))
+    )
+  (generate-output [this run-result]))
 
 (defn create []
   (->AlephPlugin (prolog/aleph-parser-context)))
