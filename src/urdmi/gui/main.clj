@@ -16,7 +16,8 @@
     (javafx.stage FileChooser DirectoryChooser)
     (java.io File)
     (javafx.scene.input KeyCodeCombination KeyCode)
-    (javafx.application Platform)))
+    (javafx.application Platform)
+    (org.controlsfx.control StatusBar)))
 
 (defn- build-file-menu-widget [>app-requests]
   (let [tree-view ^TreeView (fx/tree-view
@@ -104,6 +105,11 @@
 
         [logs-tabs add-app-log-entry add-dm-log-entry] (build-logs-tabs)
 
+        status-bar (doto (StatusBar.)
+                     (.setText "Job: Idle")
+                     (VBox/setVgrow Priority/NEVER)
+                     )
+
         main-screen (fx/v-box {:pref-height 600
                                :pref-width  900}
                               (doto (fx/menu-bar
@@ -129,34 +135,16 @@
                                                                         content-container))
                                                    logs-tabs)
                                 (VBox/setVgrow Priority/ALWAYS))
-                              (doto (fx/h-box :#hbox {:alignment Pos/CENTER_LEFT
-                                                      :spacing   5.0
-                                                      :padding   (Insets. 3 3 3 3)}
-                                              (doto (fx/label {:max-height 1.8
-                                                               :max-width  Region/USE_COMPUTED_SIZE
-                                                               :text       "Left status"
-                                                               :font       font
-                                                               :text-fill  text-fill})
-                                                (HBox/setHgrow Priority/ALWAYS))
-                                              (doto (fx/pane {:pref-height Region/USE_COMPUTED_SIZE
-                                                              :pref-width  Region/USE_COMPUTED_SIZE})
-                                                (HBox/setHgrow Priority/ALWAYS))
-                                              (doto (fx/label {:max-height 1.8
-                                                               :max-width  Region/USE_COMPUTED_SIZE
-                                                               :text       "Right status"
-                                                               :font       font
-                                                               :text-fill  text-fill})
-                                                (HBox/setHgrow Priority/NEVER)))
-                                (VBox/setVgrow Priority/NEVER))
+                              status-bar
                               )]
     (.. main-screen getStylesheets (add (.toExternalForm (io/resource "main.css"))))
-    [main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry]))
+    [main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry status-bar]))
 
-(deftype MainScreen [widget file-menu content-container menu-items app-requests add-app-log-entry add-dm-log-entry])
+(deftype MainScreen [widget file-menu content-container menu-items app-requests add-app-log-entry add-dm-log-entry status-bar])
 
 (defn make-main-screen [>app-requests]
-  (let [[main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry] (build-main-screen >app-requests)]
-    (->MainScreen main-screen file-menu content-container menu-items >app-requests add-app-log-entry add-dm-log-entry)))
+  (let [[main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry status-bar] (build-main-screen >app-requests)]
+    (->MainScreen main-screen file-menu content-container menu-items >app-requests add-app-log-entry add-dm-log-entry status-bar)))
 
 (defn add-menu-files! [^MainScreen screen files-model]
   (let [{:keys [view items]} (.file_menu screen)]
@@ -200,6 +188,23 @@
 
 (defn add-dm-log-entry! [^MainScreen screen text]
   ((.add-dm-log-entry screen) text))
+
+(defn start-job![^MainScreen screen name ui-requests<]
+  (doto
+    (.status-bar screen)
+    (.setText (str "Job: " name))
+    (.setProgress -1)
+    (.. getRightItems (add (fx/button {:text "Stop"
+                                      :on-action (fn [e]
+                                                   (put! ui-requests< {:type :stop-job}))}))))
+  )
+
+(defn stop-job![^MainScreen screen]
+  (doto
+    (.status-bar screen)
+    (.setText (str "Job: Idle"))
+    (.. getRightItems clear)
+    (.setProgress 0.0)))
 
 (defn get-widget [^MainScreen screen]
   (.widget screen))

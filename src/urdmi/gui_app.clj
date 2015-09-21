@@ -1,6 +1,6 @@
 (ns urdmi.gui-app
   (:use clojure.core.incubator)
-  (:require [clojure.core.async :refer [chan go <! >! alt!]]
+  (:require [clojure.core.async :refer [chan go <! >! alt! put!]]
             [urdmi.core :as core]
             [clojure.zip :as zip]
             [urdmi.gui.relation :as relation-gui]
@@ -18,7 +18,8 @@
            (java.io StringWriter File)
            (javafx.scene.layout Pane)
            (javafx.scene Scene)
-           (javafx.stage Stage)))
+           (javafx.stage Stage)
+           (java.util.concurrent FutureTask)))
 
 (defn- unwrap-urdmi-edit [ast]
   (when (and (= (:type ast) :ast-functor) (= "urdmi_edit" (:name (first (:children ast)))))
@@ -156,6 +157,9 @@
   (or (app/is-desynced app page-key) (is-page-modified app page-key)))
 
 (defn update-main-menu-for-current-page! [app]
+  (let [project-jobs-enabled (and (:project app) (not (:job app)))]
+    (doseq [menu [:build :build-run :run]]
+      (main-gui/set-menu-item-enabled! (:main-screen app) menu project-jobs-enabled)))
   (main-gui/set-menu-item-enabled! (:main-screen app) :reload-file (not (app/is-dir app (:current-page-key app))))
   (main-gui/set-menu-item-enabled! (:main-screen app) :save-file (is-page-modified-or-desynced app (:current-page-key app)))
   (main-gui/set-menu-item-enabled! (:main-screen app) :revert-file (is-page-modified app (:current-page-key app)))
@@ -181,19 +185,46 @@
              (update-main-menu-for-current-page! app))
     app))
 
+(defn stop-current-job [app]
+  (if-let [job (get app :job)]
+    (let [app (->
+                app
+                (dissoc :job))]
+      (when-not (realized? (:task job))
+        (future-cancel (:task job)))
+      (fx/run! (main-gui/stop-job! (:main-screen app))
+               (update-main-menu-for-current-page! app))
+      app)
+    app))
+
+(defn start-job [app name job-fn]
+  (let [app (assoc app :job {:name name
+                             :task (future (let [result (job-fn)]
+                                             (if (core/thread-interruped?)
+                                               (put! (:ui-requests app)
+                                                     {:type :stop-job})
+                                               (put! (:ui-requests app)
+                                                     {:type   :job-finished
+                                                      :result result}))
+                                             ))})]
+    (fx/run! (main-gui/start-job! (:main-screen app) name (:ui-requests app))
+             (update-main-menu-for-current-page! app))
+    app))
+
 (defn load-project [app dir]
-  (let [app (switch-page app [])
-        app (app/load-project app dir)
+  (let [app (-> app
+                (switch-page [])
+                (dissoc :pages)
+                (stop-current-job)
+                (app/load-project dir))
         proj (:project app)
         files-view-model (generate-menu-viewmodel proj)]
     (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
-             (doseq [menu [:build :build-run :run]]
-               (main-gui/set-menu-item-enabled! (:main-screen app) menu true)))
+             (update-main-menu-for-current-page! app))
     (when-let [c (get app :fs-changes)]
       (watch-fs/close! c))
     (-> app
         (assoc :fs-changes (watch-fs/changes-chan (app/get-model-dirs (:project app))))
-        (dissoc :pages)
         (switch-page []))))
 
 (defmulti handle-request (fn [{:keys [type data]} app]
@@ -285,6 +316,22 @@
     (load-project app location)
     app))
 
+(defmethod handle-request :stop-job [event app]
+  (stop-current-job app))
+
+(defmethod handle-request :job-finished [{:keys [type]} app]
+  (stop-current-job app))
+
+(defmethod handle-request :log-datamining [{:keys [type message]} app]
+  (fx/run!
+    (main-gui/add-dm-log-entry! (:main-screen app) message))
+  app)
+
+(defmethod handle-request :log-app [{:keys [type message]} app]
+  (fx/run!
+    (main-gui/add-app-log-entry! (:main-screen app) message))
+  app)
+
 (defn file-pages-seq [app]
   (->> app
        (:pages)
@@ -308,23 +355,21 @@
 (defmethod handle-request :build [event app]
   (do-with-saved-project app "build"
                          (fn [app]
-                           (app/build-working-dir (:project app))
-                           app)))
+                           (start-job app "Build" #(app/build-working-dir app)))))
 
 (defmethod handle-request :run [event app]
   (do-with-saved-project app "run"
                          (fn [app]
-                           (let [run-result (app/run-learning (:project app))]
-                             (fx/run! (main-gui/add-dm-log-entry! (:main-screen app) (:out run-result)))
-                             app))))
+                           (start-job app "Run" #(app/run-learning app))
+                           )))
 
 (defmethod handle-request :build-run [event app]
   (do-with-saved-project app "build and run"
                          (fn [app]
-                           (app/build-working-dir (:project app))
-                           (let [run-result (app/run-learning (:project app))]
-                             (fx/run! (main-gui/add-dm-log-entry! (:main-screen app) (:out run-result)))
-                             app))))
+                           (start-job app "Build & Run"
+                                      #(do
+                                        (app/build-working-dir app)
+                                        (app/run-learning app))))))
 
 (defmulti handle-fs-change (fn [[event file time] app]
                              event))
@@ -384,6 +429,14 @@
             (dissoc-in [:pages file-key]))
         ))))
 
+(defn handle-exception [app e]
+  (let [writer (StringWriter.)]
+    (binding [*out* writer]
+      (println "An application error occured:")
+      (stacktrace/print-cause-trace e))
+    (fx/run!
+      (main-gui/add-app-log-entry! (:screen app) (str writer)))))
+
 (defn main-scene [stage]
   (let [app (->
               (init-app stage)
@@ -400,12 +453,7 @@
                   (:fs-changes app) ([change]
                                       (handle-fs-change change app)))
             (catch Exception e
-              (let [writer (StringWriter.)]
-                (binding [*out* writer]
-                  (println "An application error occured:")
-                  (stacktrace/print-cause-trace e))
-                (main-gui/add-app-log-entry! (:screen app) (str writer)))
-              app
+              (handle-exception app e)
               )))))
 
     (Scene. (main-gui/get-widget (:main-screen app)))))

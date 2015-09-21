@@ -11,7 +11,8 @@
             [urdmi.prolog :as prolog]
             [clojure.string :as string]
             [me.raynes.fs :as fs]
-            [urdmi.core :as core])
+            [urdmi.core :as core]
+            [clojure.core.async :as async])
   (:import (urdmi.core App Project)
            (java.io File Reader Writer)
            (java.util Date)))
@@ -265,10 +266,15 @@
                       (assoc :fs-sync {})))
   )
 
-(defn build-working-dir [^Project p]
-  (rebuild-working-dir (:plugin p) p)
+(defn build-working-dir [^App app]
+  (let [p (:project app) ]
+    (rebuild-working-dir (:plugin p) p))
   )
-
-(defn run-learning [^Project p]
-  (run (:plugin p) p)
-  )
+;todo: pass channel/writer/outputstream to the plugin, so it can provide async log updates
+; in addition to sync return value
+(defn run-learning [^App app]
+  (let [p (:project app)
+        result (run (:plugin p) p)]
+    (generate-output (:plugin p) p result)
+    (async/put! (:ui-requests app) {:type :log-datamining :message (:out result)})
+    result))

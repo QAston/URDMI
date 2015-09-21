@@ -14,9 +14,9 @@
 
 (defprotocol Plugin
   "All urdmi plugins must implement this protocol"
-  (run [this project] "Run datamining engine associated to this plugin. Updates output menu entries.")
-  (generate-output [this run-result])
-  (rebuild-working-dir [this project] "Rebuilds working directory of a datamining app")
+  (run [this project] "Run datamining engine associated to this plugin. Runs on a background thread, which can be interrupted to stop the job.")
+  (generate-output [this project run-result] "Update output project directory with analysis of run-result. Runs on a background thread, which can be interrupted to stop the job.")
+  (rebuild-working-dir [this project] "Rebuilds working directory of a datamining app. Runs on a background thread, which can be interrupted to stop the job.")
   (get-parser-context [this])
   )
 
@@ -152,3 +152,6 @@
 
 (defn get-relations [^Project p]
   (map second (get-in p (dir-keys relations-keyname :dir))))
+
+(defn thread-interruped?[]
+  (Thread/interrupted))

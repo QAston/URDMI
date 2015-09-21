@@ -100,7 +100,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
           (fs/mkdir workdir-dir)
           (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))
                 parser-context (prolog/aleph-parser-context)]
-            (build-working-dir (:project app))
+            (build-working-dir app)
             (fact "pracownik.f"
                   (with-open [rdr (io/reader (io/file workdir-dir "pracownik.f"))]
                     (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
@@ -133,8 +133,8 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
           (core/move-file workdir-dir backup-working-dir)
           (fs/mkdir workdir-dir)
           (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))]
-            (build-working-dir (:project app))
-            (let [result (run-learning (:project app))]
+            (build-working-dir app)
+            (let [result (run-learning  app)]
               (:exit result) => 0
               (string/blank? (:out result)) => false))
           (finally
@@ -146,7 +146,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
       (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))
             parser-context (prolog/ace-parser-context)
             workdir-dir (core/get-working-dir (:project app))]
-        (build-working-dir (:project app))
+        (build-working-dir app)
         (fact "pracownik.s"
               (with-open [rdr (io/reader (io/file workdir-dir "pracownik.s"))]
                 (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
@@ -170,8 +170,8 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 
 (fact "build project generates expected working_dir output for ace"
       (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
-        (build-working-dir (:project app))
-        (let [result (run-learning (:project app))]
+        (build-working-dir app)
+        (let [result (run-learning app)]
           (:exit result) => 0
           (string/blank? (:out result)) => false)))
 
