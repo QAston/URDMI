@@ -263,7 +263,8 @@
 (defn init-app []
   (register-plugins (->
                       (->App nil {})
-                      (assoc :fs-sync {})))
+                      (assoc :fs-sync {})
+                      (assoc :ui-requests (async/chan))))
   )
 
 (defn build-working-dir [^App app]

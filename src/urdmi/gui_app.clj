@@ -2,65 +2,22 @@
   (:use clojure.core.incubator)
   (:require [clojure.core.async :refer [chan go <! >! alt! put!]]
             [urdmi.core :as core]
-            [clojure.zip :as zip]
             [urdmi.gui.relation :as relation-gui]
             [urdmi.gui.code-editor :as code-editor-gui]
+            [urdmi.gui.empty :as empty-gui]
             [urdmi.gui.main :as main-gui]
-            [urdmi.prolog :as prolog]
             [urdmi.app :as app]
             [fx-clj.core :as fx]
             [me.raynes.fs :as fs]
             [urdmi.gui :as gui]
             [urdmi.gui.dialogs :as dialogs]
+            [urdmi.gui.relation-list :as relation-list-gui]
             [clojure.stacktrace :as stacktrace]
             [urdmi.watch-fs :as watch-fs])
   (:import (urdmi.core Project)
            (java.io StringWriter File)
-           (javafx.scene.layout Pane)
            (javafx.scene Scene)
-           (javafx.stage Stage)
-           (java.util.concurrent FutureTask)))
-
-(defn- unwrap-urdmi-edit [ast]
-  (when (and (= (:type ast) :ast-functor) (= "urdmi_edit" (:name (first (:children ast)))))
-    (:name (second (:children ast)))))
-
-(defn- rel-ast-to-table [parser-context rel-asts]
-  (->> rel-asts
-       (mapv (fn [ast]
-               (->> ast
-                    :children
-                    rest
-                    (mapv (fn [ast]
-                            (if-let [unwrapped (unwrap-urdmi-edit ast)]
-                              unwrapped
-                              (let [writer (StringWriter.)]
-                                (prolog/pretty-print ast parser-context writer)
-                                (.toString writer))))))))))
-
-(defn relations-model-to-viewmodel [parser-context rel]
-  (let [rel-asts (:ast rel)
-        [rel-name rel-arity] (:rel rel)]
-    {:name  rel-name
-     :arity rel-arity
-     :items (rel-ast-to-table parser-context rel-asts)}
-    ))
-
-(defn relations-viewmodel-to-model [parser-context viewmodel]
-  {:name (str (:name viewmodel) "_" (:arity viewmodel) ".pl")
-   :rel  [(:name viewmodel) (:arity viewmodel)]
-   :ast  (let [items (:items viewmodel)
-               head {:type :ast-atom :name (:name viewmodel)}]
-           (for [row items]
-             {:type     :ast-functor
-              :children (doall
-                          (cons head
-                                (for [item row
-                                      :let [term (prolog/parse-single-term parser-context item)]]
-                                  (if term
-                                    term
-                                    {:type     :ast-functor
-                                     :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))}))})
+           (javafx.stage Stage)))
 
 (defn generate-menu-viewmodel [^Project p]
   (let [vm (for [file (app/get-model-file-keys p true)]
@@ -74,58 +31,14 @@
              )]
     (into [{:name "Project" :path []}] vm)))
 
-(deftype RelationPage [widget parser-context]
-  gui/ContentPage
-  (container-node [this]
-    (gui/get-node widget))
-  (show-data [this project data-key]
-    (let [rel-view-model (relations-model-to-viewmodel parser-context
-                                                       (get-in project (apply core/dir-keys data-key)))]
-      (fx/run! (gui/set-data! widget rel-view-model data-key))))
-  (read-data [this]
-    (relations-viewmodel-to-model parser-context (gui/get-data widget))
-    ))
-
-(defn make-relation-page [app]
-  (let [parser-context (app/plugin-parser-context app)]
-    (->RelationPage (relation-gui/make-widget parser-context (:ui-requests app)) parser-context)))
-
-(deftype CodeEditorPage [widget]
-  gui/ContentPage
-  (container-node [this]
-    (gui/get-node widget))
-  (show-data [this project data-key]
-    (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key))) data-key))
-  (read-data [this]
-    {:text (delay (gui/get-data widget))}
-    ))
-
-(defn make-code-editor-page [app]
-  (->CodeEditorPage (code-editor-gui/make-widget (:ui-requests app))))
-
-(extend-type Pane
-  gui/ContentPage
-  (container-node [this]
-    this)
-  (show-data [this project key]
-    nil)
-  (read-data [this]
-    nil))
-
-(def empty-page
-  (Pane.))
-
-(defn make-relation-list-page []
-  empty-page)
-
 ;cascading dispatch
 (defmulti generate-page (fn [cascade-key orig-key app]
                           cascade-key))
 
 (defmethod generate-page [:relations] [cascade-key orig-key app]
   (if (= cascade-key orig-key)
-    (make-relation-list-page)
-    (make-relation-page app)))
+    (relation-list-gui/make-page)
+    (relation-gui/make-page (:ui-requests app) (app/plugin-parser-context app))))
 
 (defmethod generate-page :default [cascade-key orig-key app]
   (generate-page (vec (butlast cascade-key)) orig-key app))
@@ -134,8 +47,8 @@
   (let [proj (:project app)
         data (get-in proj (apply core/dir-keys orig-key))]
     (if-not (:text data)
-      empty-page
-      (make-code-editor-page app)
+      empty-gui/empty-page
+      (code-editor-gui/make-page (:ui-requests app))
       )))
 
 (defn init-app [stage]

@@ -4,7 +4,8 @@
             [urdmi.prolog :as prolog]
             [clojure.string :as string]
             [urdmi.util :as util]
-            [urdmi.gui :as gui])
+            [urdmi.gui :as gui]
+            [urdmi.core :as core])
   (:import
     (javafx.scene.layout Region VBox Priority HBox)
     (javafx.geometry Pos Insets)
@@ -469,6 +470,62 @@
       items-list
       relation-edit-widget
       shown-data-key)))
+
+(defn- unwrap-urdmi-edit [ast]
+  (when (and (= (:type ast) :ast-functor) (= "urdmi_edit" (:name (first (:children ast)))))
+    (:name (second (:children ast)))))
+
+(defn- rel-ast-to-table [parser-context rel-asts]
+  (->> rel-asts
+       (mapv (fn [ast]
+               (->> ast
+                    :children
+                    rest
+                    (mapv (fn [ast]
+                            (if-let [unwrapped (unwrap-urdmi-edit ast)]
+                              unwrapped
+                              (let [writer (StringWriter.)]
+                                (prolog/pretty-print ast parser-context writer)
+                                (.toString writer))))))))))
+
+(defn relations-model-to-viewmodel [parser-context rel]
+  (let [rel-asts (:ast rel)
+        [rel-name rel-arity] (:rel rel)]
+    {:name  rel-name
+     :arity rel-arity
+     :items (rel-ast-to-table parser-context rel-asts)}
+    ))
+
+(defn relations-viewmodel-to-model [parser-context viewmodel]
+  {:name (str (:name viewmodel) "_" (:arity viewmodel) ".pl")
+   :rel  [(:name viewmodel) (:arity viewmodel)]
+   :ast  (let [items (:items viewmodel)
+               head {:type :ast-atom :name (:name viewmodel)}]
+           (for [row items]
+             {:type     :ast-functor
+              :children (doall
+                          (cons head
+                                (for [item row
+                                      :let [term (prolog/parse-single-term parser-context item)]]
+                                  (if term
+                                    term
+                                    {:type     :ast-functor
+                                     :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))}))})
+
+(deftype RelationPage [widget parser-context]
+  gui/ContentPage
+  (container-node [this]
+    (gui/get-node widget))
+  (show-data [this project data-key]
+    (let [rel-view-model (relations-model-to-viewmodel parser-context
+                                                       (get-in project (apply core/dir-keys data-key)))]
+      (fx/run! (gui/set-data! widget rel-view-model data-key))))
+  (read-data [this]
+    (relations-viewmodel-to-model parser-context (gui/get-data widget))
+    ))
+
+(defn make-page [ui-requests parser-context]
+  (->RelationPage (make-widget parser-context ui-requests) parser-context))
 
 (comment
   (require '[clojure.java.io :as io])

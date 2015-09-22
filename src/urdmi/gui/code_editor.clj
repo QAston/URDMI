@@ -3,7 +3,8 @@
             [fx-clj.core :as fx]
             [clojure.string :as string]
             [urdmi.util :as util]
-            [urdmi.gui :as gui])
+            [urdmi.gui :as gui]
+            [urdmi.core :as core])
   (:import [org.fxmisc.richtext CodeArea LineNumberFactory]
            (javafx.scene.control ContextMenu)
            (javafx.scene.input KeyCode KeyCodeCombination)
@@ -78,6 +79,19 @@
         shown-data-key (atom nil)]
     (register-data-change-listeners >ui-requests text-property shown-data-key)
     (->CodeEditorWidget widget shown-data-key)))
+
+(deftype CodeEditorPage [widget]
+  gui/ContentPage
+  (container-node [this]
+    (gui/get-node widget))
+  (show-data [this project data-key]
+    (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key))) data-key))
+  (read-data [this]
+    {:text (delay (gui/get-data widget))}
+    ))
+
+(defn make-page [ui-requests]
+  (->CodeEditorPage (make-widget ui-requests)))
 
 (comment
   (defn test-fn []
