@@ -51,13 +51,24 @@
       (code-editor-gui/make-page (:ui-requests app))
       )))
 
-(defmulti model-modified (fn [app cascade-key orig-key]
+; todo: this should possibly be in app layer, not here?
+; sending in a channel consumed by this layer
+; problem: could not get old-app state from that layer
+(defmulti model-modified (fn [app old-app cascade-key orig-key]
                            cascade-key))
 
-(defmethod model-modified :default [app cascade-key orig-key]
-  (model-modified app (vec (butlast cascade-key)) orig-key))
+(defmethod model-modified :default [app old-app cascade-key orig-key]
+  (model-modified app old-app (vec (butlast cascade-key)) orig-key))
 
-(defmethod model-modified [] [app cascade-key orig-key]
+(defmethod model-modified [:settings "project.edn"] [app old-app cascade-key orig-key]
+  ; pass old app too, so you can know if something changed
+  ; check if working dir setting changed
+  ; if currently opened working dir page - close
+  ; unload all the model files
+  ; load all the new model files
+  app)
+
+(defmethod model-modified [] [app old-app cascade-key orig-key]
   app)
 
 (defn init-app [stage]
@@ -171,12 +182,13 @@
     app))
 
 (defn reload-model-page [app key]
-  (let [file (core/name-keys-to-file (:project app) key)
+  (let [old-app app
+        file (core/name-keys-to-file (:project app) key)
         app (app/load-file-to-model app file)]
     (if (get-in app [:pages key])
       (-> app
           (revert-model-page key)
-          (model-modified key key))
+          (model-modified old-app key key))
       app)))
 
 (defmethod handle-request :revert-file [{:keys [type]} app]
@@ -186,7 +198,8 @@
   (reload-model-page app (:current-page-key app)))
 
 (defn save-model-page [app page-key]
-  (let [app-page (get-in app [:pages page-key])
+  (let [old-app app
+        app-page (get-in app [:pages page-key])
         page (:page app-page)
         old-page-data (get-in (:project app) (apply core/dir-keys page-key))
         page-data (merge old-page-data
@@ -202,7 +215,7 @@
                                        (-> app
                                            (app/delete-model-page page-key)
                                            (dissoc-in [:pages page-key])
-                                           (model-modified page-key page-key))
+                                           (model-modified old-app page-key page-key))
                                        app))
         proj (-> (:project app)
                  (dissoc-in (apply core/dir-keys page-key))
@@ -216,7 +229,7 @@
                 (update-current-page-if-needed)
                 ;save is before delete, so that on crash the file is preserved
                 (app/save-model-to-file new-page-key)
-                (model-modified new-page-key new-page-key)
+                (model-modified old-app new-page-key new-page-key)
                 )
         ]
     (fx/run!
@@ -305,7 +318,8 @@
                              event))
 
 (defmethod handle-fs-change :create [[event file time] app]
-  (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
+  (let [old-app app
+        file-key (core/file-to-name-keys (:project app) (fs/file file))]
     (if (get-in (:project app) (apply core/dir-keys file-key))
       app
       (do
@@ -313,7 +327,7 @@
           (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
         (-> app
             (app/load-file-to-model file)
-            (model-modified file-key file-key))
+            (model-modified old-app file-key file-key))
         ))))
 
 (defn- is-page-modified-or-current [app key]
@@ -349,7 +363,8 @@
     app))
 
 (defmethod handle-fs-change :delete [[event file time] app]
-  (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
+  (let [old-app app
+        file-key (core/file-to-name-keys (:project app) (fs/file file))]
     (if-not (get-in (:project app) (apply core/dir-keys file-key))
       app
       (do
@@ -359,7 +374,7 @@
             (close-page-if-open file-key)
             (app/delete-model-page file-key)
             (dissoc-in [:pages file-key])
-            (model-modified file-key file-key))
+            (model-modified old-app file-key file-key))
         ))))
 
 (defn handle-exception [app e]
