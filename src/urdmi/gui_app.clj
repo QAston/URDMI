@@ -51,6 +51,15 @@
       (code-editor-gui/make-page (:ui-requests app))
       )))
 
+(defmulti model-modified (fn [app cascade-key orig-key]
+                           cascade-key))
+
+(defmethod model-modified :default [app cascade-key orig-key]
+  (model-modified app (vec (butlast cascade-key)) orig-key))
+
+(defmethod model-modified [] [app cascade-key orig-key]
+  app)
+
 (defn init-app [stage]
   (let [app (app/init-app)
         pages {}
@@ -153,7 +162,9 @@
     app))
 
 (defn revert-model-page [app page-key]
-  (let [app (assoc-in app [:pages page-key :modified] false)]
+  (let [app (-> app
+                (assoc-in [:pages page-key :modified] false)
+                )]
     (gui/show-data (get-in app [:pages page-key :page]) (:project app) page-key)
     (fx/run! (update-file-menu-for-page! app page-key)
              (update-main-menu-for-current-page! app))
@@ -163,7 +174,9 @@
   (let [file (core/name-keys-to-file (:project app) key)
         app (app/load-file-to-model app file)]
     (if (get-in app [:pages key])
-      (revert-model-page app key)
+      (-> app
+          (revert-model-page key)
+          (model-modified key key))
       app)))
 
 (defmethod handle-request :revert-file [{:keys [type]} app]
@@ -186,20 +199,24 @@
 
         delete-old-page-if-renamed (fn [app]
                                      (if-not (= page-key new-page-key)
-                                       (app/delete-model-page app page-key)
+                                       (-> app
+                                           (app/delete-model-page page-key)
+                                           (dissoc-in [:pages page-key])
+                                           (model-modified page-key page-key))
                                        app))
         proj (-> (:project app)
                  (dissoc-in (apply core/dir-keys page-key))
                  (assoc-in (apply core/dir-keys new-page-key) page-data))
         app (-> app
-                (dissoc-in [:pages page-key])
-                (assoc-in [:pages page-key] (-> app-page
-                                                (assoc :modified false)))
+                (assoc-in [:pages new-page-key]
+                          (-> app-page
+                              (assoc :modified false)))
                 (assoc :project proj)
                 (delete-old-page-if-renamed)
                 (update-current-page-if-needed)
                 ;save is before delete, so that on crash the file is preserved
                 (app/save-model-to-file new-page-key)
+                (model-modified new-page-key new-page-key)
                 )
         ]
     (fx/run!
@@ -294,7 +311,9 @@
       (do
         (fx/run!
           (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
-        (app/load-file-to-model app file)
+        (-> app
+            (app/load-file-to-model file)
+            (model-modified file-key file-key))
         ))))
 
 (defn- is-page-modified-or-current [app key]
@@ -339,7 +358,8 @@
         (-> app
             (close-page-if-open file-key)
             (app/delete-model-page file-key)
-            (dissoc-in [:pages file-key]))
+            (dissoc-in [:pages file-key])
+            (model-modified file-key file-key))
         ))))
 
 (defn handle-exception [app e]
