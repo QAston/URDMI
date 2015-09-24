@@ -26,7 +26,8 @@
            (org.controlsfx.validation ValidationSupport)
            (javafx.beans.property SimpleStringProperty)
            (org.controlsfx.validation.decoration StyleClassValidationDecoration)
-           (org.controlsfx.control SegmentedButton)))
+           (org.controlsfx.control SegmentedButton PropertySheet$Item)
+           (org.controlsfx.property.editor PropertyEditor DefaultPropertyEditorFactory)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -69,11 +70,11 @@
   pred is a (fn [value] (Boolean.))"
   [^ValidationSupport validation ^Control control ^IFn pred ^String message]
   (.registerValidator validation control false (Validator/createPredicateValidator
-                                                (reify Predicate
-                                                  (test [this val]
-                                                    (boolean (pred val))))
-                                                message
-                                                Severity/ERROR)))
+                                                 (reify Predicate
+                                                   (test [this val]
+                                                     (boolean (pred val))))
+                                                 message
+                                                 Severity/ERROR)))
 
 ; property as clojure ref
 (comment @(fx/property-ref node :text))
@@ -115,9 +116,9 @@
   ([]
    (FXCollections/observableArrayList))
   ([^Collection col]
-  (FXCollections/observableArrayList col)))
+   (FXCollections/observableArrayList col)))
 
-(defn ctrl-key-accelerator[^KeyCode code]
+(defn ctrl-key-accelerator [^KeyCode code]
   (KeyCodeCombination. code (into-array (list KeyCodeCombination/SHORTCUT_DOWN))))
 
 (defn on-text-field-confirmed
@@ -125,18 +126,18 @@
   textfield-fn is (fn [text-field])"
   [^TextField text-field textfield-fn]
   (on-changed (.focusedProperty text-field)
-                  (fn [observable old new]
-                    (when-not new
-                      (textfield-fn text-field))))
+              (fn [observable old new]
+                (when-not new
+                  (textfield-fn text-field))))
   (.setOnAction text-field (reify EventHandler
                              (handle [this e]
                                (textfield-fn text-field)))))
 
 (defn loose-bind [src-property ^WritableValue target-property]
   (on-changed src-property
-                  (fn [obs old new]
-                    (when (not= old new)
-                      (.setValue target-property new)))))
+              (fn [obs old new]
+                (when (not= old new)
+                  (.setValue target-property new)))))
 
 (defn str-to-file [^File base-dir s]
   (let [^File file (io/file s)]
@@ -151,30 +152,30 @@
         absolute-btn (ToggleButton. "Absolute")
         absolute-relative-toggle (SegmentedButton.
                                    (observable-list (list relative-btn
-                                                              absolute-btn)))
+                                                          absolute-btn)))
         ]
     (on-text-field-confirmed text-field (fn [text-field]
-                                              (.setValue file-str (.getText text-field))))
+                                          (.setValue file-str (.getText text-field))))
     (loose-bind file-str (.textProperty text-field))
     (on-changed (.. absolute-relative-toggle
-                        getToggleGroup
-                        selectedToggleProperty)
-                    (fn [obs old type]
-                      (let [file ^File (io/file (.getValue file-str))
-                            new-file (if (= type relative-btn)
-                                       (if (fs/absolute? file)
-                                         (core/relativize-path base-dir file)
-                                         file)
-                                       (str-to-file base-dir file))]
-                        (.setValue file-str (str new-file))
-                        )))
+                    getToggleGroup
+                    selectedToggleProperty)
+                (fn [obs old type]
+                  (let [file ^File (io/file (.getValue file-str))
+                        new-file (if (= type relative-btn)
+                                   (if (fs/absolute? file)
+                                     (core/relativize-path base-dir file)
+                                     file)
+                                   (str-to-file base-dir file))]
+                    (.setValue file-str (str new-file))
+                    )))
     (on-changed file-str
-                    (fn [obs old new]
-                      (when (not= old new)
-                        (let [file (io/file new)]
-                          (if (fs/absolute? file)
-                            (.setSelected absolute-btn true)
-                            (.setSelected relative-btn true))))))
+                (fn [obs old new]
+                  (when (not= old new)
+                    (let [file (io/file new)]
+                      (if (fs/absolute? file)
+                        (.setSelected absolute-btn true)
+                        (.setSelected relative-btn true))))))
     (doto (fx/h-box {:spacing 8}
                     (fx/button {:text "Browse" :on-action browsing-fn})
                     (doto text-field
@@ -185,22 +186,80 @@
 (defn make-directory-select-widget [^File relative-to file-str-property description ^ValidationSupport validation]
   (let [text-field (fx/text-field {})]
     (validate-control validation text-field
-                          (fn [value]
-                            (let [file (str-to-file relative-to value)]
-                              (and (.exists file) (.isDirectory file))
-                              ))
-                          "You must select an existing directory.")
+                      (fn [value]
+                        (let [file (str-to-file relative-to value)]
+                          (and (.exists file) (.isDirectory file))
+                          ))
+                      "You must select an existing directory.")
     (make-fs-select-widget relative-to file-str-property text-field
                            (fn [e]
                              (let [file (.showDialog
                                           (doto (DirectoryChooser.)
-                                            (.setInitialDirectory (str-to-file relative-to (.getValue file-str-property)))
+                                            (.setInitialDirectory (let [dir (str-to-file relative-to (.getValue file-str-property))]
+                                                                    (if (and (.exists dir) (.isDirectory dir))
+                                                                      dir
+                                                                      relative-to)))
                                             (.setTitle description)
                                             )
                                           nil)]
                                (when file
                                  (.setValue file-str-property (str file)))
                                )))))
+
+(deftype DirPropertyItemEditor [widget ^String name obj-property]
+  PropertyEditor
+  (getEditor [this]
+    widget)
+  PropertySheet$Item
+  (getType [this]
+    String)
+  (getCategory [this])
+  (getName [this]
+    name)
+  (getDescription [this])
+  (getValue [this]
+    (.getValue obj-property))
+  (setValue [this new-val]
+    (.setValue obj-property new-val)))
+
+(defn make-dir-property-item-editor [^String name ^File relative-to ^ValidationSupport validation on-update-fn]
+  (let [property (SimpleStringProperty. "")
+        widget (make-directory-select-widget relative-to property (str "Select " name " location") validation)]
+
+    (on-changed property
+                (fn [obs old new]
+                  (when (not= old new)
+                    (on-update-fn))))
+    (->DirPropertyItemEditor widget name property)
+    ))
+
+(defn make-property-editor-factory []
+  (let [default-factory (DefaultPropertyEditorFactory.)]
+    (reify Callback
+      (call [this item]
+        (if (instance? PropertyEditor item)
+          item
+          (.call default-factory item))))))
+
+(def property-editor-factory (make-property-editor-factory))
+
+(deftype PropertyItem [^String name ^String description ^Class class obj-property on-update-fn editable]
+  PropertySheet$Item
+  (getType [this]
+    class)
+  (getCategory [this])
+  (getName [this]
+    name)
+  (getDescription [this]
+    description)
+  (getValue [this]
+    (.getValue obj-property))
+  (setValue [this new-val]
+    (when (not= (.getValue this) new-val)
+      (.setValue obj-property new-val)
+      (on-update-fn)))
+  (isEditable [this]
+    (boolean editable)))
 
 ;(fx/sandbox #(make-directory-select-widget (fs/file ".") (SimpleStringProperty. "") "Select working directory dir" (validation-support (StyleClassValidationDecoration.))))
 

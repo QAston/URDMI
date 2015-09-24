@@ -42,7 +42,7 @@
     (relation-gui/make-page (:ui-requests app) (app/plugin-parser-context app))))
 
 (defmethod generate-page [:settings "project.edn"] [cascade-key orig-key app]
-  (project-settings-gui/make-page (:ui-requests app)))
+  (project-settings-gui/make-page (:ui-requests app) (:project app)))
 
 (defmethod generate-page :default [cascade-key orig-key app]
   (generate-page (vec (butlast cascade-key)) orig-key app))
@@ -401,6 +401,7 @@
 
 (defn handle-exception [app e]
   (let [writer (StringWriter.)]
+    (println "An application error occured:")
     (stacktrace/print-cause-trace e)
     (binding [*out* writer]
       (println "An application error occured:")

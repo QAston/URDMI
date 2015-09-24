@@ -7,44 +7,18 @@
             [clojure.java.io :as io])
   (:import (org.controlsfx.control PropertySheet PropertySheet$Mode PropertySheet$Item SegmentedButton)
            (javafx.beans.property SimpleStringProperty SimpleObjectProperty SimpleBooleanProperty)
-           (java.io File)))
+           (java.io File)
+           (java.util Optional)
+           (org.controlsfx.validation.decoration StyleClassValidationDecoration)))
 
 
-(defn make-widget [ui-requests properties-list]
+(defn make-widget [properties-list]
   (doto (PropertySheet. properties-list)
     (.setModeSwitcherVisible false)
     (.setSearchBoxVisible false)
     (.setMode PropertySheet$Mode/NAME)
+    (.setPropertyEditorFactory gui/property-editor-factory)
     ))
-
-(defn make-item [[key value]]
-  (reify PropertySheet$Item
-    (getType [this])
-    (getCategory [this])
-    (getName [this])
-    (getDescription [this])
-    (getValue [this])
-    (setValue [this new-val])
-    (isEditable [this])
-    (getPropertyEditorClass [this])))
-
-(deftype StringItem [^String name ^String description ^Class class obj-property on-update-fn]
-  PropertySheet$Item
-  (getType [this]
-    class)
-  (getCategory [this])
-  (getName [this]
-    name)
-  (getDescription [this]
-    description)
-  (getValue [this]
-    (.getValue obj-property))
-  (setValue [this new-val]
-    (when (not= (.getValue this) new-val)
-      (.setValue obj-property new-val)
-      (on-update-fn)))
-  (isEditable [this]
-    true))
 
 (def fields [:active-plugin :working-dir])
 
@@ -63,22 +37,22 @@
             :working-dir   (io/file (.getValue (:working-dir properties-map)))
             }}))
 
-(defn make-page [>ui-requests]
+(defn make-page [>ui-requests project]
   (let [current-page (atom nil)
         on-update-fn (fn []
                        (when-let [key @current-page]
                          (async/put! >ui-requests {:type     :modified-page
                                                    :data-key key})))
-        properties-map {:active-plugin (->StringItem "Active Plugin"
-                                                     "Curently active dataminging plugin"
-                                                     String
-                                                     (SimpleObjectProperty. "")
-                                                     on-update-fn)
-                        :working-dir   (->StringItem "Working directory location"
-                                                     "Directory where giles for the datamining engine will be stored"
-                                                     String
-                                                     (SimpleObjectProperty. (io/file ""))
-                                                     on-update-fn)}
+        properties-map {:active-plugin (gui/->PropertyItem "Active Plugin"
+                                                           "Curently active dataminging plugin"
+                                                           String
+                                                           (SimpleObjectProperty. "")
+                                                           on-update-fn
+                                                           false)
+                        :working-dir (gui/make-dir-property-item-editor  "Working directory"
+                                                                         (:project-dir project)
+                                                                         (gui/validation-support (StyleClassValidationDecoration.))
+                                                                         on-update-fn)}
         properties-list (gui/observable-list (map properties-map fields))
-        widget (make-widget >ui-requests properties-list)]
+        widget (make-widget properties-list)]
     (->ProjectSettingsPage widget properties-map current-page)))
