@@ -10,6 +10,7 @@
             [fx-clj.core :as fx]
             [me.raynes.fs :as fs]
             [urdmi.gui :as gui]
+            [urdmi.gui.project-settings :as project-settings-gui]
             [urdmi.gui.dialogs :as dialogs]
             [urdmi.gui.relation-list :as relation-list-gui]
             [clojure.stacktrace :as stacktrace]
@@ -40,6 +41,9 @@
     (relation-list-gui/make-page)
     (relation-gui/make-page (:ui-requests app) (app/plugin-parser-context app))))
 
+(defmethod generate-page [:settings "project.edn"] [cascade-key orig-key app]
+  (project-settings-gui/make-page (:ui-requests app)))
+
 (defmethod generate-page :default [cascade-key orig-key app]
   (generate-page (vec (butlast cascade-key)) orig-key app))
 
@@ -60,13 +64,21 @@
 (defmethod model-modified :default [app old-app cascade-key orig-key]
   (model-modified app old-app (vec (butlast cascade-key)) orig-key))
 
+(declare remove-pages)
+(declare initialize-watching-fs)
+(declare load-pages)
+
 (defmethod model-modified [:settings "project.edn"] [app old-app cascade-key orig-key]
-  ; pass old app too, so you can know if something changed
-  ; check if working dir setting changed
-  ; if currently opened working dir page - close
-  ; unload all the model files
-  ; load all the new model files
-  app)
+  (let [old-project (:project app)
+        project (:project old-app)]
+    (if (not= (core/get-working-dir old-project) (core/get-working-dir project))
+      (-> app
+          (remove-pages (->> (:project app)
+                             (app/get-model-file-keys)
+                             (filter #(= :working-dir (first %)))))
+          (initialize-watching-fs)
+          (load-pages (core/dir-seq (:project app) [:working-dir])))
+      app)))
 
 (defmethod model-modified [] [app old-app cascade-key orig-key]
   app)
@@ -144,6 +156,12 @@
              (update-main-menu-for-current-page! app))
     app))
 
+(defn initialize-watching-fs [app]
+  (when-let [c (get app :fs-changes)]
+    (watch-fs/close! c))
+  (-> app
+      (assoc :fs-changes (watch-fs/changes-chan (app/get-model-dirs (:project app))))))
+
 (defn load-project [app dir]
   (let [app (-> app
                 (switch-page [])
@@ -154,10 +172,8 @@
         files-view-model (generate-menu-viewmodel proj)]
     (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
              (update-main-menu-for-current-page! app))
-    (when-let [c (get app :fs-changes)]
-      (watch-fs/close! c))
     (-> app
-        (assoc :fs-changes (watch-fs/changes-chan (app/get-model-dirs (:project app))))
+        (initialize-watching-fs)
         (switch-page []))))
 
 (defmulti handle-request (fn [{:keys [type data]} app]
@@ -229,8 +245,7 @@
                 (update-current-page-if-needed)
                 ;save is before delete, so that on crash the file is preserved
                 (app/save-model-to-file new-page-key)
-                (model-modified old-app new-page-key new-page-key)
-                )
+                (model-modified old-app new-page-key new-page-key))
         ]
     (fx/run!
       (main-gui/update-file-viewmodel!
@@ -317,18 +332,22 @@
 (defmulti handle-fs-change (fn [[event file time] app]
                              event))
 
+(defn load-model-page [app file]
+  (let [file-key (core/file-to-name-keys (:project app) file)]
+    (fx/run!
+      (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
+    (-> app
+        (app/load-file-to-model file)
+        (model-modified app file-key file-key))))
+
+(defn load-pages [app files]
+  (reduce load-model-page app files))
+
 (defmethod handle-fs-change :create [[event file time] app]
-  (let [old-app app
-        file-key (core/file-to-name-keys (:project app) (fs/file file))]
+  (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
     (if (get-in (:project app) (apply core/dir-keys file-key))
       app
-      (do
-        (fx/run!
-          (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
-        (-> app
-            (app/load-file-to-model file)
-            (model-modified old-app file-key file-key))
-        ))))
+      (load-model-page app file-key))))
 
 (defn- is-page-modified-or-current [app key]
   (or (= key (:current-page-key app))
@@ -362,28 +381,33 @@
     (switch-page app [])
     app))
 
+(defn remove-model-page [app file-key]
+  (fx/run!
+    (main-gui/remove-file! (:main-screen app) file-key))
+  (-> app
+      (close-page-if-open file-key)
+      (app/delete-model-page file-key)
+      (dissoc-in [:pages file-key])
+      (model-modified app file-key file-key)))
+
+(defn remove-pages [app file-keys]
+  (reduce remove-model-page app file-keys))
+
 (defmethod handle-fs-change :delete [[event file time] app]
-  (let [old-app app
-        file-key (core/file-to-name-keys (:project app) (fs/file file))]
+  (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
     (if-not (get-in (:project app) (apply core/dir-keys file-key))
       app
-      (do
-        (fx/run!
-          (main-gui/remove-file! (:main-screen app) file-key))
-        (-> app
-            (close-page-if-open file-key)
-            (app/delete-model-page file-key)
-            (dissoc-in [:pages file-key])
-            (model-modified old-app file-key file-key))
-        ))))
+      (remove-model-page app file-key))))
 
 (defn handle-exception [app e]
   (let [writer (StringWriter.)]
+    (stacktrace/print-cause-trace e)
     (binding [*out* writer]
       (println "An application error occured:")
       (stacktrace/print-cause-trace e))
     (fx/run!
-      (main-gui/add-app-log-entry! (:screen app) (str writer)))))
+      (main-gui/add-app-log-entry! (:main-screen app) (str writer)))
+    app))
 
 (defn main-scene [stage]
   (let [app (->

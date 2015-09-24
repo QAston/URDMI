@@ -6,17 +6,14 @@
             [clojure.zip :as zip]
             [clojure.java.io :as io])
   (:import
-    (javafx.scene.layout AnchorPane Region VBox Priority HBox StackPane)
+    (javafx.scene.layout VBox Priority StackPane)
     (javafx.geometry Pos Insets Orientation)
-    (javafx.scene.text Font TextAlignment)
+    (javafx.scene.text Font)
     (javafx.scene.paint Color)
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)
     (javafx.scene.control TreeView TreeItem ScrollPane MenuItem Tab Button TextArea)
-    (javafx.stage FileChooser DirectoryChooser)
-    (java.io File)
-    (javafx.scene.input KeyCodeCombination KeyCode)
-    (javafx.application Platform)
+    (javafx.scene.input KeyCode)
     (org.controlsfx.control StatusBar)))
 
 (defn- build-file-menu-widget [>app-requests]
@@ -39,7 +36,8 @@
         (.selectedItemProperty)
         (gui/on-changed
           (fn [obs old ^TreeItem new]
-            (put! >app-requests {:type :switch-page :target (:path (.getValue new))}))))
+            (when new
+              (put! >app-requests {:type :switch-page :target (:path (.getValue new))})))))
     (VBox/setVgrow tree-view Priority/ALWAYS)
     {:view tree-view :items (atom {})}))
 
@@ -166,9 +164,10 @@
       (swap! (:items (.file_menu screen)) assoc new-path tree-item))))
 
 (defn remove-file! [^MainScreen screen path]
-  (let [^TreeItem item (get @(:items (.file_menu screen)) path)]
-    (swap! (:items (.file_menu screen)) dissoc path)
-    (.remove (.getChildren (.getParent item)) item)
+  (if-let [^TreeItem item (get @(:items (.file_menu screen)) path)]
+    (do
+      (swap! (:items (.file_menu screen)) dissoc path)
+      (.remove (.getChildren (.getParent item)) item))
     ))
 
 (defn set-menu-files! [^MainScreen screen files-model]
@@ -189,17 +188,17 @@
 (defn add-dm-log-entry! [^MainScreen screen text]
   ((.add-dm-log-entry screen) text))
 
-(defn start-job![^MainScreen screen name ui-requests<]
+(defn start-job! [^MainScreen screen name ui-requests<]
   (doto
     (.status-bar screen)
     (.setText (str "Job: " name))
     (.setProgress -1)
-    (.. getRightItems (add (fx/button {:text "Stop"
-                                      :on-action (fn [e]
-                                                   (put! ui-requests< {:type :stop-job}))}))))
+    (.. getRightItems (add (fx/button {:text      "Stop"
+                                       :on-action (fn [e]
+                                                    (put! ui-requests< {:type :stop-job}))}))))
   )
 
-(defn stop-job![^MainScreen screen]
+(defn stop-job! [^MainScreen screen]
   (doto
     (.status-bar screen)
     (.setText (str "Job: Idle"))

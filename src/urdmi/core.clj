@@ -155,3 +155,14 @@
 
 (defn thread-interruped?[]
   (Thread/interrupted))
+
+(defn dir-seq [^Project p dir-name-key]
+  (let [root-dir (name-keys-to-file p dir-name-key)
+        dirs (fs/iterate-dir root-dir)
+        ]
+    (loop [dirs dirs result []]
+      (if-not (seq dirs)
+        result
+        (let [[root subdirs files :as dir] (first dirs)]
+          (recur (rest dirs) (into result (map #(fs/file root %) (concat files subdirs)))))
+        ))))

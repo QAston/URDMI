@@ -183,19 +183,7 @@
   (vec (into (list (:name (zip/node zipiter))) (reverse (map :name (zip/path zipiter))))))
 
 (defn load-files [^App app dir-name-key]
-  (let [project (:project app)
-        root-dir (name-keys-to-file project dir-name-key)
-        dirs (fs/iterate-dir root-dir)
-        ]
-    (loop [dirs dirs app app]
-      (if-not (seq dirs)
-        app
-        (let [[root subdirs files :as dir] (first dirs)
-              app (reduce (fn [app fname]
-                            (load-file-to-model app (fs/file root fname))) app (concat files subdirs))
-              ]
-          (recur (rest dirs) app))
-        ))))
+  (reduce load-file-to-model app (dir-seq (:project app) dir-name-key)))
 
 (defn get-model-file-keys
   ([^Project p with-dirs]
@@ -268,7 +256,7 @@
   )
 
 (defn build-working-dir [^App app]
-  (let [p (:project app) ]
+  (let [p (:project app)]
     (rebuild-working-dir (:plugin p) p))
   )
 ;todo: pass channel/writer/outputstream to the plugin, so it can provide async log updates
