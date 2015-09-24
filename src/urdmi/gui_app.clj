@@ -83,6 +83,11 @@
 (defmethod model-modified [] [app old-app cascade-key orig-key]
   app)
 
+(defn handle-model-modified [app old-app key]
+  (when (app/plugin app)
+    (gui/model-modified (app/plugin app) (:project app) key))
+  (model-modified app old-app key key))
+
 (defn init-app [stage]
   (let [app (app/init-app)
         pages {}
@@ -120,7 +125,11 @@
                     page-data
                     (do
                       {:page     (doto
-                                   (generate-page key key app)
+
+                                   (if-let [plugin-page (when (app/plugin app)
+                                                          (gui/new-page (app/plugin app) (:project app) key (:ui-requests app)))]
+                                     plugin-page
+                                     (generate-page key key app))
                                    (gui/show-data (:project app) key))
                        :modified false}))
         app (-> app
@@ -204,7 +213,7 @@
     (if (get-in app [:pages key])
       (-> app
           (revert-model-page key)
-          (model-modified old-app key key))
+          (handle-model-modified old-app key))
       app)))
 
 (defmethod handle-request :revert-file [{:keys [type]} app]
@@ -231,7 +240,7 @@
                                        (-> app
                                            (app/delete-model-page page-key)
                                            (dissoc-in [:pages page-key])
-                                           (model-modified old-app page-key page-key))
+                                           (handle-model-modified old-app page-key))
                                        app))
         proj (-> (:project app)
                  (dissoc-in (apply core/dir-keys page-key))
@@ -245,7 +254,7 @@
                 (update-current-page-if-needed)
                 ;save is before delete, so that on crash the file is preserved
                 (app/save-model-to-file new-page-key)
-                (model-modified old-app new-page-key new-page-key))
+                (handle-model-modified old-app new-page-key))
         ]
     (fx/run!
       (main-gui/update-file-viewmodel!
@@ -338,7 +347,7 @@
       (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
     (-> app
         (app/load-file-to-model file)
-        (model-modified app file-key file-key))))
+        (handle-model-modified app file-key))))
 
 (defn load-pages [app files]
   (reduce load-model-page app files))
@@ -388,7 +397,7 @@
       (close-page-if-open file-key)
       (app/delete-model-page file-key)
       (dissoc-in [:pages file-key])
-      (model-modified app file-key file-key)))
+      (handle-model-modified app file-key)))
 
 (defn remove-pages [app file-keys]
   (reduce remove-model-page app file-keys))
@@ -407,8 +416,8 @@
       (println "An application error occured:")
       (stacktrace/print-cause-trace e))
     (fx/run!
-      (main-gui/add-app-log-entry! (:main-screen app) (str writer)))
-    app))
+      (main-gui/add-app-log-entry! (:main-screen app) (str writer))
+      app)))
 
 (defn main-scene [stage]
   (let [app (->

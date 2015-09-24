@@ -3,8 +3,10 @@
   mainly plugin loading and app init."
   (:use urdmi.core
         clojure.core.incubator)
-  (:require [urdmi.plugin.ace :as ace]
-            [urdmi.plugin.aleph :as aleph]
+  (:require [urdmi.plugin.ace.core :as ace]
+            [urdmi.plugin.ace.gui :as ace-gui]
+            [urdmi.plugin.aleph.core :as aleph]
+            [urdmi.plugin.aleph.gui :as aleph-gui]
             [clojure.java.io :as io]
             [clojure.zip :as zip]
             [clojure.edn :as edn]
@@ -25,6 +27,9 @@
 
 (defn plugin-parser-context [^App app]
   (core/get-parser-context (:plugin (:project app))))
+
+(defn plugin [^App app]
+  (:plugin (:project app)))
 
 (defmulti file-to-model (fn [cascade-key orig-key ^App app ^Reader reader]
                           cascade-key))

@@ -16,16 +16,12 @@
            (org.controlsfx.tools ValueExtractor)
            (javafx.scene.input KeyCodeCombination KeyCode)
            (javafx.event EventHandler)
-           (javafx.beans.property Property)
-           (java.util Optional)
            (javafx.scene.control ToggleButton)
-           (javafx.geometry Insets)
            (java.io File)
            (javafx.scene.layout HBox Priority)
-           (javafx.stage DirectoryChooser)
+           (javafx.stage DirectoryChooser FileChooser)
            (org.controlsfx.validation ValidationSupport)
            (javafx.beans.property SimpleStringProperty)
-           (org.controlsfx.validation.decoration StyleClassValidationDecoration)
            (org.controlsfx.control SegmentedButton PropertySheet$Item)
            (org.controlsfx.property.editor PropertyEditor DefaultPropertyEditorFactory)))
 
@@ -46,8 +42,9 @@
   (get-data [this]))
 
 (defprotocol PluginGui
-  (new-project-creation-view ^ContentPage [this app-event-in-channel] "returns a view for creating a ")
-  (new-entry-view ^ContentPage [this project entry to-app-channel] "Returns a view for editing/display of a menu entry"))
+  (new-project-creation-page [this >ui-requests] "Returns a view for creating a project using this plugin")
+  (new-page [this project key >ui-requests] "Returns a view for editing/display of a menu entry")
+  (model-modified [this project key] "A hook called after project model was modified."))
 
 (ValueExtractor/addObservableValueExtractor (reify Predicate
                                               (test [this control]
@@ -81,13 +78,6 @@
 ; lookup by id
 (comment (fx/lookup node :#id))
 (comment (load-fxml "main.fxml"))
-
-(defn set-widget-children [node children]
-  (fx/run!
-    (.. node
-        (getChildren)
-        (setAll
-          children))))
 
 (defn resize-observable-list
   "resizes given list to new-size, if needed constructs new elements
@@ -180,8 +170,7 @@
                     (fx/button {:text "Browse" :on-action browsing-fn})
                     (doto text-field
                       (HBox/setHgrow Priority/ALWAYS))
-                    absolute-relative-toggle))
-    ))
+                    absolute-relative-toggle))))
 
 (defn make-directory-select-widget [^File relative-to file-str-property description ^ValidationSupport validation]
   (let [text-field (fx/text-field {})]
@@ -206,13 +195,36 @@
                                  (.setValue file-str-property (str file)))
                                )))))
 
-(deftype DirPropertyItemEditor [widget ^String name obj-property]
+(defn make-file-select-widget [^File relative-to file-str-property description ^ValidationSupport validation validate-fn]
+  (let [text-field (fx/text-field {})]
+    (validate-control validation text-field
+                      (fn [value]
+                        (let [file (str-to-file relative-to value)]
+                          (and (.exists file) (not (.isDirectory file)) (validate-fn file))
+                          ))
+                      "You must select an existing file.")
+    (make-fs-select-widget relative-to file-str-property text-field
+                           (fn [e]
+                             (let [file (.showDialog
+                                          (doto (FileChooser.)
+                                            (.setInitialDirectory (let [dir (str-to-file relative-to (.getValue file-str-property))]
+                                                                    (if (and (.exists dir) (.exists (fs/parent dir)))
+                                                                      (fs/parent dir)
+                                                                      relative-to)))
+                                            (.setTitle description)
+                                            )
+                                          nil)]
+                               (when file
+                                 (.setValue file-str-property (str file)))
+                               )))))
+
+(deftype PropertyItemEditor [widget ^String name obj-property]
   PropertyEditor
   (getEditor [this]
     widget)
   PropertySheet$Item
   (getType [this]
-    String)
+    Object)
   (getCategory [this])
   (getName [this]
     name)
@@ -230,8 +242,17 @@
                 (fn [obs old new]
                   (when (not= old new)
                     (on-update-fn))))
-    (->DirPropertyItemEditor widget name property)
-    ))
+    (->PropertyItemEditor widget name property)))
+
+(defn make-file-property-item-editor [^String name ^File relative-to ^ValidationSupport validation validate-fn on-update-fn]
+  (let [property (SimpleStringProperty. "")
+        widget (make-file-select-widget relative-to property (str "Select " name " location") validation validate-fn)]
+
+    (on-changed property
+                (fn [obs old new]
+                  (when (not= old new)
+                    (on-update-fn))))
+    (->PropertyItemEditor widget name property)))
 
 (defn make-property-editor-factory []
   (let [default-factory (DefaultPropertyEditorFactory.)]

@@ -1,4 +1,4 @@
-(ns urdmi.plugin.ace
+(ns urdmi.plugin.ace.core
   (:require [clojure.java.shell :as shell]
             [clojure.java.io :as io]
             [urdmi.core :as api]

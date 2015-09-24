@@ -1,4 +1,4 @@
-(ns urdmi.plugin.aleph
+(ns urdmi.plugin.aleph.core
   (:require [clojure.java.io :as io]
             [clojure.java.shell :as shell]
             [urdmi.prolog :as prolog]

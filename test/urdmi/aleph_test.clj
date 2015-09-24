@@ -1,7 +1,7 @@
 (ns urdmi.aleph-test
   (:use midje.sweet
         urdmi.prolog-test)
-  (:require [urdmi.plugin.aleph :as aleph]
+  (:require [urdmi.plugin.aleph.core :as aleph]
             [urdmi.prolog :as prolog]))
 
 (use 'clojure.pprint)
