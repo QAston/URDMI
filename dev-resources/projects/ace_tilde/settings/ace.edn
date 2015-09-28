@@ -1,1 +1,1 @@
-{:target-rel ["pracownik" 7], :target-rel-param 6, :ace-loc "C:\\ML-Tools\\ACE-1.2.15\\windows\\bin\\ACE.exe"}
+{:ace-loc "C:\\ML-Tools\\ACE-1.2.15\\windows\\bin\\ACE.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
