@@ -4,7 +4,6 @@
             [clojure.core.async :as async]
             [urdmi.core :as core])
   (:import (org.controlsfx.control PropertySheet PropertySheet$Mode)
-           (javafx.beans.property SimpleObjectProperty)
            (org.controlsfx.validation.decoration StyleClassValidationDecoration)
            (java.io File)))
 
@@ -17,22 +16,37 @@
     (.setPropertyEditorFactory gui/property-editor-factory)
     ))
 
-(def fields [:aleph-loc :swi-prolog-loc])
-
 (deftype AlephSettingsPage [widget properties-map current-page]
   gui/ContentPage
   (container-node [this]
     widget)
-  (show-data [this project key]
-    (reset! current-page nil)
-    (let [data (:data (get-in project (apply core/dir-keys key)))]
-      (.setValue (:aleph-loc properties-map) (:aleph-loc data))
-      (.setValue (:swi-prolog-loc properties-map) (:swi-prolog-loc data)))
-    (reset! current-page key))
+  (show-data [this project key modified]
+
+    (fx/run!
+      (reset! current-page nil)
+      (let [data (:data (get-in project (apply core/dir-keys key)))
+            relations (doall (map :rel (core/get-relations project)))
+            target-rel (let [index (.indexOf relations (:target-rel data))]
+                         (when-not (= index -1)
+                           (.get relations index)))
+            {:keys [relation relation-term relation-list]} (.getValue (:target-term properties-map))]
+        (.setValue (:aleph-loc properties-map) (:aleph-loc data))
+        (.setValue (:swi-prolog-loc properties-map) (:swi-prolog-loc data))
+        (.setAll relation-list relations)
+        (.setValue relation target-rel)
+        (.setValue relation-term (:target-rel-param data))
+        )
+      (reset! current-page key))
+    )
   (read-data [this]
-    {:data {:aleph-loc      (.getValue (:aleph-loc properties-map))
-            :swi-prolog-loc (.getValue (:swi-prolog-loc properties-map))
-            }}))
+    (let [{:keys [relation relation-term]} (.getValue (:target-term properties-map))]
+      {:data {:aleph-loc        (.getValue (:aleph-loc properties-map))
+              :swi-prolog-loc   (.getValue (:swi-prolog-loc properties-map))
+              :target-rel       (.getValue relation)
+              :target-rel-param (.getValue relation-term)
+              }})))
+
+(def fields [:aleph-loc :swi-prolog-loc :target-term])
 
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support (StyleClassValidationDecoration.))
@@ -52,7 +66,10 @@
                                                                             validation
                                                                             (fn [^File f]
                                                                               true)
-                                                                            on-update-fn)}
+                                                                            on-update-fn)
+                        :target-term    (gui/make-target-term-item-editor "Target rel. term"
+                                                                          validation
+                                                                          on-update-fn)}
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]
     (->AlephSettingsPage widget properties-map current-page)))

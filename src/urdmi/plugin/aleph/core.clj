@@ -16,7 +16,7 @@
   (let [grouped-rel (->> rel-asts
                          (map (fn [ast]
                                 (let [child-idx rel-arg
-                                      arg (:value (nth (:children ast) child-idx))
+                                      arg (:value (nth (:children ast) (inc child-idx)))
                                       newrel (update-in ast [:children] (fn [children]
                                                                           (->> children
                                                                                (map-indexed vector)

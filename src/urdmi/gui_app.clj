@@ -119,22 +119,38 @@
   (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified (is-page-modified-or-desynced app page-key)))
   )
 
+(defn sync-page-data [app key]
+  (gui/show-data
+    (get-in app [:pages key :page])
+    (:project app)
+    key
+    (get-in app [:pages key :needs-data-sync]))
+  (assoc-in app [:pages key :needs-data-sync] false))
+
+(defn mark-page-needs-data-sync [app key]
+  (let [app (-> app
+                (assoc-in [:pages key :needs-data-sync] true))]
+    (if (= (:current-page-key app) key)
+      (sync-page-data app key)
+      app)))
+
 (defn switch-page [app key]
   (let [page-data (get-in app [:pages key] nil)
         page-data (if page-data
                     page-data
                     (do
-                      {:page     (doto
-
-                                   (if-let [plugin-page (when (app/plugin app)
-                                                          (gui/new-page (app/plugin app) (:project app) key (:ui-requests app)))]
-                                     plugin-page
-                                     (generate-page key key app))
-                                   (gui/show-data (:project app) key))
-                       :modified false}))
+                      {:page            (doto
+                                          (if-let [plugin-page (when (app/plugin app)
+                                                                 (gui/new-page (app/plugin app) (:project app) key (:ui-requests app)))]
+                                            plugin-page
+                                            (generate-page key key app))
+                                          )
+                       :modified        false
+                       :needs-data-sync true}))
         app (-> app
                 (assoc-in [:pages key] page-data)
-                (assoc :current-page-key key))]
+                (assoc :current-page-key key)
+                (sync-page-data key))]
     (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node (:page page-data)))
              (update-main-menu-for-current-page! app))
     app))
@@ -200,8 +216,8 @@
 (defn revert-model-page [app page-key]
   (let [app (-> app
                 (assoc-in [:pages page-key :modified] false)
+                (mark-page-needs-data-sync page-key)
                 )]
-    (gui/show-data (get-in app [:pages page-key :page]) (:project app) page-key)
     (fx/run! (update-file-menu-for-page! app page-key)
              (update-main-menu-for-current-page! app))
     app))
@@ -232,7 +248,13 @@
         new-page-key (conj (vec (butlast page-key)) (:name page-data))
         update-current-page-if-needed (fn [app]
                                         (if (= (:current-page-key app) page-key)
-                                          (assoc app :current-page-key new-page-key)
+                                          (do
+                                            ; todo:
+                                            ; this is only to trace current key by the view
+                                            ; give it ref managed by framework, or add page-key to ui-requests from framework
+                                            (-> app
+                                                (assoc :current-page-key new-page-key)
+                                                (mark-page-needs-data-sync new-page-key)))
                                           app))
 
         delete-old-page-if-renamed (fn [app]
@@ -265,13 +287,9 @@
       (update-main-menu-for-current-page! app))
     ; delete file if renamed
     (when-not (= page-key new-page-key)
-      (fs/delete (core/name-keys-to-file proj page-key))
-      ; todo:
-      ; remove the need of tracing the key by the view
-      ; give it ref managed by framework, or add page-key to ui-requests from framework
       ;todo:
       ;disallow renaming file to an already existing one!
-      (gui/show-data page (:project app) new-page-key))
+      (fs/delete (core/name-keys-to-file proj page-key)))
     app))
 
 (defmethod handle-request :save-file [{:keys [type]} app]
@@ -416,8 +434,8 @@
       (println "An application error occured:")
       (stacktrace/print-cause-trace e))
     (fx/run!
-      (main-gui/add-app-log-entry! (:main-screen app) (str writer))
-      app)))
+      (main-gui/add-app-log-entry! (:main-screen app) (str writer)))
+    app))
 
 (defn main-scene [stage]
   (let [app (->

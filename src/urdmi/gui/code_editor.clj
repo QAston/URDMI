@@ -84,8 +84,9 @@
   gui/ContentPage
   (container-node [this]
     (gui/get-node widget))
-  (show-data [this project data-key]
-    (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key))) data-key))
+  (show-data [this project data-key modified]
+    (when modified
+      (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key))) data-key)))
   (read-data [this]
     {:text (delay (gui/get-data widget))}
     ))

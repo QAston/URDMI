@@ -16,13 +16,11 @@
       (.setPropertyEditorFactory gui/property-editor-factory)
       ))
 
-(def fields [:ace-loc])
-
 (deftype AceSettingsPage [widget properties-map current-page]
    gui/ContentPage
    (container-node [this]
       widget)
-   (show-data [this project key]
+   (show-data [this project key modified]
       (reset! current-page nil)
       (let [data (:data (get-in project (apply core/dir-keys key)))]
          (.setValue (:ace-loc properties-map) (:ace-loc data)))
@@ -31,6 +29,8 @@
       {:data {:ace-loc      (.getValue (:ace-loc properties-map))
               }}))
 
+(def fields [:ace-loc])
+
 (defn make-page [>ui-requests project]
    (let [validation (gui/validation-support (StyleClassValidationDecoration.))
          current-page (atom nil)
@@ -38,7 +38,7 @@
                          (when-let [key @current-page]
                             (async/put! >ui-requests {:type     :modified-page
                                                       :data-key key})))
-         properties-map {:ace-loc      (gui/make-file-property-item-editor "Ace.pl"
+         properties-map {:ace-loc      (gui/make-file-property-item-editor "Ace executable"
                                                                              (:project-dir project)
                                                                              validation
                                                                              (fn [^File f]

@@ -6,7 +6,7 @@
   gui/ContentPage
   (container-node [this]
     this)
-  (show-data [this project key]
+  (show-data [this project key modified]
     nil)
   (read-data [this]
     nil))

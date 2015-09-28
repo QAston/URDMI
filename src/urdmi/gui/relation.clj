@@ -516,10 +516,11 @@
   gui/ContentPage
   (container-node [this]
     (gui/get-node widget))
-  (show-data [this project data-key]
-    (let [rel-view-model (relations-model-to-viewmodel parser-context
-                                                       (get-in project (apply core/dir-keys data-key)))]
-      (fx/run! (gui/set-data! widget rel-view-model data-key))))
+  (show-data [this project data-key modified]
+    (when modified
+      (let [rel-view-model (relations-model-to-viewmodel parser-context
+                                                        (get-in project (apply core/dir-keys data-key)))]
+       (fx/run! (gui/set-data! widget rel-view-model data-key)))))
   (read-data [this]
     (relations-viewmodel-to-model parser-context (gui/get-data widget))
     ))

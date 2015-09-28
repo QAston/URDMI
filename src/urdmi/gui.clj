@@ -4,7 +4,7 @@
             [fx-clj.core :as fx]
             [urdmi.core :as core]
             [me.raynes.fs :as fs])
-  (:import (javafx.collections ObservableList FXCollections)
+  (:import (javafx.collections ObservableList FXCollections ListChangeListener)
            (java.util Collection)
            (javafx.beans.value ObservableValue ChangeListener WritableValue)
            (org.controlsfx.validation ValidationSupport Validator Severity)
@@ -12,16 +12,16 @@
            (javafx.scene.control Control TableCell Labeled TextField)
            (java.util.function Predicate)
            (clojure.lang IFn)
-           (javafx.util Callback)
+           (javafx.util Callback StringConverter)
            (org.controlsfx.tools ValueExtractor)
            (javafx.scene.input KeyCodeCombination KeyCode)
            (javafx.event EventHandler)
-           (javafx.scene.control ToggleButton)
+           (javafx.scene.control ToggleButton ChoiceBox)
            (java.io File)
            (javafx.scene.layout HBox Priority)
            (javafx.stage DirectoryChooser FileChooser)
            (org.controlsfx.validation ValidationSupport)
-           (javafx.beans.property SimpleStringProperty)
+           (javafx.beans.property SimpleStringProperty SimpleObjectProperty)
            (org.controlsfx.control SegmentedButton PropertySheet$Item)
            (org.controlsfx.property.editor PropertyEditor DefaultPropertyEditorFactory)))
 
@@ -29,10 +29,11 @@
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
     (.load loader)))
 
+;(defonce _ (do
 ;application level abstraction, implements presenting data from app model
 (defprotocol ContentPage
   (container-node [this])
-  (show-data [this data data-key])
+  (show-data [this data data-key modified])
   (read-data [this]))
 
 ;implementation level abstraction, gui taking viewmodel
@@ -53,6 +54,8 @@
                                               (call [this control]
                                                 (let [^Labeled control control]
                                                   (.textProperty control)))))
+
+;))
 
 
 (defn validation-support
@@ -205,7 +208,7 @@
                       "You must select an existing file.")
     (make-fs-select-widget relative-to file-str-property text-field
                            (fn [e]
-                             (let [file (.showDialog
+                             (let [file (.showOpenDialog
                                           (doto (FileChooser.)
                                             (.setInitialDirectory (let [dir (str-to-file relative-to (.getValue file-str-property))]
                                                                     (if (and (.exists dir) (.exists (fs/parent dir)))
@@ -283,4 +286,70 @@
     (boolean editable)))
 
 ;(fx/sandbox #(make-directory-select-widget (fs/file ".") (SimpleStringProperty. "") "Select working directory dir" (validation-support (StyleClassValidationDecoration.))))
+
+(defn make-relation-select-widget [relations-list selected-relation validation]
+  (let [widget (doto (ChoiceBox.)
+                 (.setConverter (proxy [StringConverter] []
+                                  (fromString [s])
+                                  (toString [v]
+                                    (str (first v) "_" (second v) ".pl"))))
+                 (.setItems relations-list))
+        ]
+    (validate-control validation
+                      widget
+                      (fn [val]
+                        (boolean val)) "Must select a valid binary term with 2 values")
+    (.addListener relations-list
+                  (reify ListChangeListener
+                    (onChanged [this change]
+                      (when-not (.contains relations-list (.getValue selected-relation))
+                        (.setValue selected-relation nil))
+                      )))
+    (.bindBidirectional (.valueProperty widget) selected-relation)
+    widget
+    ))
+
+(defn make-relation-term-select-widget [relation-list selected-relation selected-relation-term validation]
+  (let [arity (if-let [arity (second (.getValue selected-relation))]
+                arity
+                0)
+        relation-term-list (observable-list (for [i (range arity)]
+                                              i))
+        term-widget (doto (ChoiceBox.)
+                      (.setItems relation-term-list)
+                      )
+        widget (fx/h-box {}
+                         (make-relation-select-widget relation-list selected-relation validation)
+                         term-widget)]
+    (validate-control validation
+                      term-widget
+                      (fn [val]
+                        (boolean val)) "Must select a valid binary term with 2 values")
+    (on-changed selected-relation
+                (fn [obs old new]
+                  (when (not= old new)
+                    (resize-observable-list relation-term-list (if new (second new) 0) identity)
+                    (.setValue selected-relation-term (let [old-val (.getValue selected-relation-term)
+                                                            new-val (second new)]
+                                                        (when (and old-val new-val)
+                                                          (min old-val (dec new-val)))))
+                    )))
+    (.bindBidirectional (.valueProperty term-widget) selected-relation-term)
+    widget))
+
+(defn make-target-term-item-editor [name validation on-update-fn]
+  (let [selected-relation (SimpleObjectProperty. nil)
+        relation-list (observable-list [])
+        selected-relation-term (SimpleObjectProperty. nil)
+        widget (make-relation-term-select-widget relation-list selected-relation selected-relation-term validation)]
+    (on-changed selected-relation
+                (fn [obs old new]
+                  (when (not= old new)
+                    (on-update-fn))))
+    (on-changed selected-relation-term
+                (fn [obs old new]
+                  (when (not= old new)
+                    (on-update-fn))))
+    (->PropertyItemEditor widget name (SimpleObjectProperty. {:relation selected-relation :relation-list relation-list :relation-term selected-relation-term}))
+    ))
 

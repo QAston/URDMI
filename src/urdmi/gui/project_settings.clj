@@ -26,7 +26,7 @@
   gui/ContentPage
   (container-node [this]
     widget)
-  (show-data [this project key]
+  (show-data [this project key modified]
     (reset! current-page nil)
     (let [data (:data (get-in project (apply core/dir-keys key)))]
       (.setValue (:active-plugin properties-map) (name (:active-plugin data)))
