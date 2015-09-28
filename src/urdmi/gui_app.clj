@@ -374,7 +374,7 @@
   (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
     (if (get-in (:project app) (apply core/dir-keys file-key))
       app
-      (load-model-page app file-key))))
+      (load-model-page app file))))
 
 (defn- is-page-modified-or-current [app key]
   (or (= key (:current-page-key app))
