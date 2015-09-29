@@ -80,5 +80,3 @@
        dialog
        ))
     nil))
-
-(fx/run! (new-relation nil (prolog/parser-context nil)))

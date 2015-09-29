@@ -33,10 +33,10 @@
 
     (when (Desktop/isDesktopSupported)
       (make-file-entry-menu! "Open Location" :open-location))
-    (cond (= menu-type :relations)
-          (make-file-entry-menu! "New Relation" :new-relation)
+    (when (= menu-type :relations)
+      (make-file-entry-menu! "New Relation" :new-relation))
 
-          (and deletable (or (= menu-type :output) (= menu-type :working-dir) (= menu-type :relations)))
+    (when (and deletable (or (= menu-type :output) (= menu-type :working-dir) (= menu-type :relations)))
           (make-file-entry-menu! "Delete" :delete-file))
     base-menu)
   )

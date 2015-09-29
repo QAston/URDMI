@@ -3,6 +3,8 @@
             :url "https://github.com/QAston/URDMI"
             :license {:name "GNU General Public License, version 3"
                       :url  "https://www.gnu.org/licenses/gpl.html"}
+        :repositories [["snapshots" {:url "https://oss.sonatype.org/content/repositories/snapshots/"
+                              :update :daily}]]
             :dependencies [[org.clojure/clojure "1.7.0"]
                            [clj-antlr "0.2.2"]
                            [org.clojure/core.async "0.1.346.0-17112a-alpha"]
@@ -11,10 +13,10 @@
                            [org.clojure/core.incubator "0.1.3"]
                            [org.controlsfx/controlsfx "8.40.9"]
                            [com.stuartsierra/component "0.2.3"]
+                           [org.fxmisc.richtext/richtextfx	"1.0.0-SNAPSHOT"]
                            [org.apache.directory.studio/org.apache.commons.io "2.4"]
                            [org.apache.commons/commons-lang3 "3.4"]
                            [potemkin "0.3.13"]
-                           [org.fxmisc.richtext/richtextfx "0.6.6"]
                            [me.raynes/fs "1.4.6" :exclusions [potemkin]]
                            [org.clojars.ato/clojure-jsr223 "1.5.1" :exclusions [org.clojure/clojure]]
                            ]

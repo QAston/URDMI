@@ -28,9 +28,10 @@
     widget)
   (show-data [this project key modified]
     (reset! current-page nil)
-    (let [data (:data (get-in project (apply core/dir-keys key)))]
-      (.setValue (:active-plugin properties-map) (name (:active-plugin data)))
-      (.setValue (:working-dir properties-map) (str (:working-dir data))))
+    (when modified
+      (let [data (:data (get-in project (apply core/dir-keys key)))]
+        (.setValue (:active-plugin properties-map) (name (:active-plugin data)))
+        (.setValue (:working-dir properties-map) (str (:working-dir data)))))
     (reset! current-page key))
   (read-data [this]
     {:data {:active-plugin (keyword (.getValue (:active-plugin properties-map)))
