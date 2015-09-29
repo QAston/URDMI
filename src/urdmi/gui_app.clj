@@ -18,7 +18,8 @@
   (:import (urdmi.core Project)
            (java.io StringWriter File)
            (javafx.scene Scene)
-           (javafx.stage Stage)))
+           (javafx.stage Stage)
+           (java.awt Desktop)))
 
 (defn generate-menu-viewmodel [^Project p]
   (let [vm (for [file (app/get-model-file-keys p true)]
@@ -354,6 +355,29 @@
                                       #(do
                                         (app/build-working-dir app)
                                         (app/run-learning app))))))
+
+(defmethod handle-request :delete-file [{:keys [key]} app]
+  (if-let [file (core/name-keys-to-file (:project app) key)]
+    (when (.exists file)
+      (fs/delete-dir file)))
+  app)
+
+(defmethod handle-request :open-location [{:keys [key]} app]
+  (if-let [file (core/name-keys-to-file (:project app) key)]
+    (when (.exists file)
+      (let [file (if (fs/directory? file)
+                   file
+                   (fs/parent file))]
+        (-> (Desktop/getDesktop)
+            (.open file)))))
+  app)
+
+(defmethod handle-request :new-relation [{:keys [key]} app]
+  (if-let [rel (fx/run<!! (dialogs/new-relation (:stage app) (app/plugin-parser-context app)))]
+    (let [file (core/name-keys-to-file (:project app) [:relations (core/relation-to-filename rel)])]
+      (fs/create file)
+      ))
+  app)
 
 (defmulti handle-fs-change (fn [[event file time] app]
                              event))

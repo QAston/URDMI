@@ -12,9 +12,34 @@
     (javafx.scene.paint Color)
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)
-    (javafx.scene.control TreeView TreeItem ScrollPane MenuItem Tab Button TextArea)
+    (javafx.scene.control TreeView TreeItem ScrollPane MenuItem Tab Button TextArea ContextMenu)
     (javafx.scene.input KeyCode)
-    (org.controlsfx.control StatusBar)))
+    (org.controlsfx.control StatusBar)
+    (javafx.beans.value ChangeListener)
+    (java.awt Desktop)))
+
+(defn create-file-entry-context-menu [>app-requests tree-item-value]
+  (let [base-menu (ContextMenu.)
+        menu-type (first (:path tree-item-value))
+        deletable (< 1 (count (:path tree-item-value)))
+        make-file-entry-menu! (fn [text type]
+                                (.. base-menu
+                                    getItems
+                                    (add
+                                      (fx/menu-item {:text      text
+                                                     :on-action (fn [e]
+                                                                  (put! >app-requests {:type type
+                                                                                       :key  (:path tree-item-value)}))}))))]
+
+    (when (Desktop/isDesktopSupported)
+      (make-file-entry-menu! "Open Location" :open-location))
+    (cond (= menu-type :relations)
+          (make-file-entry-menu! "New Relation" :new-relation)
+
+          (and deletable (or (= menu-type :output) (= menu-type :working-dir) (= menu-type :relations)))
+          (make-file-entry-menu! "Delete" :delete-file))
+    base-menu)
+  )
 
 (defn- build-file-menu-widget [>app-requests]
   (let [tree-view ^TreeView (fx/tree-view
@@ -23,14 +48,30 @@
                                                   (reify
                                                     Callback
                                                     (call [this tree-view]
-                                                      (TextFieldTreeCell. (proxy
-                                                                            [StringConverter] []
-                                                                            (toString [obj]
+                                                      (let [cell (TextFieldTreeCell. (proxy
+                                                                                       [StringConverter] []
+                                                                                       (toString [obj]
 
-                                                                              (str (:name obj)
-                                                                                   (when (:modified obj)
-                                                                                     "*"))
-                                                                              )))))})]
+                                                                                         (str (:name obj)
+                                                                                              (when (:modified obj)
+                                                                                                "*"))
+                                                                                         )))
+                                                            item-value-change-listener ^ChangeListener (reify ChangeListener
+                                                                                                         (changed [this obs old new]
+                                                                                                           (.setContextMenu cell (create-file-entry-context-menu >app-requests new))))
+
+                                                            item-change-listener (reify ChangeListener
+                                                                                   (changed [this obs old new]
+                                                                                     (when old
+                                                                                       (.removeListener (.valueProperty old) item-value-change-listener))
+                                                                                     (when new
+                                                                                       (.addListener (.valueProperty new) item-value-change-listener)
+                                                                                       (when (.getValue new)
+                                                                                         (.setContextMenu cell (create-file-entry-context-menu >app-requests (.getValue new)))))))
+
+                                                            ]
+                                                        (.addListener (.treeItemProperty cell) item-change-listener)
+                                                        cell)))})]
     (-> tree-view
         (.getSelectionModel)
         (.selectedItemProperty)

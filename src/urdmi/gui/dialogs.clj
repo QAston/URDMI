@@ -1,9 +1,15 @@
 (ns urdmi.gui.dialogs
-  (:require [fx-clj.core :as fx])
+  (:require [fx-clj.core :as fx]
+            [urdmi.gui :as gui]
+            [urdmi.prolog :as prolog])
   (:import (java.io File)
            (javafx.stage DirectoryChooser)
-           (javafx.scene.control Alert Alert$AlertType ButtonType)
-           (java.util Optional)))
+           (javafx.scene.control Alert Alert$AlertType ButtonType TextInputDialog Dialog TextField)
+           (java.util Optional)
+           (javafx.geometry Pos)
+           (javafx.scene.text TextAlignment)
+           (org.controlsfx.validation.decoration StyleClassValidationDecoration)
+           (javafx.util Callback)))
 
 (defn open-project [stage ^File dir]
   (.showDialog
@@ -19,12 +25,7 @@
                                              (.. getDialogPane
                                                  (setContentText content-text))
                                              (.. getButtonTypes
-                                                 (clear))
-                                             (.. getButtonTypes
-                                                 (add ButtonType/YES)
-                                                 )
-                                             (.. getButtonTypes
-                                                 (add ButtonType/NO)
+                                                 (setAll [ButtonType/YES ButtonType/NO])
                                                  ))
                                            ) ButtonType/NO)))
 
@@ -38,3 +39,46 @@
   (let [title-text "Unsaved files"
         content-text (str "Some files in the project are modified but not saved. Do you wish to save the files and continue " operation " operation?")]
     (yes-no-dialog stage content-text title-text)))
+
+(defn new-relation [stage parser-context]
+  (.orElse
+    (.showAndWait
+     (let [validation (gui/validation-support (StyleClassValidationDecoration.))
+           name-field ^TextField (fx/text-field {:prompt-text "Name"})
+           arity-field ^TextField (fx/text-field {:prompt-text "Arity" :max-width 40})
+           validate-arity-fn (fn [s]
+                               (try
+                                 (>= (Long/parseLong ^String s) 0)
+                                 (catch NumberFormatException e
+                                   false)))
+           validate-name-fn (fn [s] (prolog/parse-single-atom parser-context s))
+           dialog (doto (Dialog.)
+                    (.setTitle "New relation")
+                    (.. getDialogPane (setContent (fx/h-box {}
+                                                            name-field
+                                                            arity-field
+                                                            )))
+                    (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
+                    (.setResultConverter (reify Callback
+                                           (call [this param]
+                                             (if (= param ButtonType/OK)
+                                               [(.getText name-field) (Long/parseLong ^String (.getText arity-field))]
+                                               nil
+                                               ))))
+                    )
+           ok-button (.. dialog getDialogPane (lookupButton ButtonType/OK))
+           update-button (fn [obs old new]
+                           (.setDisable ok-button (not (and
+                                                         (validate-name-fn (.getText name-field))
+                                                         (validate-arity-fn (.getText arity-field)))))
+                           )]
+       (.setDisable ok-button true)
+       (gui/validate-control validation arity-field validate-arity-fn "Arity must be a number")
+       (gui/validate-control validation name-field validate-name-fn "Name must be a valid prolog predicate")
+       (gui/on-changed (.textProperty name-field) update-button)
+       (gui/on-changed (.textProperty arity-field) update-button)
+       dialog
+       ))
+    nil))
+
+(fx/run! (new-relation nil (prolog/parser-context nil)))

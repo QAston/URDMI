@@ -89,11 +89,14 @@
 (defn name-keys-to-file
   "Resolve name-keys to a java.io.File"
   ^File [^Project p name-keys]
-  (apply fs/file (keep identity (map (fn [element]
-                                       (let [conv-fn (get model-path-to-file-map element)]
-                                         (if conv-fn
-                                           (conv-fn p)
-                                           element))) name-keys))))
+
+  (if (= name-keys [])
+    (fs/parent (name-keys-to-file p [:settings]))
+    (apply fs/file (keep identity (map (fn [element]
+                                        (let [conv-fn (get model-path-to-file-map element)]
+                                          (if conv-fn
+                                            (conv-fn p)
+                                            element))) name-keys)))))
 
 (import 'java.nio.file.Path)
 (defn relativize-path [^File src ^File target]
