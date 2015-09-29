@@ -1,7 +1,9 @@
 (ns urdmi.watch-fs
-  (:require [clojure.core.async :as async])
-  (:import (java.nio.file WatchService Paths FileSystems StandardWatchEventKinds)
-           (java.util Date)))
+  (:require [clojure.core.async :as async]
+            [me.raynes.fs :as fs])
+  (:import (java.nio.file WatchService Paths FileSystems StandardWatchEventKinds WatchEvent)
+           (java.util Date)
+           (javafx.scene.shape Path)))
 
 (def ENTRY_CREATE java.nio.file.StandardWatchEventKinds/ENTRY_CREATE)
 (def ENTRY_DELETE java.nio.file.StandardWatchEventKinds/ENTRY_DELETE)
@@ -49,12 +51,12 @@
 
 (defn- add-path-event [paths-to-events [kind path time :as event] callback]
   (let [prev-events (get paths-to-events path {:callback callback
-                                               :path path
-                                           :events (list)})]
+                                               :path     path
+                                               :events   (list)})]
     (assoc paths-to-events path
-      (-> prev-events
-         (assoc :time time)
-         (update :events conj kind)))))
+                           (-> prev-events
+                               (assoc :time time)
+                               (update :events conj kind)))))
 
 (defn- reduce-to-single-event [{:keys [path events time] :as path-events}]
   (let [priority-events (remove #{:modify} events)]
@@ -62,23 +64,31 @@
       [:modify path time]
       [(first priority-events) path time])))
 
+(defn- register-created-dir [file watcher spec event-time keys paths-to-events callback]
+  ; because register doesn't catch up immediately, add the already existing files and dirs
+  (doseq [[base-dir subdir-names file-names] (fs/iterate-dir file)]
+    (println file-names)
+    (swap! keys #(register (assoc spec :path (str base-dir)) watcher %))
+    (doseq [file-name (concat file-names subdir-names)]
+      (swap! paths-to-events add-path-event [:create (fs/file base-dir file-name) event-time] callback))))
+
 (defn- watch [^WatchService watcher keys paths-to-events]
   (if-let [key (.poll watcher)]
     (let [[dir callback spec] (@keys key)
           event-time (Date.)
           events (for [event (.pollEvents key)]
-                     (let [kind (kind-to-key (.. event kind name))
-                           name (->> event
-                                     .context
-                                     (.resolve dir)
-                                     (.toFile))]
-                       [kind name]))]
+                   (let [op (kind-to-key (.. event kind name))
+                         file (->> ^WatchEvent event
+                                   .context
+                                   (.resolve dir)
+                                   (.toFile))]
+                     [op file]))]
       (doseq [[op file :as event] events]
+        (swap! paths-to-events add-path-event (conj event event-time) callback)
         ;add watch to newly created dirs
         (when (and (.isDirectory file)
                    (= op :create))
-          (swap! keys #(register (assoc spec :path (str file)) watcher %)))
-        (swap! paths-to-events add-path-event (conj event event-time) callback))
+          (future (register-created-dir file watcher spec event-time keys paths-to-events callback))))
       (.reset key)
       (recur watcher keys paths-to-events))
     (do
@@ -87,7 +97,7 @@
                                                 (second)
                                                 (:time))) (seq @paths-to-events))]
         (when (> (- (System/currentTimeMillis) (.getTime ^Date (:time path-events)))
-                  1000)
+                 1000)
           (apply (:callback path-events) (reduce-to-single-event path-events))
           (swap! paths-to-events dissoc path)))
       (Thread/sleep 100)
@@ -172,3 +182,5 @@ modifications within those paths."
                                 :options     {:recursive true}})
                     paths))])
     channel))
+
+(stop-all-channel-watchers!)

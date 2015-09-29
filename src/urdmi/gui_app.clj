@@ -74,7 +74,7 @@
     (if (not= (core/get-working-dir old-project) (core/get-working-dir project))
       (-> app
           (remove-pages (->> (:project app)
-                             (app/get-model-file-keys)
+                             (app/get-model-file-keys true)
                              (filter #(= :working-dir (first %)))))
           (initialize-watching-fs)
           (load-pages (core/dir-seq (:project app) [:working-dir])))
@@ -120,11 +120,12 @@
   )
 
 (defn sync-page-data [app key]
-  (gui/show-data
-    (get-in app [:pages key :page])
-    (:project app)
-    key
-    (get-in app [:pages key :needs-data-sync]))
+  (fx/run!
+    (gui/show-data
+      (get-in app [:pages key :page])
+      (:project app)
+      key
+      (get-in app [:pages key :needs-data-sync])))
   (assoc-in app [:pages key :needs-data-sync] false))
 
 (defn mark-page-needs-data-sync [app key]
@@ -248,13 +249,7 @@
         new-page-key (conj (vec (butlast page-key)) (:name page-data))
         update-current-page-if-needed (fn [app]
                                         (if (= (:current-page-key app) page-key)
-                                          (do
-                                            ; todo:
-                                            ; this is only to trace current key by the view
-                                            ; give it ref managed by framework, or add page-key to ui-requests from framework
-                                            (-> app
-                                                (assoc :current-page-key new-page-key)
-                                                (mark-page-needs-data-sync new-page-key)))
+                                          (assoc app :current-page-key new-page-key)
                                           app))
 
         delete-old-page-if-renamed (fn [app]
@@ -262,7 +257,11 @@
                                        (-> app
                                            (app/delete-model-page page-key)
                                            (dissoc-in [:pages page-key])
-                                           (handle-model-modified old-app page-key))
+                                           (handle-model-modified old-app page-key)
+                                           ; todo:
+                                           ; this is only to trace current key by the view
+                                           ; give it ref managed by framework, or add page-key to ui-requests from framework
+                                           (mark-page-needs-data-sync new-page-key))
                                        app))
         proj (-> (:project app)
                  (dissoc-in (apply core/dir-keys page-key))
@@ -360,7 +359,12 @@
                              event))
 
 (defn load-model-page [app file]
-  (let [file-key (core/file-to-name-keys (:project app) file)]
+  (let [file-key (core/file-to-name-keys (:project app) file)
+        app (if-not (get-in (:project app) (apply core/dir-keys (butlast file-key)))
+              ; parent dir not found - load
+              (load-model-page app (fs/parent file))
+              app
+              )]
     (fx/run!
       (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
     (-> app
@@ -409,13 +413,17 @@
     app))
 
 (defn remove-model-page [app file-key]
-  (fx/run!
-    (main-gui/remove-file! (:main-screen app) file-key))
-  (-> app
-      (close-page-if-open file-key)
-      (app/delete-model-page file-key)
-      (dissoc-in [:pages file-key])
-      (handle-model-modified app file-key)))
+  (let [app (remove-pages app
+                          (->> (:project app)
+                               (app/get-model-file-keys true)
+                               (filter #(= file-key (butlast %)))))]
+    (fx/run!
+      (main-gui/remove-file! (:main-screen app) file-key))
+    (-> app
+        (close-page-if-open file-key)
+        (app/delete-model-page file-key)
+        (dissoc-in [:pages file-key])
+        (handle-model-modified app file-key))))
 
 (defn remove-pages [app file-keys]
   (reduce remove-model-page app file-keys))
