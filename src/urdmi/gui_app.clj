@@ -423,13 +423,13 @@
       (if-not (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys file-key)))
         app
         (let [{:keys [app needs-sync]} (app/update-fs-sync-status app file-key time)]
-          (if (and
-                needs-sync
-                (is-page-modified-or-current app (core/file-to-name-keys (:project app) file)))
-            (if (fx/run<!! (dialogs/reload-modified-file (:stage app) file))
+          (if-not needs-sync
+            app
+            (if (or (not (is-page-modified-or-current app (core/file-to-name-keys (:project app) file)))
+                    (fx/run<!! (dialogs/reload-modified-file (:stage app) file)))
               (reload-model-page app file-key)
               (mark-page-desynced app file-key))
-            app))))))
+            ))))))
 
 (defn close-page-if-open [app key]
   (if (= key (:current-page-key app))
