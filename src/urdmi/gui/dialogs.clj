@@ -1,15 +1,17 @@
 (ns urdmi.gui.dialogs
   (:require [fx-clj.core :as fx]
             [urdmi.gui :as gui]
-            [urdmi.prolog :as prolog])
+            [urdmi.prolog :as prolog]
+            [clojure.java.io :as io]
+            [me.raynes.fs :as fs])
   (:import (java.io File)
            (javafx.stage DirectoryChooser)
-           (javafx.scene.control Alert Alert$AlertType ButtonType TextInputDialog Dialog TextField)
-           (java.util Optional)
-           (javafx.geometry Pos)
-           (javafx.scene.text TextAlignment)
+           (javafx.scene.control Alert Alert$AlertType ButtonType TextInputDialog Dialog TextField ChoiceBox)
+           (javafx.geometry Pos HPos)
            (org.controlsfx.validation.decoration StyleClassValidationDecoration)
-           (javafx.util Callback)))
+           (javafx.util Callback StringConverter)
+           (javafx.scene.layout Priority HBox GridPane ColumnConstraints)
+           (javafx.beans.property SimpleStringProperty)))
 
 (defn open-project [stage ^File dir]
   (.showDialog
@@ -43,40 +45,106 @@
 (defn new-relation [stage parser-context]
   (.orElse
     (.showAndWait
-     (let [validation (gui/validation-support (StyleClassValidationDecoration.))
-           name-field ^TextField (fx/text-field {:prompt-text "Name"})
-           arity-field ^TextField (fx/text-field {:prompt-text "Arity" :max-width 40})
-           validate-arity-fn (fn [s]
-                               (try
-                                 (>= (Long/parseLong ^String s) 0)
-                                 (catch NumberFormatException e
-                                   false)))
-           validate-name-fn (fn [s] (prolog/parse-single-atom parser-context s))
-           dialog (doto (Dialog.)
-                    (.setTitle "New relation")
-                    (.. getDialogPane (setContent (fx/h-box {}
-                                                            name-field
-                                                            arity-field
-                                                            )))
-                    (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
-                    (.setResultConverter (reify Callback
-                                           (call [this param]
-                                             (if (= param ButtonType/OK)
-                                               [(.getText name-field) (Long/parseLong ^String (.getText arity-field))]
-                                               nil
-                                               ))))
-                    )
-           ok-button (.. dialog getDialogPane (lookupButton ButtonType/OK))
-           update-button (fn [obs old new]
-                           (.setDisable ok-button (not (and
-                                                         (validate-name-fn (.getText name-field))
-                                                         (validate-arity-fn (.getText arity-field)))))
-                           )]
-       (.setDisable ok-button true)
-       (gui/validate-control validation arity-field validate-arity-fn "Arity must be a number")
-       (gui/validate-control validation name-field validate-name-fn "Name must be a valid prolog predicate")
-       (gui/on-changed (.textProperty name-field) update-button)
-       (gui/on-changed (.textProperty arity-field) update-button)
-       dialog
-       ))
+      (let [validation (gui/validation-support (StyleClassValidationDecoration.))
+            name-field ^TextField (fx/text-field {:prompt-text "Name"})
+            arity-field ^TextField (fx/text-field {:prompt-text "Arity" :max-width 40})
+            validate-arity-fn (fn [s]
+                                (try
+                                  (>= (Long/parseLong ^String s) 0)
+                                  (catch NumberFormatException e
+                                    false)))
+            validate-name-fn (fn [s] (prolog/parse-single-atom parser-context s))
+            dialog (doto (Dialog.)
+                     (.setTitle "New relation")
+                     (.. getDialogPane (setContent (fx/h-box {}
+                                                             name-field
+                                                             arity-field
+                                                             )))
+                     (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
+                     (.setResultConverter (reify Callback
+                                            (call [this param]
+                                              (if (= param ButtonType/OK)
+                                                [(.getText name-field) (Long/parseLong ^String (.getText arity-field))]
+                                                nil
+                                                ))))
+                     )
+            ok-button (.. dialog getDialogPane (lookupButton ButtonType/OK))
+            update-button (fn [obs old new]
+                            (.setDisable ok-button (not (and
+                                                          (validate-name-fn (.getText name-field))
+                                                          (validate-arity-fn (.getText arity-field)))))
+                            )]
+        (.setDisable ok-button true)
+        (gui/validate-control validation arity-field validate-arity-fn "Arity must be a number")
+        (gui/validate-control validation name-field validate-name-fn "Name must be a valid prolog predicate")
+        (gui/on-changed (.textProperty name-field) update-button)
+        (gui/on-changed (.textProperty arity-field) update-button)
+        dialog
+        ))
     nil))
+
+(defn- make-plugin-selection-widget [plugins-list]
+  (doto (ChoiceBox.)
+    (.setConverter (proxy [StringConverter] []
+                     (fromString [s]
+                       (keyword s))
+                     (toString [v]
+                       (name v))))
+    (.. getItems (setAll plugins-list))
+    (.setValue (first plugins-list))))
+
+(defn new-project [stage plugins-list]
+    (.orElse
+      (.showAndWait
+        (let [validation (gui/validation-support (StyleClassValidationDecoration.))
+              plugin-widget (make-plugin-selection-widget plugins-list)
+
+              location-validation-fn (fn [value]
+                                       (if-let [file (io/file value)]
+                                         (and (fs/absolute? file) (or (not (.exists file)) (.isDirectory file)))
+                                         ))
+
+              location-property (SimpleStringProperty. "")
+
+              location-widget (gui/make-absolute-directory-select-widget
+                                (fs/file ".")
+                                location-property
+                                "Select project directory"
+                                validation
+                                location-validation-fn)
+
+              grid (doto (GridPane.)
+                     (.setAlignment Pos/CENTER)
+                     (.setHgap 10.0)
+                     (.setVgap 12.0)
+                     (.. getColumnConstraints
+                         (setAll [(doto (ColumnConstraints.)
+                                    (.setHalignment HPos/LEFT))
+                                  (doto (ColumnConstraints.)
+                                    (.setHalignment HPos/RIGHT))
+                                  ]))
+                     (.add (fx/label {:text "Plugin"}) 0 0)
+                     (.add plugin-widget 1 0)
+                     (.add (fx/label {:text "Project Location"}) 0 1)
+                     (.add location-widget 1 1)
+                     )
+
+              dialog (doto (Dialog.)
+                       (.setTitle "New project")
+                       (.. getDialogPane (setContent grid))
+                       (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
+                       (.setResultConverter (reify Callback
+                                              (call [this param]
+                                                (if (= param ButtonType/OK)
+                                                  {:plugin (.getValue plugin-widget) :project-dir (io/file (.getValue location-property))}
+                                                  nil
+                                                  )))))
+              ok-button (.. dialog getDialogPane (lookupButton ButtonType/OK))
+              update-button (fn [obs old new]
+                              (.setDisable ok-button (not (location-validation-fn (.getValue location-property)))))
+                              ]
+          (.setDisable ok-button true)
+          (gui/on-changed location-property update-button)
+          dialog
+          ))
+      nil))

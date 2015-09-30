@@ -220,6 +220,26 @@
                                  (.setValue file-str-property (str file)))
                                )))))
 
+(defn make-absolute-directory-select-widget [^File starting-dir file-str-property description ^ValidationSupport validation validation-fn]
+  (let [text-field (fx/text-field {})]
+    (on-text-field-confirmed text-field (fn [text-field]
+                                              (.setValue file-str-property (.getText text-field))))
+    (loose-bind file-str-property (.textProperty text-field))
+    (validate-control validation text-field validation-fn "")
+    (doto (fx/h-box {:spacing 8}
+                    (fx/button {:text "Browse" :on-action (fn [e]
+                                                            (let [file (.showDialog
+                                                                         (doto (DirectoryChooser.)
+                                                                           (.setInitialDirectory starting-dir)
+                                                                           (.setTitle description)
+                                                                           )
+                                                                         nil)]
+                                                              (when file
+                                                                (.setValue file-str-property (str file)))
+                                                              ))})
+                    (doto text-field
+                      (HBox/setHgrow Priority/ALWAYS))))))
+
 (deftype PropertyItemEditor [widget ^String name obj-property]
   PropertyEditor
   (getEditor [this]
