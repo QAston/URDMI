@@ -86,7 +86,7 @@
 
 (defn handle-model-modified [app old-app key]
   (when (app/plugin app)
-    (gui/model-modified (app/plugin app) (:project app) key))
+    (core/model-modified (app/plugin app) (:project app) key))
   (model-modified app old-app key key))
 
 (defn init-app [stage]

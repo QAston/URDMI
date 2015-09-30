@@ -7,12 +7,8 @@
 
 (extend-type AcePlugin
   gui/PluginGui
-  (new-project-creation-page ^ContentPage [this >ui-requests]
-    )
   (new-page ^ContentPage [this project key >ui-requests]
     (condp = key
       [:settings ace/settings-filename] (settings-page/make-page >ui-requests project)
       nil)
-    )
-  (model-modified [this project key]
     ))

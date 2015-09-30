@@ -7,8 +7,6 @@
             [clojure.java.io :as io])
   (:import (org.controlsfx.control PropertySheet PropertySheet$Mode PropertySheet$Item SegmentedButton)
            (javafx.beans.property SimpleStringProperty SimpleObjectProperty SimpleBooleanProperty)
-           (java.io File)
-           (java.util Optional)
            (org.controlsfx.validation.decoration StyleClassValidationDecoration)))
 
 

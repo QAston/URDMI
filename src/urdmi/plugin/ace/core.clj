@@ -66,7 +66,10 @@
   (get-parser-context [this]
     parser-context
     )
-  (generate-output [this project run-result]))
+  (generate-output [this project run-result])
+  (model-created [this project])
+  (model-loaded [this project])
+  (model-modified [this project key]))
 
 (defn create []
   (->AcePlugin (prolog/ace-parser-context)))

@@ -17,7 +17,11 @@
   (run [this project] "Run datamining engine associated to this plugin. Runs on a background thread, which can be interrupted to stop the job.")
   (generate-output [this project run-result] "Update output project directory with analysis of run-result. Runs on a background thread, which can be interrupted to stop the job.")
   (rebuild-working-dir [this project] "Rebuilds working directory of a datamining app. Runs on a background thread, which can be interrupted to stop the job.")
-  (get-parser-context [this])
+  (get-parser-context [this] "Returns parser-context object initialized for prolog engine used by the plugin.")
+
+  (model-created [this project] "A hook on project creation. Should initialize model with default plugin settings. Returns ModelDiff object which is applied afterwards to the model.")
+  (model-loaded [this project] "A hook on model loading. Returns ModelDiff object which is afterwards applied to the model.")
+  (model-modified [this project key] "A hook on model modification. Returns ModelDiff object which is afterwards applied to the model.")
   )
 
 (defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])

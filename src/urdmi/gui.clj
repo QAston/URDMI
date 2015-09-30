@@ -43,7 +43,6 @@
   (get-data [this]))
 
 (defprotocol PluginGui
-  (new-project-creation-page [this >ui-requests] "Returns a view for creating a project using this plugin")
   (new-page [this project key >ui-requests] "Returns a view for editing/display of a menu entry")
   (model-modified [this project key] "A hook called after project model was modified."))
 
