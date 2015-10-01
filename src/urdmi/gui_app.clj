@@ -203,6 +203,21 @@
         (initialize-watching-fs)
         (switch-page []))))
 
+(defn create-project [app project-data]
+  (let [app (-> app
+                (switch-page [])
+                (dissoc :pages)
+                (stop-current-job)
+                (app/new-project (:project-dir project-data) (:plugin project-data))
+                (app/save-project))
+        proj (:project app)
+        files-view-model (generate-menu-viewmodel proj)]
+    (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
+             (update-main-menu-for-current-page! app))
+    (-> app
+        (initialize-watching-fs)
+        (switch-page []))))
+
 (defmulti handle-request (fn [{:keys [type data]} app]
                            type))
 
@@ -299,6 +314,11 @@
 (defmethod handle-request :open-project [event app]
   (if-let [location (fx/run<!! (dialogs/open-project (:stage app) (fs/file ".")))]
     (load-project app location)
+    app))
+
+(defmethod handle-request :new-project [event app]
+  (if-let [project-data (fx/run<!! (dialogs/new-project (:stage app) (keys (:plugins app))))]
+    (create-project app project-data)
     app))
 
 (defmethod handle-request :stop-job [event app]
@@ -472,8 +492,8 @@
 (defn main-scene [stage]
   (let [app (->
               (init-app stage)
-              (load-project (fs/file "dev-resources/projects/aleph_default/"))
-              ;(load-project (fs/file "dev-resources/projects/ace_tilde/"))
+              ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
+              (load-project (fs/file "dev-resources/projects/ace_tilde/"))
               )
         ]
     (go

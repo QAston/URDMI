@@ -132,7 +132,7 @@
         content-container (fx/scroll-pane :#content {:fit-to-height true
                                                      :fit-to-width  true})
 
-        menu-items {:new-project  (fx/menu-item {:text "New" :disable true :on-action (put-ui-event-fn {:type :new-project}) :accelerator (gui/ctrl-key-accelerator KeyCode/N)})
+        menu-items {:new-project  (fx/menu-item {:text "New" :on-action (put-ui-event-fn {:type :new-project}) :accelerator (gui/ctrl-key-accelerator KeyCode/N)})
                     :open-project (fx/menu-item {:text "Open..." :on-action (put-ui-event-fn {:type :open-project}) :accelerator (gui/ctrl-key-accelerator KeyCode/O)})
                     :build        (fx/menu-item {:text "Build" :disable true :on-action (put-ui-event-fn {:type :build}) :accelerator (gui/ctrl-key-accelerator KeyCode/B)})
                     :run          (fx/menu-item {:text "Run" :disable true :on-action (put-ui-event-fn {:type :run}) :accelerator (gui/ctrl-key-accelerator KeyCode/R)})

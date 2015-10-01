@@ -177,12 +177,16 @@
   (text-model-to-file app orig-key writer))
 
 (defn save-model-to-file [^App app name-key]
-  (let [^File file (name-keys-to-file (:project app) name-key)]
-    (fs/mkdirs (fs/parent file))
-    (with-open [writer (io/writer file)]
-      (model-to-file name-key name-key app writer)
-      )
-    (mark-file-write-synced app name-key)))
+  (if (is-dir app name-key)
+    (do
+      (fs/mkdirs (name-keys-to-file (:project app) name-key))
+      app)
+    (let [^File file (name-keys-to-file (:project app) name-key)]
+      (fs/mkdirs (fs/parent file))
+      (with-open [writer (io/writer file)]
+        (model-to-file name-key name-key app writer)
+        )
+      (mark-file-write-synced app name-key))))
 
 (defn zipiter-to-name-keys [zipiter]
   (vec (into (list (:name (zip/node zipiter))) (reverse (map :name (zip/path zipiter))))))
@@ -217,17 +221,21 @@
              (rest file-name-keys))
       app)))
 
-(defn- load-plugin [^App app]
+(defn- instantiate-plugin [^App app]
   {:pre [(not (nil? (:project app)))]}
   (let [plugin-key (:active-plugin (get-project-settings (:project app)))
         plugin-map (:plugins app)
         app (assoc-in app [:project :plugin] ((get plugin-map plugin-key (fn [] nil))))]
     app))
 
+(defn init-plugin-for-loaded-project [app]
+  (core/model-loaded (:plugin (:project app)) (:project app))
+  app)
+
 (defn load-settings [^App app]
   (-> app
       (load-files [settings-keyname])
-      (load-plugin)))
+      (instantiate-plugin)))
 
 (defn load-model-files [model-key ^App app]
   (let [p (:project app)
@@ -251,7 +259,34 @@
     (load-additions)
     (load-relations)
     (load-working-dir)
-    (load-output)))
+    (load-output)
+    (init-plugin-for-loaded-project)))
+
+(defn init-plugin-for-created-project [app]
+  (core/model-created (:plugin (:project app)) (:project app))
+  app)
+
+(defn new-project [app project-dir plugin]
+  (-> app
+      (assoc :fs-sync {})
+      (assoc :project (->
+                        (core/base-project project-dir)
+                        (assoc-in (concat (apply core/dir-keys [:settings "project.edn"]) [:data :active-plugin]) plugin)
+                        (assoc-in (apply core/dir-keys [core/output-keyname]) {:name core/output-keyname
+                                                                               :dir  {}})
+                        (assoc-in (apply core/dir-keys [core/additions-keyname]) {:name core/additions-keyname
+                                                                                  :dir  {}})
+                        (assoc-in (apply core/dir-keys [core/relations-keyname]) {:name core/relations-keyname
+                                                                                  :dir  {}})
+                        (assoc-in (apply core/dir-keys [core/workdir-keyname]) {:name core/workdir-keyname
+                                                                                :dir  {}})))
+
+      (instantiate-plugin)
+      (init-plugin-for-created-project)
+      ))
+
+(defn save-project [app]
+  (save-files app (get-model-file-keys (:project app) true)))
 
 (defn init-app []
   (register-plugins (->
