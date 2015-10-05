@@ -1,5 +1,6 @@
 (ns urdmi.core
-  (:use clojure.pprint)
+  (:use clojure.pprint
+        clojure.core.incubator)
   (:require [clojure.core.async :refer [chan go <! >!]]
             [clojure.java.io :as io]
             [me.raynes.fs :as fs]
@@ -8,7 +9,8 @@
             [clojure.string :as string]
             [urdmi.prolog :as prolog])
   (:import (java.io Writer Reader)
-           (java.nio.file Files CopyOption)))
+           (java.nio.file Files CopyOption)
+           (clojure.lang ISeq)))
 
 (import 'java.io.File)
 
@@ -27,6 +29,10 @@
 (defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])
 
 (defrecord App [^Project project ^clojure.lang.IPersistentMap plugins])
+
+;set - seq of [model-key value] pairs to add/modify in the model
+;remove- seq of model-keys to remove
+(defrecord ModelDiff [^ISeq set ^ISeq remove])
 
 (defn register-plugin [^App app name ^clojure.lang.IFn plugin]
   (assoc-in app [:plugins name] plugin))
@@ -97,10 +103,10 @@
   (if (= name-keys [])
     (fs/parent (name-keys-to-file p [:settings]))
     (apply fs/file (keep identity (map (fn [element]
-                                        (let [conv-fn (get model-path-to-file-map element)]
-                                          (if conv-fn
-                                            (conv-fn p)
-                                            element))) name-keys)))))
+                                         (let [conv-fn (get model-path-to-file-map element)]
+                                           (if conv-fn
+                                             (conv-fn p)
+                                             element))) name-keys)))))
 
 (import 'java.nio.file.Path)
 (defn relativize-path [^File src ^File target]
@@ -114,11 +120,11 @@
                         [k (name-keys-to-file p [k])])
         ]
     (first (mapcat (fn [[key ^File dir]]
-                   (let [^Path file-path (.toPath file)
-                         ^Path dir-path (.toPath dir)]
-                     (when (.startsWith file-path dir-path)
-                       (list (into [key] (fs/split (.toFile (.relativize dir-path file-path)))))
-                       ))) key-dir-pairs))))
+                     (let [^Path file-path (.toPath file)
+                           ^Path dir-path (.toPath dir)]
+                       (when (.startsWith file-path dir-path)
+                         (list (into [key] (fs/split (.toFile (.relativize dir-path file-path)))))
+                         ))) key-dir-pairs))))
 
 (defn file-model-branch? [m]
   (:dir m))
@@ -160,7 +166,7 @@
 (defn get-relations [^Project p]
   (map second (get-in p (dir-keys relations-keyname :dir))))
 
-(defn thread-interruped?[]
+(defn thread-interruped? []
   (Thread/interrupted))
 
 (defn dir-seq [^Project p dir-name-key]
@@ -173,3 +179,25 @@
         (let [[root subdirs files :as dir] (first dirs)]
           (recur (rest dirs) (into result (map #(fs/file root %) (concat files subdirs)))))
         ))))
+
+(defn get-model-entry [^Project p key]
+  (get-in p (apply dir-keys key)))
+
+(defn- set-model-entry [^Project p [key data]]
+  (let [data (assoc data :name (last key))
+        p (if (and (not-empty (butlast key)) (not (get-in p (apply dir-keys (butlast key)))))
+            ; parent not found - add with parent
+            (set-model-entry p [(butlast key) {:dir {(last key) data}}])
+            (assoc-in p (apply dir-keys key) data)
+            )]
+    p))
+
+(defn- remove-model-entry [^Project p key]
+  (dissoc-in p (apply dir-keys key)))
+
+(defn apply-diff [^Project p ^ModelDiff diff]
+  (if diff
+    (let [p (reduce set-model-entry p (:set diff))
+          p (reduce remove-model-entry p (:remove diff))]
+      p)
+    p))

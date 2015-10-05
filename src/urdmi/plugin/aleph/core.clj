@@ -94,7 +94,11 @@
     parser-context
     )
   (generate-output [this project run-result])
-  (model-created [this project])
+  (model-created [this project]
+    (core/->ModelDiff [[[:settings settings-filename] {:data {:target-rel nil
+                                                             :aleph-loc ""
+                                                             :swi-prolog-loc ""
+                                                             }}]] []))
   (model-loaded [this project])
   (model-modified [this project key]))
 

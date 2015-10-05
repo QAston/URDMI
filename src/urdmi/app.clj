@@ -15,7 +15,7 @@
             [me.raynes.fs :as fs]
             [urdmi.core :as core]
             [clojure.core.async :as async])
-  (:import (urdmi.core App Project)
+  (:import (urdmi.core App Project ModelDiff)
            (java.io File Reader Writer)
            (java.util Date)))
 
@@ -228,10 +228,6 @@
         app (assoc-in app [:project :plugin] ((get plugin-map plugin-key (fn [] nil))))]
     app))
 
-(defn init-plugin-for-loaded-project [app]
-  (core/model-loaded (:plugin (:project app)) (:project app))
-  app)
-
 (defn load-settings [^App app]
   (-> app
       (load-files [settings-keyname])
@@ -259,12 +255,7 @@
     (load-additions)
     (load-relations)
     (load-working-dir)
-    (load-output)
-    (init-plugin-for-loaded-project)))
-
-(defn init-plugin-for-created-project [app]
-  (core/model-created (:plugin (:project app)) (:project app))
-  app)
+    (load-output)))
 
 (defn new-project [app project-dir plugin]
   (-> app
@@ -281,12 +272,7 @@
                         (assoc-in (apply core/dir-keys [core/workdir-keyname]) {:name core/workdir-keyname
                                                                                 :dir  {}})))
 
-      (instantiate-plugin)
-      (init-plugin-for-created-project)
-      ))
-
-(defn save-project [app]
-  (save-files app (get-model-file-keys (:project app) true)))
+      (instantiate-plugin)))
 
 (defn init-app []
   (register-plugins (->
@@ -294,16 +280,3 @@
                       (assoc :fs-sync {})
                       (assoc :ui-requests (async/chan))))
   )
-
-(defn build-working-dir [^App app]
-  (let [p (:project app)]
-    (rebuild-working-dir (:plugin p) p))
-  )
-;todo: pass channel/writer/outputstream to the plugin, so it can provide async log updates
-; in addition to sync return value
-(defn run-learning [^App app]
-  (let [p (:project app)
-        result (run (:plugin p) p)]
-    (generate-output (:plugin p) p result)
-    (async/put! (:ui-requests app) {:type :log-datamining :message (:out result)})
-    result))

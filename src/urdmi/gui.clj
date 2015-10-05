@@ -32,19 +32,18 @@
 ;(defonce _ (do
 ;application level abstraction, implements presenting data from app model
 (defprotocol ContentPage
-  (container-node [this])
-  (show-data [this data data-key modified])
-  (read-data [this]))
+  (container-node [this] "returns JavaFX node which will be attached to the application window")
+  (show-data [this data data-key modified] "Called every time a page is shown. Data - project model, data-key - key in the model, modified - if model was modified from last call and redraw is needed")
+  (read-data [this] "should return model data for the key for which data is displayed"))
+
+(defprotocol PluginGui
+  (new-page [this project key >ui-requests] "Returns a view for editing/display of a menu entry"))
 
 ;implementation level abstraction, gui taking viewmodel
 (defprotocol DataWidget
   (get-node [this])
   (set-data! [this data data-key])
   (get-data [this]))
-
-(defprotocol PluginGui
-  (new-page [this project key >ui-requests] "Returns a view for editing/display of a menu entry")
-  (model-modified [this project key] "A hook called after project model was modified."))
 
 (ValueExtractor/addObservableValueExtractor (reify Predicate
                                               (test [this control]

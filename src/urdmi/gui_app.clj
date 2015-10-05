@@ -56,9 +56,6 @@
       (code-editor-gui/make-page (:ui-requests app))
       )))
 
-; todo: this should possibly be in app layer, not here?
-; sending in a channel consumed by this layer
-; problem: could not get old-app state from that layer
 (defmulti model-modified (fn [app old-app cascade-key orig-key]
                            cascade-key))
 
@@ -83,6 +80,8 @@
 
 (defmethod model-modified [] [app old-app cascade-key orig-key]
   app)
+
+(declare apply-diff-to-pages)
 
 (defn handle-model-modified [app old-app key]
   (when (app/plugin app)
@@ -189,12 +188,13 @@
   (-> app
       (assoc :fs-changes (watch-fs/changes-chan (app/get-model-dirs (:project app))))))
 
-(defn load-project [app dir]
+(defn change-project [app project-fn]
   (let [app (-> app
                 (switch-page [])
                 (dissoc :pages)
                 (stop-current-job)
-                (app/load-project dir))
+                (project-fn)
+                )
         proj (:project app)
         files-view-model (generate-menu-viewmodel proj)]
     (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
@@ -203,20 +203,32 @@
         (initialize-watching-fs)
         (switch-page []))))
 
+(defn load-project [app dir]
+  (let [apply-diff (fn [app]
+                     (if-let [model-diff (core/model-loaded (:plugin (:project app)) (:project app))]
+                       (do
+                         (doseq [key (:remove model-diff)]
+                           (fs/delete-dir (core/name-keys-to-file (:project app) key)))
+                         (assoc app :project
+                                    (core/apply-diff (:project app) model-diff)))
+                       app))]
+    (change-project app (fn [app]
+                          (-> app
+                              (app/load-project dir)
+                              (apply-diff))))))
+
 (defn create-project [app project-data]
-  (let [app (-> app
-                (switch-page [])
-                (dissoc :pages)
-                (stop-current-job)
-                (app/new-project (:project-dir project-data) (:plugin project-data))
-                (app/save-project))
-        proj (:project app)
-        files-view-model (generate-menu-viewmodel proj)]
-    (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
-             (update-main-menu-for-current-page! app))
-    (-> app
-        (initialize-watching-fs)
-        (switch-page []))))
+  (let [apply-diff (fn [app]
+                     (assoc app :project
+                                (core/apply-diff (:project app)
+                                                 (core/model-created (:plugin (:project app)) (:project app)))))
+        save-all (fn [app]
+                   (app/save-files app (app/get-model-file-keys (:project app) true)))]
+    (change-project app (fn [app]
+                          (-> app
+                              (app/new-project (:project-dir project-data) (:plugin project-data))
+                              (apply-diff)
+                              (save-all))))))
 
 (defmulti handle-request (fn [{:keys [type data]} app]
                            type))
@@ -248,6 +260,21 @@
           (revert-model-page key)
           (handle-model-modified old-app key))
       app)))
+
+(defn build-working-dir [app]
+  (let [p (:project app)]
+    (core/rebuild-working-dir (:plugin p) p))
+  )
+
+;todo: pass channel/writer/outputstream to the plugin, so it can provide async log updates
+; in addition to sync return value
+(defn run-learning [app]
+  (let [p (:project app)
+        result (core/run (:plugin p) p)]
+    ; todo: reload working dir here
+    (core/generate-output (:plugin p) p result)
+    (put! (:ui-requests app) {:type :log-datamining :message (:out result)})
+    result))
 
 (defmethod handle-request :revert-file [{:keys [type]} app]
   (revert-model-page app (:current-page-key app)))
@@ -360,12 +387,12 @@
 (defmethod handle-request :build [event app]
   (do-with-saved-project app "build"
                          (fn [app]
-                           (start-job app "Build" #(app/build-working-dir app)))))
+                           (start-job app "Build" #(build-working-dir app)))))
 
 (defmethod handle-request :run [event app]
   (do-with-saved-project app "run"
                          (fn [app]
-                           (start-job app "Run" #(app/run-learning app))
+                           (start-job app "Run" #(run-learning app))
                            )))
 
 (defmethod handle-request :build-run [event app]
@@ -373,8 +400,8 @@
                          (fn [app]
                            (start-job app "Build & Run"
                                       #(do
-                                        (app/build-working-dir app)
-                                        (app/run-learning app))))))
+                                        (build-working-dir app)
+                                        (run-learning app))))))
 
 (defmethod handle-request :delete-file [{:keys [key]} app]
   (if-let [file (core/name-keys-to-file (:project app) key)]
