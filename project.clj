@@ -21,7 +21,8 @@
                            [org.clojars.ato/clojure-jsr223 "1.5.1" :exclusions [org.clojure/clojure]]
                            ]
             :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]}}
-            :plugins [[lein-midje "3.0.0"]]
+            :plugins [[lein-midje "3.0.0"]
+                      [codox "0.8.13"]]
             :java-source-paths ["deps/jiprolog/src"]
             :javac-options ["-target" "1.8" "-source" "1.8"]
             :jvm-opts ["-Xmx2g"]
