@@ -32,7 +32,7 @@
   (let [plugin-settings (api/get-settings-data project settings-filename)
         target-relation (:target-rel plugin-settings)
         target-relation-param (:target-rel-param plugin-settings)
-        target-rel-asts (:ast (api/get-relation-data project target-relation))
+        target-rel-asts @(:data (api/get-relation project target-relation))
         ]
     (split-by-relation-arg target-rel-asts target-relation-param)
   ))
@@ -50,7 +50,7 @@
         ]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (doseq [rel background-relations]
-        (let [ast (:ast (api/get-relation-data project rel))]
+        (let [ast @(:data (api/get-relation project rel))]
           (.append writer (str "\n % relation: "(api/relation-to-string rel) "\n"))
           (prolog/pretty-print-sentences parser-context ast writer)
           ))
@@ -95,10 +95,11 @@
     )
   (generate-output [this project run-result])
   (model-created [this project]
-    (core/->ModelDiff [[[:settings settings-filename] {:data {:target-rel nil
-                                                             :aleph-loc ""
-                                                             :swi-prolog-loc ""
-                                                             }}]] []))
+    (core/->ModelDiff [[[:settings settings-filename] (core/file-item
+                                                        {:target-rel     nil
+                                                        :aleph-loc      ""
+                                                        :swi-prolog-loc ""
+                                                        })]] []))
   (model-loaded [this project])
   (model-modified [this project key]))
 

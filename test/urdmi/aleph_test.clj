@@ -28,3 +28,53 @@ pracownik(50,prezes,4,2,00,1).")
             ]
         (first result)  => (just (set (first rel-out)))
         (second result)  => (just (set (second rel-out)))))
+
+(fact "build project generates expected working_dir output for aleph"
+      (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")
+            backup-dir (fs/file "dev-resources/projects/aleph_default/working_dir_orig")]
+        (try
+          (core/move-file workdir-dir backup-dir)
+          (fs/mkdir workdir-dir)
+          (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))
+                parser-context (prolog/aleph-parser-context)]
+            (build-working-dir app)
+            (fact "pracownik.f"
+                  (with-open [rdr (io/reader (io/file workdir-dir "pracownik.f"))]
+                    (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
+                      (count sentences) => 17
+                      (distinct (map (fn [sentence]
+                                       (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
+            (fact "pracownik.n"
+                  (with-open [rdr (io/reader (io/file workdir-dir "pracownik.n"))]
+                    (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
+                      (count sentences) => 17
+                      (distinct (map (fn [sentence]
+                                       (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
+            (fact "pracownik.b"
+                  (with-open [rdr (io/reader (io/file workdir-dir "pracownik.b"))]
+                    (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
+                      (count sentences) => 1415
+                      (distinct (map (fn [sentence]
+                                       (:name (first (:children sentence)))) sentences)) => (just #{"dzial" "klient" "pracownikpersonalia" "pracownikprodukcja"
+                                                                                                    "produkcja" "towar" "zamowienie"
+                                                                                                    "zamowienieszczegoly" ":-"})))))
+          (finally
+            (fs/delete-dir workdir-dir)
+            (core/move-file backup-dir workdir-dir)
+            ))))
+
+(fact "build project generates expected working_dir output for aleph"
+      (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")
+            backup-working-dir (fs/file "dev-resources/projects/aleph_default/working_dir_orig")]
+        (try
+          (core/move-file workdir-dir backup-working-dir)
+          (fs/mkdir workdir-dir)
+          (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))]
+            (build-working-dir app)
+            (let [result (run-learning  app)]
+              (:exit result) => 0
+              (string/blank? (:out result)) => false))
+          (finally
+            (fs/delete-dir workdir-dir)
+            (core/move-file backup-working-dir workdir-dir)
+            ))))

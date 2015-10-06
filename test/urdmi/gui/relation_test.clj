@@ -11,7 +11,7 @@
       (fact "converts valid relations"
             (let [proj (:project (app/load-project (app/init-app) (fs/file "dev-resources/projects/aleph_default/")))]
               (relation/relations-model-to-viewmodel (prolog/parser-context [])
-                                                    (core/get-relation-data proj ["dzial" 6])) =>
+                                                    (core/get-relation proj ["dzial" 6])) =>
               {:name  "dzial"
                :arity 6
                :items [["1" "produkcja" "produkcyjna" "1" "null" "lapy"]

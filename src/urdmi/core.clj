@@ -8,11 +8,13 @@
             [clojure.edn :as edn]
             [clojure.string :as string]
             [urdmi.prolog :as prolog])
-  (:import (java.io Writer Reader)
+  (:import (java.io Writer Reader File)
            (java.nio.file Files CopyOption)
            (clojure.lang ISeq)))
 
-(import 'java.io.File)
+(defrecord FileItem [data])
+
+(defrecord DirItem [dir])
 
 (defprotocol Plugin
   "All urdmi plugins must implement this protocol"
@@ -49,27 +51,31 @@
 (def relations-dir-name "relations")
 (def working-dir-default-folder "working_dir")
 
+(defn instant [data]
+  "opposite of clojure.core/delay, because it's a fn, not a macro
+  data - data to be stored as immediately-resolved delay"
+  (delay data))
+
 (defn move-file [^File src ^File dst]
   (Files/move (.toPath src) (.toPath dst) (into-array CopyOption [])))
 
 (defn base-project [project-dir]
-  (->Project {settings-keyname {:name settings-keyname
-                                :dir
-                                      {"project.edn" {:name "project.edn"
-                                                      :data {:working-dir (io/file working-dir-default-folder)}}}}} project-dir nil))
-
-(defn dir-keys
+  (->Project {settings-keyname (map->DirItem {:name settings-keyname
+                                              :dir  {"project.edn" (map->FileItem {:name "project.edn"
+                                                                                  :data (instant {:working-dir (io/file working-dir-default-folder)})})}})}
+             project-dir nil))
+(defn model-map-keys
   "constructs a vector of keys into project :dir map from given node names (name-keys)"
   [& name-keys]
   (vec (dedupe (take (* 2 (count name-keys)) (interleave (repeat :dir) name-keys)))))
 
-(defn to-name-keys
+(defn to-item-key
   "constructs a vector of project node-names (model-keys) from a vector of keys into project :dir map"
   [dir-keys]
   (vec (remove (fn [k] (= :dir k)) dir-keys)))
 
 (defn get-project-settings [project]
-  (:data (get (:dir (:settings (:dir project))) "project.edn")))
+  @(:data (get (:dir (:settings (:dir project))) "project.edn")))
 
 (defn get-working-dir [project]
   (let [wdir (:working-dir (get-project-settings project))]
@@ -96,17 +102,17 @@
    settings-keyname  get-settings-dir
    additions-keyname get-additions-dir})
 
-(defn name-keys-to-file
+(defn item-key-to-file
   "Resolve name-keys to a java.io.File"
-  ^File [^Project p name-keys]
+  ^File [^Project p item-key]
 
-  (if (= name-keys [])
-    (fs/parent (name-keys-to-file p [:settings]))
+  (if (= item-key [])
+    (fs/parent (item-key-to-file p [:settings]))
     (apply fs/file (keep identity (map (fn [element]
                                          (let [conv-fn (get model-path-to-file-map element)]
                                            (if conv-fn
                                              (conv-fn p)
-                                             element))) name-keys)))))
+                                             element))) item-key)))))
 
 (import 'java.nio.file.Path)
 (defn relativize-path [^File src ^File target]
@@ -114,10 +120,10 @@
         ^Path target-path (.toPath target)]
     (.toFile (.relativize src-path target-path))))
 
-(defn file-to-name-keys
+(defn file-to-item-key
   [^Project p ^File file]
   (let [key-dir-pairs (for [k [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
-                        [k (name-keys-to-file p [k])])
+                        [k (item-key-to-file p [k])])
         ]
     (first (mapcat (fn [[key ^File dir]]
                      (let [^Path file-path (.toPath file)
@@ -133,8 +139,8 @@
   (seq (map second (:dir m))))
 
 (defn file-model-make-node [node children]
-  (assoc node :dir (into {} (map (fn [child]
-                                   [(:name child) child]) children))))
+  (map->DirItem (assoc node :dir (into {} (map (fn [child]
+                                                 [(:name child) child]) children)))))
 
 (defn file-model-zipper [root]
   (zip/zipper file-model-branch? file-model-children file-model-make-node root))
@@ -157,20 +163,20 @@
 (defn relation-to-string [[relname relarity]]
   (str relname "/" relarity))
 
-(defn get-relation-data [^Project p [relname relarity :as rel]]
-  (get-in p (dir-keys relations-keyname (relation-to-filename rel))))
+(defn get-relation [^Project p [relname relarity :as rel]]
+  (get-in p (model-map-keys relations-keyname (relation-to-filename rel))))
 
 (defn get-settings-data [^Project p settings-filename]
-  (:data (get-in p (dir-keys settings-keyname settings-filename))))
+  @(:data (get-in p (model-map-keys settings-keyname settings-filename))))
 
 (defn get-relations [^Project p]
-  (map second (get-in p (dir-keys relations-keyname :dir))))
+  (map second (get-in p (model-map-keys relations-keyname :dir))))
 
 (defn thread-interruped? []
   (Thread/interrupted))
 
-(defn dir-seq [^Project p dir-name-key]
-  (let [root-dir (name-keys-to-file p dir-name-key)
+(defn dir-seq [^Project p dir-item-key]
+  (let [root-dir (item-key-to-file p dir-item-key)
         dirs (fs/iterate-dir root-dir)
         ]
     (loop [dirs dirs result []]
@@ -180,24 +186,29 @@
           (recur (rest dirs) (into result (map #(fs/file root %) (concat files subdirs)))))
         ))))
 
-(defn get-model-entry [^Project p key]
-  (get-in p (apply dir-keys key)))
+(defn get-model-item [^Project p key]
+  (get-in p (apply model-map-keys key)))
 
-(defn- set-model-entry [^Project p [key data]]
-  (let [data (assoc data :name (last key))
-        p (if (and (not-empty (butlast key)) (not (get-in p (apply dir-keys (butlast key)))))
+(defn file-item
+  "Constructs a FileItem instance with in-memory contents"
+  [data]
+  (->FileItem (instant data)))
+
+(defn- set-model-item [^Project p [key item]]
+  (let [item (assoc item :name (last key))
+        p (if (and (not-empty (butlast key)) (not (get-in p (apply model-map-keys (butlast key)))))
             ; parent not found - add with parent
-            (set-model-entry p [(butlast key) {:dir {(last key) data}}])
-            (assoc-in p (apply dir-keys key) data)
+            (set-model-item p [(butlast key) (->DirItem item)])
+            (assoc-in p (apply model-map-keys key) item)
             )]
     p))
 
-(defn- remove-model-entry [^Project p key]
-  (dissoc-in p (apply dir-keys key)))
+(defn- remove-model-item [^Project p key]
+  (dissoc-in p (apply model-map-keys key)))
 
 (defn apply-diff [^Project p ^ModelDiff diff]
   (if diff
-    (let [p (reduce set-model-entry p (:set diff))
-          p (reduce remove-model-entry p (:remove diff))]
+    (let [p (reduce set-model-item p (:set diff))
+          p (reduce remove-model-item p (:remove diff))]
       p)
     p))

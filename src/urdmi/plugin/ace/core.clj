@@ -23,7 +23,7 @@
         ]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (doseq [rel background-relations]
-        (let [ast (:ast (api/get-relation-data project rel))]
+        (let [ast @(:data (api/get-relation project rel))]
           (.append writer (str "\n % relation: " (api/relation-to-string rel) "\n"))
           (prolog/pretty-print-sentences parser-context ast writer)
           ))
@@ -33,7 +33,7 @@
 (defn- build-knowledge-base-file [plugin project]
   (let [working-dir (api/get-working-dir project)
         plugin-settings (api/get-settings-data project settings-filename)
-        target-rel-asts (:ast (api/get-relation-data project (:target-rel plugin-settings)))
+        target-rel-asts @(:data (api/get-relation project (:target-rel plugin-settings)))
         parser-context (core/get-parser-context plugin)
         filename (str (get-app-name project) ".kb")]
     (with-open [writer (io/writer (io/file working-dir filename))]
@@ -68,9 +68,9 @@
     )
   (generate-output [this project run-result])
   (model-created [this project]
-    (core/->ModelDiff [[[:settings settings-filename] {:data {:target-rel nil
-                                                              :ace-loc ""
-                                                              }}]] []))
+    (core/->ModelDiff [[[:settings settings-filename] (core/file-item {:target-rel nil
+                                                                       :ace-loc    ""
+                                                                       })]] []))
   (model-loaded [this project])
   (model-modified [this project key]))
 

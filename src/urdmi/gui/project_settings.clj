@@ -27,14 +27,13 @@
   (show-data [this project key modified]
     (reset! current-page nil)
     (when modified
-      (let [data (:data (get-in project (apply core/dir-keys key)))]
+      (let [data @(:data (get-in project (apply core/model-map-keys key)))]
         (.setValue (:active-plugin properties-map) (name (:active-plugin data)))
         (.setValue (:working-dir properties-map) (str (:working-dir data)))))
     (reset! current-page key))
   (read-data [this]
-    {:data {:active-plugin (keyword (.getValue (:active-plugin properties-map)))
-            :working-dir   (io/file (.getValue (:working-dir properties-map)))
-            }}))
+    (core/file-item {:active-plugin (keyword (.getValue (:active-plugin properties-map)))
+             :working-dir   (io/file (.getValue (:working-dir properties-map)))})))
 
 (defn make-page [>ui-requests project]
   (let [current-page (atom nil)

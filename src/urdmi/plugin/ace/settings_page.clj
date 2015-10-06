@@ -26,7 +26,7 @@
       (reset! current-page nil)
       (if modified
         ; reload whole page
-        (let [data (:data (get-in project (apply core/dir-keys key)))
+        (let [data (core/get-settings-data project (last key))
               relations (doall (map :rel (core/get-relations project)))
               target-rel (let [index (.indexOf relations (:target-rel data))]
                            (when-not (= index -1)
@@ -48,10 +48,10 @@
       (reset! current-page key)))
   (read-data [this]
     (let [{:keys [relation relation-term]} (.getValue (:target-term properties-map))]
-      {:data {:ace-loc          (.getValue (:ace-loc properties-map))
-              :target-rel       (.getValue relation)
-              :target-rel-param (.getValue relation-term)
-              }})))
+      (core/file-item {:ace-loc          (.getValue (:ace-loc properties-map))
+                       :target-rel       (.getValue relation)
+                       :target-rel-param (.getValue relation-term)
+                       }))))
 
 (def fields [:ace-loc :target-term])
 

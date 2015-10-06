@@ -31,10 +31,10 @@ dzial(7,reklamacja,lipowa,1,5,bialystok).
 dzial(8,informatyka,produkcyjna,1,1,lapy).
 ")
             rels (core/get-relations loaded)
-            relkeys (map first (get-in loaded (core/dir-keys core/relations-keyname :dir)))]
+            relkeys (map first (get-in loaded (core/model-map-keys core/relations-keyname :dir)))]
         (map :name rels) => (just #{"towar_6.pl" "produkcja_5.pl" "pracownik_7.pl" "pracownikpersonalia_8.pl" "klient_9.pl" "zamowienieszczegoly_4.pl" "pracownikprodukcja_6.pl" "zamowienie_5.pl" "dzial_6.pl"})
         (map :rel rels) => (just #{["dzial" 6] ["klient" 9] ["pracownik" 7] ["pracownikpersonalia" 8] ["pracownikprodukcja" 6] ["produkcja" 5] ["towar" 6] ["zamowienie" 5] ["zamowienieszczegoly" 4]})
-        (:ast (core/get-relation-data loaded ["dzial" 6])) => dzial-6-rel
+        @(:data (core/get-relation loaded ["dzial" 6])) => dzial-6-rel
         relkeys => (just #{"towar_6.pl" "produkcja_5.pl" "pracownik_7.pl" "pracownikpersonalia_8.pl" "klient_9.pl" "zamowienieszczegoly_4.pl" "pracownikprodukcja_6.pl" "zamowienie_5.pl" "dzial_6.pl"})))
 
 
@@ -42,8 +42,8 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
       (let [base (-> (base-app (fs/file "dev-resources/projects/ace_tilde/"))
                      (app/load-working-dir)
                      (:project))
-            tildedir (get-in base (core/dir-keys core/workdir-keyname "tilde"))
-            outfile (get-in base (core/dir-keys core/workdir-keyname "tilde" "pracownik.out"))]
+            tildedir (get-in base (core/model-map-keys core/workdir-keyname "tilde"))
+            outfile (get-in base (core/model-map-keys core/workdir-keyname "tilde" "pracownik.out"))]
         (:name tildedir) => "tilde"
         (:name outfile) => "pracownik.out"
         (map first (:dir tildedir)) => (just #{"pracownik.out" "pracownik.progress" "pracownik.ptree"})))
@@ -61,14 +61,14 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
       (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
                      (app/load-additions)
                      (:project))
-            additions (get-in base (core/dir-keys core/additions-keyname :dir))]
+            additions (get-in base (core/model-map-keys core/additions-keyname :dir))]
         (map first additions) => (just #{"pracownik.b"})))
 
 (fact "load output"
       (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
                      (app/load-output)
                      (:project))
-            additions (get-in base (core/dir-keys core/output-keyname :dir))]
+            additions (get-in base (core/model-map-keys core/output-keyname :dir))]
         (map first additions) => (just #{"result.edn"})))
 
 (fact "init-app loads plugins"
@@ -77,108 +77,25 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 
 (fact "load settings"
       (let [app (base-app (fs/file "dev-resources/projects/aleph_default/"))
-            settings (get-in (:project app) (core/dir-keys core/settings-keyname :dir))]
+            settings (get-in (:project app) (core/model-map-keys core/settings-keyname :dir))]
         (map first settings) => (just #{"project.edn" "aleph.edn"})
-        (get-in settings ["project.edn" :data]) => {:working-dir (io/file "working_dir") :active-plugin :aleph}
-        (get-in settings ["aleph.edn" :data]) => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 7}
-        (core/get-settings-data (:project app) "aleph.edn") => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 7}
+        @(get-in settings ["project.edn" :data]) => {:working-dir (io/file "working_dir") :active-plugin :aleph}
+        @(get-in settings ["aleph.edn" :data]) => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
+        (core/get-settings-data (:project app) "aleph.edn") => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
         (extends? core/Plugin (class (get-in app [:project :plugin]))) => truthy))
 
 (fact "load project populates project fields"
       (let [proj (:project (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/")))]
-        (< 0 (count (get-in proj (core/dir-keys core/relations-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/dir-keys core/additions-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/dir-keys core/workdir-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/dir-keys core/output-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/dir-keys core/settings-keyname :dir)))) => truthy))
+        (< 0 (count (get-in proj (core/model-map-keys core/relations-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/model-map-keys core/additions-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/model-map-keys core/workdir-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/model-map-keys core/output-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/model-map-keys core/settings-keyname :dir)))) => truthy))
 
-(fact "build project generates expected working_dir output for aleph"
-      (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")
-            backup-dir (fs/file "dev-resources/projects/aleph_default/working_dir_orig")]
-        (try
-          (core/move-file workdir-dir backup-dir)
-          (fs/mkdir workdir-dir)
-          (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))
-                parser-context (prolog/aleph-parser-context)]
-            (build-working-dir app)
-            (fact "pracownik.f"
-                  (with-open [rdr (io/reader (io/file workdir-dir "pracownik.f"))]
-                    (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
-                      (count sentences) => 17
-                      (distinct (map (fn [sentence]
-                                       (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
-            (fact "pracownik.n"
-                  (with-open [rdr (io/reader (io/file workdir-dir "pracownik.n"))]
-                    (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
-                      (count sentences) => 17
-                      (distinct (map (fn [sentence]
-                                       (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
-            (fact "pracownik.b"
-                  (with-open [rdr (io/reader (io/file workdir-dir "pracownik.b"))]
-                    (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
-                      (count sentences) => 1415
-                      (distinct (map (fn [sentence]
-                                       (:name (first (:children sentence)))) sentences)) => (just #{"dzial" "klient" "pracownikpersonalia" "pracownikprodukcja"
-                                                                                                    "produkcja" "towar" "zamowienie"
-                                                                                                    "zamowienieszczegoly" ":-"})))))
-          (finally
-            (fs/delete-dir workdir-dir)
-            (core/move-file backup-dir workdir-dir)
-            ))))
-
-(fact "build project generates expected working_dir output for aleph"
-      (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")
-            backup-working-dir (fs/file "dev-resources/projects/aleph_default/working_dir_orig")]
-        (try
-          (core/move-file workdir-dir backup-working-dir)
-          (fs/mkdir workdir-dir)
-          (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/"))]
-            (build-working-dir app)
-            (let [result (run-learning  app)]
-              (:exit result) => 0
-              (string/blank? (:out result)) => false))
-          (finally
-            (fs/delete-dir workdir-dir)
-            (core/move-file backup-working-dir workdir-dir)
-            ))))
-
-(fact "build project generates expected working_dir output for ace"
-      (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))
-            parser-context (prolog/ace-parser-context)
-            workdir-dir (core/get-working-dir (:project app))]
-        (build-working-dir app)
-        (fact "pracownik.s"
-              (with-open [rdr (io/reader (io/file workdir-dir "pracownik.s"))]
-                (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
-                  (count sentences) => 26
-                  (distinct (map (fn [sentence]
-                                   (:name (first (:children sentence)))) sentences)) => (list "load" "tilde_mode" "talking" "predict" "typed_language" "type" "rmode"))))
-        (fact "pracownik.kb"
-              (with-open [rdr (io/reader (io/file workdir-dir "pracownik.kb"))]
-                (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
-                  (count sentences) => 34
-                  (distinct (map (fn [sentence]
-                                   (:name (first (:children sentence)))) sentences)) => (list "pracownik"))))
-        (fact "pracownik.bg"
-              (with-open [rdr (io/reader (io/file workdir-dir "pracownik.bg"))]
-                (let [sentences (doall (prolog/prolog-sentence-seq parser-context rdr))]
-                  (count sentences) => 1379
-                  (distinct (map (fn [sentence]
-                                   (:name (first (:children sentence)))) sentences)) => (just #{"dzial" "klient" "pracownikpersonalia" "pracownikprodukcja"
-                                                                                                "produkcja" "towar" "zamowienie"
-                                                                                                "zamowienieszczegoly"}))))))
-
-(fact "build project generates expected working_dir output for ace"
-      (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
-        (build-working-dir app)
-        (let [result (run-learning app)]
-          (:exit result) => 0
-          (string/blank? (:out result)) => false)))
-
-(facts get-model-file-keys
+(facts get-model-item-keys
        (fact "returns file-name-keys for example project"
              (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
-               (get-model-file-keys (:project app))) => (just #{[:additions "pracownik.s"]
+               (get-model-item-keys (:project app))) => (just #{[:additions "pracownik.s"]
                                                                 [:settings "project.edn"]
                                                                 [:settings "ace.edn"]
                                                                 [:working-dir "pracownik.bg.w"]
@@ -212,14 +129,14 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
                                                    })))
 
 (defn dir-equals [proj-a proj-b]
-  (let [files (get-model-file-keys proj-a)]
+  (let [files (get-model-item-keys proj-a)]
     (doseq [file files]
-      (with-open [file-a (io/reader (core/name-keys-to-file proj-a file))
-                  file-b (io/reader (core/name-keys-to-file proj-b file))]
+      (with-open [file-a (io/reader (core/item-key-to-file proj-a file))
+                  file-b (io/reader (core/item-key-to-file proj-b file))]
         (while (let [a (.read file-a)
                      b (.read file-b)]
                  (when-not (= a b)
-                   (throw (Exception. (str "files" (core/name-keys-to-file proj-a file) (core/name-keys-to-file proj-b file) " differ"))))
+                   (throw (Exception. (str "files" (core/item-key-to-file proj-a file) (core/item-key-to-file proj-b file) " differ"))))
                  (not= a -1)))))))
 
 (fact "saving a copy of project in another place produces an exact copy"
@@ -228,18 +145,18 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
           (let [orig-app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))
                 _ (fs/mkdir copy-proj-dir)
                 app (assoc-in orig-app [:project :project-dir] copy-proj-dir)
-                app (save-files app (get-model-file-keys (:project app)))
+                app (save-files app (get-model-item-keys (:project app)))
                 copy-app (app/load-project (init-app) copy-proj-dir)]
-            (get-model-file-keys (:project orig-app)) => (get-model-file-keys (:project copy-app))
+            (get-model-item-keys (:project orig-app)) => (get-model-item-keys (:project copy-app))
             (dir-equals (:project orig-app) (:project copy-app))
             )
           (finally
             (fs/delete-dir copy-proj-dir)))
         ))
 
-(fact core/file-to-name-keys
+(fact core/file-to-item-key
       (let [proj-dir (fs/file "dev-resources/projects/ace_tilde/")
             app (app/load-project (init-app) proj-dir)]
-        (core/file-to-name-keys (:project app) (fs/file "dev-resources/projects/ace_tilde/relations/dzial_6.pl")) => [:relations "dzial_6.pl"]))
+        (core/file-to-item-key (:project app) (fs/file "dev-resources/projects/ace_tilde/relations/dzial_6.pl")) => [:relations "dzial_6.pl"]))
 
 (future-fact "provide [apply] button for settings, settings until 'applied' are stored locally on screen")

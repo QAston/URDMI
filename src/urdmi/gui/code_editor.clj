@@ -86,10 +86,10 @@
     (gui/get-node widget))
   (show-data [this project data-key modified]
     (when modified
-      (gui/set-data! widget @(:text (get-in project (apply core/dir-keys data-key))) data-key)))
+      (gui/set-data! widget @(:data (get-in project (apply core/model-map-keys data-key))) data-key)))
   (read-data [this]
-    {:text (delay (gui/get-data widget))}
-    ))
+    (core/file-item (gui/get-data widget)))
+    )
 
 (defn make-page [ui-requests]
   (->CodeEditorPage (make-widget ui-requests)))

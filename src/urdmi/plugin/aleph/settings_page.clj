@@ -24,7 +24,7 @@
   (show-data [this project key modified]
     (reset! current-page nil)
     (if modified
-      (let [data (:data (get-in project (apply core/dir-keys key)))
+      (let [data (core/get-settings-data project (last key))
             relations (doall (map :rel (core/get-relations project)))
             target-rel (let [index (.indexOf relations (:target-rel data))]
                          (when-not (= index -1)
@@ -47,11 +47,11 @@
     )
   (read-data [this]
     (let [{:keys [relation relation-term]} (.getValue (:target-term properties-map))]
-      {:data {:aleph-loc        (.getValue (:aleph-loc properties-map))
-              :swi-prolog-loc   (.getValue (:swi-prolog-loc properties-map))
-              :target-rel       (.getValue relation)
-              :target-rel-param (.getValue relation-term)
-              }})))
+      (core/file-item {:aleph-loc        (.getValue (:aleph-loc properties-map))
+                       :swi-prolog-loc   (.getValue (:swi-prolog-loc properties-map))
+                       :target-rel       (.getValue relation)
+                       :target-rel-param (.getValue relation-term)
+                       }))))
 
 (def fields [:aleph-loc :swi-prolog-loc :target-term])
 

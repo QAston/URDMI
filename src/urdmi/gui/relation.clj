@@ -489,7 +489,7 @@
                                 (.toString writer))))))))))
 
 (defn relations-model-to-viewmodel [parser-context rel]
-  (let [rel-asts (:ast rel)
+  (let [rel-asts @(:data rel)
         [rel-name rel-arity] (:rel rel)]
     {:name  rel-name
      :arity rel-arity
@@ -497,20 +497,22 @@
     ))
 
 (defn relations-viewmodel-to-model [parser-context viewmodel]
-  {:name (str (:name viewmodel) "_" (:arity viewmodel) ".pl")
-   :rel  [(:name viewmodel) (:arity viewmodel)]
-   :ast  (let [items (:items viewmodel)
-               head {:type :ast-atom :name (:name viewmodel)}]
-           (for [row items]
-             {:type     :ast-functor
-              :children (doall
-                          (cons head
-                                (for [item row
-                                      :let [term (prolog/parse-single-term parser-context item)]]
-                                  (if term
-                                    term
-                                    {:type     :ast-functor
-                                     :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))}))})
+  (let [data (let [items (:items viewmodel)
+                     head {:type :ast-atom :name (:name viewmodel)}]
+               (doall (for [row items]
+                  {:type     :ast-functor
+                   :children (doall
+                               (cons head
+                                     (for [item row
+                                           :let [term (prolog/parse-single-term parser-context item)]]
+                                       (if term
+                                         term
+                                         {:type     :ast-functor
+                                          :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))})))]
+
+    {:name (str (:name viewmodel) "_" (:arity viewmodel) ".pl")
+     :rel  [(:name viewmodel) (:arity viewmodel)]
+     :data (core/instant data)}))
 
 (deftype RelationPage [widget parser-context]
   gui/ContentPage
@@ -519,10 +521,10 @@
   (show-data [this project data-key modified]
     (when modified
       (let [rel-view-model (relations-model-to-viewmodel parser-context
-                                                        (get-in project (apply core/dir-keys data-key)))]
+                                                        (get-in project (apply core/model-map-keys data-key)))]
        (fx/run! (gui/set-data! widget rel-view-model data-key)))))
   (read-data [this]
-    (relations-viewmodel-to-model parser-context (gui/get-data widget))
+    (core/map->FileItem (relations-viewmodel-to-model parser-context (gui/get-data widget)))
     ))
 
 (defn make-page [ui-requests parser-context]

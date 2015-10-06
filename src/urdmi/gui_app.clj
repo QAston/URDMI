@@ -22,7 +22,7 @@
            (java.awt Desktop)))
 
 (defn generate-menu-viewmodel [^Project p]
-  (let [vm (for [file (app/get-model-file-keys p true)]
+  (let [vm (for [file (app/get-model-item-keys p true)]
              (case file
                [:working-dir] {:name "Working dir" :path file}
                [:additions] {:name "Additions" :path file}
@@ -50,7 +50,7 @@
 
 (defmethod generate-page [] [cascade-key orig-key app]
   (let [proj (:project app)
-        data (get-in proj (apply core/dir-keys orig-key))]
+        data (get-in proj (apply core/model-map-keys orig-key))]
     (if-not (:text data)
       empty-gui/empty-page
       (code-editor-gui/make-page (:ui-requests app))
@@ -72,7 +72,7 @@
     (if (not= (core/get-working-dir old-project) (core/get-working-dir project))
       (-> app
           (remove-pages (->> (:project app)
-                             (app/get-model-file-keys true)
+                             (app/get-model-item-keys true)
                              (filter #(= :working-dir (first %)))))
           (initialize-watching-fs)
           (load-pages (core/dir-seq (:project app) [:working-dir])))
@@ -208,7 +208,7 @@
                      (if-let [model-diff (core/model-loaded (:plugin (:project app)) (:project app))]
                        (do
                          (doseq [key (:remove model-diff)]
-                           (fs/delete-dir (core/name-keys-to-file (:project app) key)))
+                           (fs/delete-dir (core/item-key-to-file (:project app) key)))
                          (assoc app :project
                                     (core/apply-diff (:project app) model-diff)))
                        app))]
@@ -223,7 +223,7 @@
                                 (core/apply-diff (:project app)
                                                  (core/model-created (:plugin (:project app)) (:project app)))))
         save-all (fn [app]
-                   (app/save-files app (app/get-model-file-keys (:project app) true)))]
+                   (app/save-files app (app/get-model-item-keys (:project app) true)))]
     (change-project app (fn [app]
                           (-> app
                               (app/new-project (:project-dir project-data) (:plugin project-data))
@@ -253,7 +253,7 @@
 
 (defn reload-model-page [app key]
   (let [old-app app
-        file (core/name-keys-to-file (:project app) key)
+        file (core/item-key-to-file (:project app) key)
         app (app/load-file-to-model app file)]
     (if (get-in app [:pages key])
       (-> app
@@ -286,7 +286,7 @@
   (let [old-app app
         app-page (get-in app [:pages page-key])
         page (:page app-page)
-        old-page-data (get-in (:project app) (apply core/dir-keys page-key))
+        old-page-data (get-in (:project app) (apply core/model-map-keys page-key))
         page-data (merge old-page-data
                          (gui/read-data page))
         new-page-key (conj (vec (butlast page-key)) (:name page-data))
@@ -307,8 +307,8 @@
                                            (mark-page-needs-data-sync new-page-key))
                                        app))
         proj (-> (:project app)
-                 (dissoc-in (apply core/dir-keys page-key))
-                 (assoc-in (apply core/dir-keys new-page-key) page-data))
+                 (dissoc-in (apply core/model-map-keys page-key))
+                 (assoc-in (apply core/model-map-keys new-page-key) page-data))
         app (-> app
                 (assoc-in [:pages new-page-key]
                           (-> app-page
@@ -331,7 +331,7 @@
     (when-not (= page-key new-page-key)
       ;todo:
       ;disallow renaming file to an already existing one!
-      (fs/delete (core/name-keys-to-file proj page-key)))
+      (fs/delete (core/item-key-to-file proj page-key)))
     app))
 
 (defmethod handle-request :save-file [{:keys [type]} app]
@@ -404,13 +404,13 @@
                                         (run-learning app))))))
 
 (defmethod handle-request :delete-file [{:keys [key]} app]
-  (if-let [file (core/name-keys-to-file (:project app) key)]
+  (if-let [file (core/item-key-to-file (:project app) key)]
     (when (.exists file)
       (fs/delete-dir file)))
   app)
 
 (defmethod handle-request :open-location [{:keys [key]} app]
-  (if-let [file (core/name-keys-to-file (:project app) key)]
+  (if-let [file (core/item-key-to-file (:project app) key)]
     (when (.exists file)
       (let [file (if (fs/directory? file)
                    file
@@ -421,7 +421,7 @@
 
 (defmethod handle-request :new-relation [{:keys [key]} app]
   (if-let [rel (fx/run<!! (dialogs/new-relation (:stage app) (app/plugin-parser-context app)))]
-    (let [file (core/name-keys-to-file (:project app) [:relations (core/relation-to-filename rel)])]
+    (let [file (core/item-key-to-file (:project app) [:relations (core/relation-to-filename rel)])]
       (fs/create file)
       ))
   app)
@@ -430,8 +430,8 @@
                              event))
 
 (defn load-model-page [app file]
-  (let [file-key (core/file-to-name-keys (:project app) file)
-        app (if-not (get-in (:project app) (apply core/dir-keys (butlast file-key)))
+  (let [file-key (core/file-to-item-key (:project app) file)
+        app (if-not (get-in (:project app) (apply core/model-map-keys (butlast file-key)))
               ; parent dir not found - load
               (load-model-page app (fs/parent file))
               app
@@ -446,8 +446,8 @@
   (reduce load-model-page app files))
 
 (defmethod handle-fs-change :create [[event file time] app]
-  (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
-    (if (get-in (:project app) (apply core/dir-keys file-key))
+  (let [file-key (core/file-to-item-key (:project app) (fs/file file))]
+    (if (get-in (:project app) (apply core/model-map-keys file-key))
       app
       (load-model-page app file))))
 
@@ -466,13 +466,13 @@
   ; skip events on dirs
   (if (.isDirectory file)
     app
-    (let [file-key (core/file-to-name-keys (:project app) file)]
-      (if-not (and (fs/exists? file) (get-in (:project app) (apply core/dir-keys file-key)))
+    (let [file-key (core/file-to-item-key (:project app) file)]
+      (if-not (and (fs/exists? file) (get-in (:project app) (apply core/model-map-keys file-key)))
         app
         (let [{:keys [app needs-sync]} (app/update-fs-sync-status app file-key time)]
           (if-not needs-sync
             app
-            (if (or (not (is-page-modified-or-current app (core/file-to-name-keys (:project app) file)))
+            (if (or (not (is-page-modified-or-current app (core/file-to-item-key (:project app) file)))
                     (fx/run<!! (dialogs/reload-modified-file (:stage app) file)))
               (reload-model-page app file-key)
               (mark-page-desynced app file-key))
@@ -486,7 +486,7 @@
 (defn remove-model-page [app file-key]
   (let [app (remove-pages app
                           (->> (:project app)
-                               (app/get-model-file-keys true)
+                               (app/get-model-item-keys true)
                                (filter #(= file-key (butlast %)))))]
     (fx/run!
       (main-gui/remove-file! (:main-screen app) file-key))
@@ -500,8 +500,8 @@
   (reduce remove-model-page app file-keys))
 
 (defmethod handle-fs-change :delete [[event file time] app]
-  (let [file-key (core/file-to-name-keys (:project app) (fs/file file))]
-    (if-not (get-in (:project app) (apply core/dir-keys file-key))
+  (let [file-key (core/file-to-item-key (:project app) (fs/file file))]
+    (if-not (get-in (:project app) (apply core/model-map-keys file-key))
       app
       (remove-model-page app file-key))))
 

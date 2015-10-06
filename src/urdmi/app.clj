@@ -31,70 +31,80 @@
 (defn plugin [^App app]
   (:plugin (:project app)))
 
-(defmulti file-to-model (fn [cascade-key orig-key ^App app ^Reader reader]
+(defmulti file-to-model (fn [cascade-key orig-key ^App app]
                           cascade-key))
 
-(defmethod file-to-model :default [cascade-key orig-key ^App app ^Reader reader]
-  (file-to-model (vec (butlast cascade-key)) orig-key app reader))
+(defmethod file-to-model :default [cascade-key orig-key ^App app]
+  (file-to-model (vec (butlast cascade-key)) orig-key app))
 
-(defmethod file-to-model [] [cascade-key orig-key ^App app ^Reader reader]
+(defmethod file-to-model [] [cascade-key orig-key ^App app]
   {})
 
-(defmethod file-to-model [core/settings-keyname "project.edn"] [cascade-key orig-key ^App app ^Reader reader]
-  (let [data (edn/read (java.io.PushbackReader. reader))]
-    {:data (update data :working-dir (fn [workdir]
-                                       (io/file workdir)))}
-    ))
+(defmethod file-to-model [core/settings-keyname "project.edn"] [cascade-key orig-key ^App app]
+  (->FileItem
+    (delay
+      (with-open [reader (io/reader (item-key-to-file (:project app) orig-key))]
+        (->
+          (edn/read (java.io.PushbackReader. reader))
+          (update :working-dir (fn [workdir]
+                                 (io/file workdir)))))))
+  )
 
-(defmethod file-to-model [core/settings-keyname] [cascade-key orig-key ^App app ^Reader reader]
-  (let [data (edn/read (java.io.PushbackReader. reader))]
-    {:data data}
-    ))
+(defmethod file-to-model [core/settings-keyname] [cascade-key orig-key ^App app]
+  (->FileItem
+    (delay
+      (with-open [reader (io/reader (item-key-to-file (:project app) orig-key))]
+        (edn/read (java.io.PushbackReader. reader)))))
+  )
 
-(defmethod file-to-model [core/relations-keyname] [cascade-key orig-key ^App app ^Reader reader]
+(defmethod file-to-model [core/relations-keyname] [cascade-key orig-key ^App app]
   (let [parser-context (plugin-parser-context app)
-        asts (doall (prolog/prolog-sentence-seq parser-context reader))
         [_ name arity] (re-find #"(.*)_(.*)\.pl" (last orig-key))]
-    {:rel [name (Integer/valueOf ^String arity)]
-     :ast asts}
+    (map->FileItem
+      {:rel  [name (Integer/valueOf ^String arity)]
+       :data (delay
+               (with-open [reader (io/reader (item-key-to-file (:project app) orig-key))]
+                 (doall (prolog/prolog-sentence-seq parser-context reader))))})
     ))
 
-(defn text-file-to-model [^App app name-key]
-  {:text (delay
-           (slurp (name-keys-to-file (:project app) name-key)))})
+(defn text-file-to-model [^App app item-key]
+  (->
+    (->FileItem (delay
+                 (slurp (item-key-to-file (:project app) item-key))))
+    (assoc :text true)))
 
-(defmethod file-to-model [core/additions-keyname] [cascade-key orig-key ^App app ^Reader reader]
+(defmethod file-to-model [core/additions-keyname] [cascade-key orig-key ^App app]
   (text-file-to-model app orig-key))
 
-(defmethod file-to-model [core/workdir-keyname] [cascade-key orig-key ^App app ^Reader reader]
+(defmethod file-to-model [core/workdir-keyname] [cascade-key orig-key ^App app]
   (text-file-to-model app orig-key))
 
-(defmethod file-to-model [core/output-keyname] [cascade-key orig-key ^App app ^Reader reader]
+(defmethod file-to-model [core/output-keyname] [cascade-key orig-key ^App app]
   (text-file-to-model app orig-key))
 
-(defn mark-file-desynced [^App app file-key]
+(defn mark-file-desynced [^App app item-key]
   (-> app
-      (dissoc-in [:fs-sync file-key])))
+      (dissoc-in [:fs-sync item-key])))
 
-(defn is-dir [app file-key]
-  (:dir (get-in (:project app) (apply core/dir-keys file-key))))
+(defn is-dir [app item-key]
+  (:dir (get-in (:project app) (apply core/model-map-keys item-key))))
 
-(defn is-desynced [^App app file-key]
-  (and (not (is-dir app file-key))
-       (not (get-in app [:fs-sync file-key]))))
+(defn is-desynced [^App app item-key]
+  (and (not (is-dir app item-key))
+       (not (get-in app [:fs-sync item-key]))))
 
-(defn mark-file-read-synced [^App app file-key]
+(defn mark-file-read-synced [^App app item-key]
   (-> app
-      (assoc-in [:fs-sync file-key] [:read (Date.)])))
+      (assoc-in [:fs-sync item-key] [:read (Date.)])))
 
-(defn mark-file-write-synced [^App app file-key]
+(defn mark-file-write-synced [^App app item-key]
   (-> app
-      (assoc-in [:fs-sync file-key] [:write (Date.)])))
+      (assoc-in [:fs-sync item-key] [:write (Date.)])))
 
-(defn update-fs-sync-status [^App app file-key ^Date event-date]
+(defn update-fs-sync-status [^App app item-key ^Date event-date]
   (let [[sync-type ^Date sync-date :as sync-status] (get-in
                                                       app
-                                                      [:fs-sync file-key]
+                                                      [:fs-sync item-key]
                                                       [:read (Date. 0)])
 
         needs-sync (and (not= sync-type :write)
@@ -104,36 +114,34 @@
      ;change to read-sync, so that next sync occurs properly
      :app        (if (and (= sync-type :write)
                           (> (.getTime event-date) (.getTime sync-date)))
-                   (assoc-in app [:fs-sync file-key] [:read sync-date])
+                   (assoc-in app [:fs-sync item-key] [:read sync-date])
                    app)}))
 
 (defn load-file-to-model [^App app ^File file]
-  (let [file-key (file-to-name-keys (:project app) file)
+  (let [item-key (file-to-item-key (:project app) file)
 
-        app (if-not (get-in (:project app) (apply dir-keys (butlast file-key)))
+        app (if-not (get-in (:project app) (apply model-map-keys (butlast item-key)))
               ; parent dir not found - load
               (load-file-to-model app (fs/parent file))
               app
               )
-        data (get-in (:project app) (apply dir-keys file-key) {:name (fs/base-name file)})
-        new-data (if (fs/directory? file)
-                   (merge data {:dir {}})
-                   (merge data
-                          (with-open [reader (io/reader file)]
-                            (file-to-model file-key file-key app reader)
-                            )))
 
-        project (assoc-in (:project app) (apply dir-keys file-key) new-data)]
+        new-data (if (fs/directory? file)
+                   (->DirItem (get-in (:project app) (conj (apply model-map-keys item-key) :dir) {}))
+                   (file-to-model item-key item-key app)
+                   )
+
+        project (assoc-in (:project app) (apply model-map-keys item-key) (assoc new-data :name (last item-key)))]
 
     (->
       app
       (assoc :project project)
-      (mark-file-read-synced file-key))))
+      (mark-file-read-synced item-key))))
 
-(defn delete-model-page [^App app file-key]
+(defn delete-model-page [^App app item-key]
   (-> app
-      (dissoc-in [:fs-sync file-key])
-      (dissoc-in (cons :project (seq (apply dir-keys file-key))))))
+      (dissoc-in [:fs-sync item-key])
+      (dissoc-in (cons :project (seq (apply model-map-keys item-key))))))
 
 (defmulti model-to-file (fn [cascade-key orig-key ^App app ^Writer writer]
                           cascade-key))
@@ -146,24 +154,25 @@
 (defmethod model-to-file [core/settings-keyname "project.edn"] [cascade-key orig-key ^App app ^Writer writer]
   (let [data (-> app
                  (:project)
-                 (get-in (apply dir-keys orig-key))
+                 (get-in (apply model-map-keys orig-key))
                  (:data)
+                 (deref)
                  (update :working-dir #(.toString %)))]
     (binding [*out* writer]
       (prn data))))
 
 (defmethod model-to-file [core/settings-keyname] [cascade-key orig-key ^App app ^Writer writer]
-  (let [data (:data (get-in (:project app) (apply dir-keys orig-key)))]
+  (let [data @(:data (get-in (:project app) (apply model-map-keys orig-key)))]
     (binding [*out* writer]
       (pr data))))
 
 (defmethod model-to-file [core/relations-keyname] [cascade-key orig-key ^App app ^Writer writer]
   (let [parser-context (plugin-parser-context app)
-        ast (:ast (get-in (:project app) (apply dir-keys orig-key)))]
+        ast @(:data (get-in (:project app) (apply model-map-keys orig-key)))]
     (prolog/pretty-print-sentences parser-context ast writer)))
 
-(defn text-model-to-file [^App app name-key ^Writer writer]
-  (let [text @(:text (get-in (:project app) (apply dir-keys name-key)))]
+(defn text-model-to-file [^App app item-key ^Writer writer]
+  (let [text @(:data (get-in (:project app) (apply model-map-keys item-key)))]
     (binding [*out* writer]
       (print text))))
 
@@ -176,49 +185,49 @@
 (defmethod model-to-file [core/output-keyname] [cascade-key orig-key ^App app ^Writer writer]
   (text-model-to-file app orig-key writer))
 
-(defn save-model-to-file [^App app name-key]
-  (if (is-dir app name-key)
+(defn save-model-to-file [^App app item-key]
+  (if (is-dir app item-key)
     (do
-      (fs/mkdirs (name-keys-to-file (:project app) name-key))
+      (fs/mkdirs (item-key-to-file (:project app) item-key))
       app)
-    (let [^File file (name-keys-to-file (:project app) name-key)]
+    (let [^File file (item-key-to-file (:project app) item-key)]
       (fs/mkdirs (fs/parent file))
       (with-open [writer (io/writer file)]
-        (model-to-file name-key name-key app writer)
+        (model-to-file item-key item-key app writer)
         )
-      (mark-file-write-synced app name-key))))
+      (mark-file-write-synced app item-key))))
 
-(defn zipiter-to-name-keys [zipiter]
+(defn zipiter-to-item-key [zipiter]
   (vec (into (list (:name (zip/node zipiter))) (reverse (map :name (zip/path zipiter))))))
 
-(defn load-files [^App app dir-name-key]
-  (reduce load-file-to-model app (dir-seq (:project app) dir-name-key)))
+(defn load-files [^App app dir-item-key]
+  (reduce load-file-to-model app (dir-seq (:project app) dir-item-key)))
 
-(defn get-model-file-keys
+(defn get-model-item-keys
   ([^Project p with-dirs]
    (apply concat (for [base-key [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
-                   (loop [zipiter (file-model-zipper (get-in p (dir-keys base-key))) ret []]
+                   (loop [zipiter (file-model-zipper (get-in p (model-map-keys base-key))) ret []]
                      (if (zip/end? zipiter)
                        ret
                        (let [node (zip/node zipiter)]
                          (if (:dir node)
                            (recur (zip/next zipiter) (if with-dirs
-                                                       (conj ret (zipiter-to-name-keys zipiter))
+                                                       (conj ret (zipiter-to-item-key zipiter))
                                                        ret))
-                           (recur (zip/next zipiter) (conj ret (zipiter-to-name-keys zipiter))))))))))
+                           (recur (zip/next zipiter) (conj ret (zipiter-to-item-key zipiter))))))))))
   ([^Project p]
-   (get-model-file-keys p false)))
+   (get-model-item-keys p false)))
 
 (defn get-model-dirs [^Project p]
   (vec (for [k [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
-         (core/name-keys-to-file p [k]))))
+         (core/item-key-to-file p [k]))))
 
-(defn save-files [^App app file-name-keys]
-  (loop [app app file-name-keys file-name-keys]
+(defn save-files [^App app item-key]
+  (loop [app app file-item-keys item-key]
 
-    (if (seq file-name-keys)
-      (recur (save-model-to-file app (first file-name-keys))
-             (rest file-name-keys))
+    (if (seq file-item-keys)
+      (recur (save-model-to-file app (first file-item-keys))
+             (rest file-item-keys))
       app)))
 
 (defn- instantiate-plugin [^App app]
@@ -233,13 +242,13 @@
       (load-files [settings-keyname])
       (instantiate-plugin)))
 
-(defn load-model-files [model-key ^App app]
+(defn load-model-files [item-key ^App app]
   (let [p (:project app)
-        dir (name-keys-to-file p [model-key])]
+        dir (item-key-to-file p [item-key])]
     (fs/mkdirs dir)
     (-> app
-        (assoc-in [:project :dir model-key] {:name model-key :dir {}})
-        (load-files [model-key]))))
+        (assoc-in [:project :dir item-key] (map->DirItem {:name item-key :dir {}}))
+        (load-files [item-key]))))
 
 (def load-output (partial load-model-files output-keyname))
 
@@ -262,15 +271,20 @@
       (assoc :fs-sync {})
       (assoc :project (->
                         (core/base-project project-dir)
-                        (assoc-in (concat (apply core/dir-keys [:settings "project.edn"]) [:data :active-plugin]) plugin)
-                        (assoc-in (apply core/dir-keys [core/output-keyname]) {:name core/output-keyname
-                                                                               :dir  {}})
-                        (assoc-in (apply core/dir-keys [core/additions-keyname]) {:name core/additions-keyname
-                                                                                  :dir  {}})
-                        (assoc-in (apply core/dir-keys [core/relations-keyname]) {:name core/relations-keyname
-                                                                                  :dir  {}})
-                        (assoc-in (apply core/dir-keys [core/workdir-keyname]) {:name core/workdir-keyname
-                                                                                :dir  {}})))
+                        (update-in (apply core/model-map-keys [:settings "project.edn"]) #(assoc % :data
+                                                                                                   (instant (assoc @(:data %) :active-plugin plugin))))
+                        (assoc-in (apply core/model-map-keys [core/output-keyname])
+                                  (map->DirItem {:name core/output-keyname
+                                                 :dir  {}}))
+                        (assoc-in (apply core/model-map-keys [core/additions-keyname])
+                                  (map->DirItem {:name core/additions-keyname
+                                                 :dir  {}}))
+                        (assoc-in (apply core/model-map-keys [core/relations-keyname])
+                                  (map->DirItem {:name core/relations-keyname
+                                                 :dir  {}}))
+                        (assoc-in (apply core/model-map-keys [core/workdir-keyname])
+                                  (map->DirItem {:name core/workdir-keyname
+                                                 :dir  {}}))))
 
       (instantiate-plugin)))
 
