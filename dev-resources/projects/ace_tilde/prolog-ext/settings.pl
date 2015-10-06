@@ -1,4 +1,6 @@
-%SETTINGS
+% ace engine settings
+% file appended to the generated .s file
+
 load(key).
 tilde_mode(classify).
 talking(4).

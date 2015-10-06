@@ -25,7 +25,7 @@
   (let [vm (for [file (app/get-model-item-keys p true)]
              (case file
                [:working-dir] {:name "Working dir" :path file}
-               [:additions] {:name "Additions" :path file}
+               [:prolog-ext] {:name "Prolog ext" :path file}
                [:output] {:name "Output" :path file}
                [:relations] {:name "Relations" :path file}
                [:settings] {:name "Settings" :path file}

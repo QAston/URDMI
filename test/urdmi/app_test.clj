@@ -57,19 +57,19 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
         (get (:dir (zip/root (zip/append-child (core/file-model-zipper workdir) {:name "tyry"}))) "tyry") => {:name "tyry"}
         ))
 
-(fact "load additions loads additions data from disk"
+(fact "load-prolog-ext loads prolog data from disk"
       (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
-                     (app/load-additions)
+                     (app/load-prolog-ext)
                      (:project))
-            additions (get-in base (core/model-map-keys core/additions-keyname :dir))]
-        (map first additions) => (just #{"bg_and_settings.pl"})))
+            items (get-in base (core/model-map-keys core/prolog-ext-keyname :dir))]
+        (map first items) => (just #{"negative.pl" "bg_and_settings.pl" "positive.pl"})))
 
 (fact "load output"
       (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
                      (app/load-output)
                      (:project))
-            additions (get-in base (core/model-map-keys core/output-keyname :dir))]
-        (map first additions) => (just #{"result.edn"})))
+            items (get-in base (core/model-map-keys core/output-keyname :dir))]
+        (map first items) => (just #{"result.edn"})))
 
 (fact "init-app loads plugins"
       (let [app (init-app)]
@@ -87,7 +87,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 (fact "load project populates project fields"
       (let [proj (:project (app/load-project (init-app) (fs/file "dev-resources/projects/aleph_default/")))]
         (< 0 (count (get-in proj (core/model-map-keys core/relations-keyname :dir)))) => truthy
-        (< 0 (count (get-in proj (core/model-map-keys core/additions-keyname :dir)))) => truthy
+        (< 0 (count (get-in proj (core/model-map-keys core/prolog-ext-keyname :dir)))) => truthy
         (< 0 (count (get-in proj (core/model-map-keys core/workdir-keyname :dir)))) => truthy
         (< 0 (count (get-in proj (core/model-map-keys core/output-keyname :dir)))) => truthy
         (< 0 (count (get-in proj (core/model-map-keys core/settings-keyname :dir)))) => truthy))
@@ -95,7 +95,9 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 (facts get-model-item-keys
        (fact "returns file-name-keys for example project"
              (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
-               (get-model-item-keys (:project app))) => (just #{[:additions "settings.pl"]
+               (get-model-item-keys (:project app))) => (just #{[:prolog-ext "settings.pl"]
+                                                                [:prolog-ext "bg.pl"]
+                                                                [:prolog-ext "kb.pl"]
                                                                 [:settings "project.edn"]
                                                                 [:settings "ace.edn"]
                                                                 [:working-dir "pracownik.bg.w"]
@@ -121,7 +123,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 (fact get-model-dirs
       (let [proj-dir (fs/file "dev-resources/projects/ace_tilde/")
             app (app/load-project (init-app) proj-dir)]
-        (get-model-dirs (:project app)) => (just #{(fs/file proj-dir "additions")
+        (get-model-dirs (:project app)) => (just #{(fs/file proj-dir "prolog-ext")
                                                    (fs/file proj-dir "relations")
                                                    (fs/file proj-dir "settings")
                                                    (fs/file proj-dir "working_dir")

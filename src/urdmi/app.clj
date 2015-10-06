@@ -73,7 +73,7 @@
                  (slurp (item-key-to-file (:project app) item-key))))
     (assoc :text true)))
 
-(defmethod file-to-model [core/additions-keyname] [cascade-key orig-key ^App app]
+(defmethod file-to-model [core/prolog-ext-keyname] [cascade-key orig-key ^App app]
   (text-file-to-model app orig-key))
 
 (defmethod file-to-model [core/workdir-keyname] [cascade-key orig-key ^App app]
@@ -176,7 +176,7 @@
     (binding [*out* writer]
       (print text))))
 
-(defmethod model-to-file [core/additions-keyname] [cascade-key orig-key ^App app ^Writer writer]
+(defmethod model-to-file [core/prolog-ext-keyname] [cascade-key orig-key ^App app ^Writer writer]
   (text-model-to-file app orig-key writer))
 
 (defmethod model-to-file [core/workdir-keyname] [cascade-key orig-key ^App app ^Writer writer]
@@ -205,7 +205,7 @@
 
 (defn get-model-item-keys
   ([^Project p with-dirs]
-   (apply concat (for [base-key [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
+   (apply concat (for [base-key [prolog-ext-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
                    (loop [zipiter (file-model-zipper (get-in p (model-map-keys base-key))) ret []]
                      (if (zip/end? zipiter)
                        ret
@@ -219,7 +219,7 @@
    (get-model-item-keys p false)))
 
 (defn get-model-dirs [^Project p]
-  (vec (for [k [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
+  (vec (for [k [prolog-ext-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
          (core/item-key-to-file p [k]))))
 
 (defn save-files [^App app item-key]
@@ -254,14 +254,14 @@
 
 (def load-working-dir (partial load-model-files workdir-keyname))
 
-(def load-additions (partial load-model-files additions-keyname))
+(def load-prolog-ext (partial load-model-files prolog-ext-keyname))
 
 (def load-relations (partial load-model-files relations-keyname))
 
 (defn load-project [^App app ^File dir]
   (->
     (load-settings (assoc app :project (base-project dir)))
-    (load-additions)
+    (load-prolog-ext)
     (load-relations)
     (load-working-dir)
     (load-output)))
@@ -276,8 +276,8 @@
                         (assoc-in (apply core/model-map-keys [core/output-keyname])
                                   (map->DirItem {:name core/output-keyname
                                                  :dir  {}}))
-                        (assoc-in (apply core/model-map-keys [core/additions-keyname])
-                                  (map->DirItem {:name core/additions-keyname
+                        (assoc-in (apply core/model-map-keys [core/prolog-ext-keyname])
+                                  (map->DirItem {:name core/prolog-ext-keyname
                                                  :dir  {}}))
                         (assoc-in (apply core/model-map-keys [core/relations-keyname])
                                   (map->DirItem {:name core/relations-keyname

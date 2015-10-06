@@ -43,9 +43,9 @@
 (def workdir-keyname :working-dir)
 (def output-keyname :output)
 (def settings-keyname :settings)
-(def additions-keyname :additions)
+(def prolog-ext-keyname :prolog-ext)
 
-(def additions-dir-name "additions")
+(def prolog-ext-dir-name "prolog-ext")
 (def settings-dir-name "settings")
 (def output-dir-name "output")
 (def relations-dir-name "relations")
@@ -83,8 +83,8 @@
       wdir
       (io/file (:project-dir project) wdir))))
 
-(defn get-additions-dir [^Project p]
-  (fs/file (:project-dir p) additions-dir-name))
+(defn get-prolog-ext-dir [^Project p]
+  (fs/file (:project-dir p) prolog-ext-dir-name))
 
 (defn get-relations-dir [^Project p]
   (fs/file (:project-dir p) relations-dir-name))
@@ -100,7 +100,7 @@
    workdir-keyname   get-working-dir
    output-keyname    get-output-dir
    settings-keyname  get-settings-dir
-   additions-keyname get-additions-dir})
+   prolog-ext-keyname get-prolog-ext-dir})
 
 (defn item-key-to-file
   "Resolve name-keys to a java.io.File"
@@ -122,7 +122,7 @@
 
 (defn file-to-item-key
   [^Project p ^File file]
-  (let [key-dir-pairs (for [k [additions-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
+  (let [key-dir-pairs (for [k [prolog-ext-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]
                         [k (item-key-to-file p [k])])
         ]
     (first (mapcat (fn [[key ^File dir]]
@@ -145,11 +145,11 @@
 (defn file-model-zipper [root]
   (zip/zipper file-model-branch? file-model-children file-model-make-node root))
 
-(defn try-append-addition
-  "appends addition file to the working directory file, creates files if not present"
-  ([^Project p ^File addition-file-rel output]
+(defn try-append-prolog-ext-file
+  "appends file to the working directory file, creates files if not present"
+  ([^Project p ^File prolog-ext-file-rel output]
    (try
-     (let [file (io/file (get-additions-dir p) addition-file-rel)]
+     (let [file (io/file (get-prolog-ext-dir p) prolog-ext-file-rel)]
        (when (fs/file? file)
          (io/copy file output)))
      (catch Exception e))

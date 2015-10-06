@@ -31,7 +31,7 @@
                 {:name "pracownik.n", :path [:working-dir "pracownik.n"]}
                 {:name "Output", :path [:output]}
                 {:name "result.edn", :path [:output "result.edn"]}
-                {:name "Additions", :path [:additions]}
-                {:name "pracownik.b", :path [:additions "pracownik.b"]}
+                {:name "Prolog ext", :path [:prolog-ext]}
+                {:name "pracownik.b", :path [:prolog-ext "pracownik.b"]}
                 {:name "Settings", :path [:settings]}
                 {:name "project.edn", :path [:settings "project.edn"]}})))
