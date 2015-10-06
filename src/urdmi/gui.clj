@@ -97,7 +97,8 @@
   [^ObservableValue val callback]
   (let [listener (reify ChangeListener
                    (changed [this obs old new]
-                     (callback obs old new)))]
+                     (when (not= old new)
+                       (callback obs old new))))]
     (.addListener val
                   listener)
     listener))
@@ -222,7 +223,7 @@
 (defn make-absolute-directory-select-widget [^File starting-dir file-str-property description ^ValidationSupport validation validation-fn]
   (let [text-field (fx/text-field {})]
     (on-text-field-confirmed text-field (fn [text-field]
-                                              (.setValue file-str-property (.getText text-field))))
+                                          (.setValue file-str-property (.getText text-field))))
     (loose-bind file-str-property (.textProperty text-field))
     (validate-control validation text-field validation-fn "")
     (doto (fx/h-box {:spacing 8}
@@ -362,12 +363,10 @@
         widget (make-relation-term-select-widget relation-list selected-relation selected-relation-term validation)]
     (on-changed selected-relation
                 (fn [obs old new]
-                  (when (not= old new)
-                    (on-update-fn))))
+                  (on-update-fn)))
     (on-changed selected-relation-term
                 (fn [obs old new]
-                  (when (not= old new)
-                    (on-update-fn))))
+                  (on-update-fn)))
     (->PropertyItemEditor widget name (SimpleObjectProperty. {:relation selected-relation :relation-list relation-list :relation-term selected-relation-term}))
     ))
 

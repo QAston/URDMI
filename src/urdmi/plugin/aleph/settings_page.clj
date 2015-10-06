@@ -103,11 +103,5 @@
         widget (make-widget properties-list)]
     (gui/on-changed program-property
                     (fn [obs old new]
-                      (when (not= old new)
-                        (on-update-fn))))
+                        (on-update-fn)))
     (->AlephSettingsPage widget properties-map current-page)))
-
-#_{:target-rel       ["pracownik" 7]
-   :target-rel-param 7
-   :aleph-loc        "C:\\portable\\aleph.pl"
-   :swi-prolog-loc   "C:\\Program Files\\pl\\bin\\plcon.exe"}

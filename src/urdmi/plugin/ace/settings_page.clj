@@ -6,7 +6,8 @@
             [clojure.set :as set])
   (:import (org.controlsfx.control PropertySheet PropertySheet$Mode)
            (org.controlsfx.validation.decoration StyleClassValidationDecoration)
-           (java.io File)))
+           (java.io File)
+           (javafx.beans.property SimpleObjectProperty)))
 
 
 (defn make-widget [properties-list]
@@ -31,13 +32,12 @@
               target-rel (let [index (.indexOf relations (:target-rel data))]
                            (when-not (= index -1)
                              (.get relations index)))
-              {:keys [relation relation-term relation-list]} (.getValue (:target-term properties-map))]
+              {:keys [relation relation-list]} (.getValue (:target-term properties-map))]
           (.setAll relation-list relations)
           (.setValue (:ace-loc properties-map) (:ace-loc data))
-          (.setValue relation target-rel)
-          (.setValue relation-term (:target-rel-param data)))
+          (.setValue relation target-rel))
         ; just modify relation list
-        (let [{:keys [relation relation-term relation-list]} (.getValue (:target-term properties-map))
+        (let [{:keys [relation relation-list]} (.getValue (:target-term properties-map))
               model-relations (set (map :rel (core/get-relations project)))
               edited-relations (set relation-list)
               to-add (set/difference model-relations edited-relations)
@@ -47,10 +47,9 @@
         )
       (reset! current-page key)))
   (read-data [this]
-    (let [{:keys [relation relation-term]} (.getValue (:target-term properties-map))]
+    (let [{:keys [relation]} (.getValue (:target-term properties-map))]
       (core/file-item {:ace-loc          (.getValue (:ace-loc properties-map))
                        :target-rel       (.getValue relation)
-                       :target-rel-param (.getValue relation-term)
                        }))))
 
 (def fields [:ace-loc :target-term])
@@ -62,19 +61,23 @@
                        (when-let [key @current-page]
                          (async/put! >ui-requests {:type     :modified-page
                                                    :data-key key})))
+
+        relation-list (gui/observable-list)
+        selected-relation (SimpleObjectProperty.)
+
         properties-map {:ace-loc     (gui/make-file-property-item-editor "Ace executable"
                                                                          (:project-dir project)
                                                                          validation
                                                                          (fn [^File f]
                                                                            true)
                                                                          on-update-fn)
-                        :target-term (gui/make-target-term-item-editor "Target rel. term"
-                                                                       validation
-                                                                       on-update-fn)}
+                        :target-term (gui/->PropertyItemEditor
+                                       (gui/make-relation-select-widget relation-list selected-relation validation)
+                                       "Target relation"
+                                       (SimpleObjectProperty. {:relation selected-relation :relation-list relation-list}))}
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]
+    (gui/on-changed selected-relation
+                    (fn [obs old new]
+                      (on-update-fn)))
     (->AceSettingsPage widget properties-map current-page)))
-
-#_{:target-rel       ["pracownik" 7],
-   :target-rel-param 7,
-   :ace-loc          "C:\\ML-Tools\\ACE-1.2.15\\windows\\bin\\ACE.exe"}
