@@ -1,4 +1,1 @@
-{:target-rel ["pracownik" 7]
- :target-rel-param 6
- :aleph-loc "C:\\portable\\aleph.pl"
- :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe"}
+{:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6, :program "induce"}

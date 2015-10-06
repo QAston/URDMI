@@ -316,7 +316,7 @@
     (validate-control validation
                       widget
                       (fn [val]
-                        (boolean val)) "Must select a valid binary term with 2 values")
+                        (boolean val)) "")
     (.addListener relations-list
                   (reify ListChangeListener
                     (onChanged [this change]

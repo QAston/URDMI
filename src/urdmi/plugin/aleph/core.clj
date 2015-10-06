@@ -12,6 +12,10 @@
 
 (def settings-filename "aleph.edn")
 
+(def programs #{"induce"   "induce_cover"  "induce_max"   "induce_incremental"
+  "induce_clauses"   "induce_theory"   "induce_tree"  "induce_constraints"  "induce_modes"   "induce_features"
+                "custom"})
+
 (defn split-by-relation-arg [rel-asts rel-arg]
   (let [grouped-rel (->> rel-asts
                          (map (fn [ast]
@@ -81,9 +85,13 @@
           swiprolog-location (:swi-prolog-loc plugin-settings)
           aleph-location (:aleph-loc plugin-settings)
           working-dir (api/get-working-dir project)
-          dbname (get-db-name project)]
+          dbname (get-db-name project)
+          learning-program (get plugin-settings :program "induce")
+          learning-program (if (= learning-program "custom")
+                             (slurp (io/file (core/get-prolog-ext-dir project) "custom_program.pl"))
+                             (str learning-program ".\n"))]
       (shell/sh swiprolog-location "-g" "true"
-                :in (StringReader. (str "consult('" (prolog/quote-atom aleph-location) "').\nread_all(" (prolog/quote-atom dbname) ").\n.\ninduce.\nhalt.\n"))
+                :in (StringReader. (str "consult('" (prolog/quote-atom aleph-location) "').\nread_all(" (prolog/quote-atom dbname) ").\n.\n" learning-program "\nhalt.\n"))
                 :dir working-dir
                 )))
   (rebuild-working-dir [this project]
@@ -98,10 +106,13 @@
     (core/->ModelDiff [[[:prolog-ext "negative.pl"] (core/file-item "%negative examples \n% file appended to the generated .n file")]
                        [[:prolog-ext "positive.pl"] (core/file-item "%positive examples \n% file appended to the generated .f file")]
                        [[:prolog-ext "bg_and_settings.pl"] (core/file-item "%background knowledge and aleph settings \n% file appended to the generated .b file")]
+                       [[:prolog-ext "custom_program.pl"] (core/file-item "%custom program run instead of the default induce_* command. can be enabled in aleph settings.")]
                        [[:settings settings-filename] (core/file-item
                                                         {:target-rel     nil
+                                                         :target-rel-param nil
                                                         :aleph-loc      ""
                                                         :swi-prolog-loc ""
+                                                         :program "induce"
                                                         })]] []))
   (model-loaded [this project])
   (model-modified [this project key]))
