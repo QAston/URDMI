@@ -15,7 +15,7 @@
             [urdmi.gui.relation-list :as relation-list-gui]
             [clojure.stacktrace :as stacktrace]
             [urdmi.watch-fs :as watch-fs])
-  (:import (urdmi.core Project)
+  (:import (urdmi.core Project ModelDiff)
            (java.io StringWriter File)
            (javafx.scene Scene)
            (javafx.stage Stage)
@@ -50,9 +50,9 @@
 
 (defmethod generate-page [] [cascade-key orig-key app]
   (let [proj (:project app)
-        data (get-in proj (apply core/model-map-keys orig-key))]
-    (if-not (:text data)
-      empty-gui/empty-page
+        item (get-in proj (apply core/model-map-keys orig-key))]
+    (if-not (and (:data item) (instance? String @(:data item)))
+              empty-gui/empty-page
       (code-editor-gui/make-page (:ui-requests app))
       )))
 
@@ -85,7 +85,7 @@
 
 (defn handle-model-modified [app old-app key]
   (when (app/plugin app)
-    (core/model-modified (app/plugin app) (:project app) key))
+    (apply-diff-to-pages app (core/model-modified (app/plugin app) (:project app) key)))
   (model-modified app old-app key key))
 
 (defn init-app [stage]
@@ -272,7 +272,7 @@
   (let [p (:project app)
         result (core/run (:plugin p) p)]
     ; todo: reload working dir here
-    (core/generate-output (:plugin p) p result)
+    (apply-diff-to-pages app (core/generate-output (:plugin p) p result))
     (put! (:ui-requests app) {:type :log-datamining :message (:out result)})
     result))
 
@@ -504,6 +504,27 @@
     (if-not (get-in (:project app) (apply core/model-map-keys file-key))
       app
       (remove-model-page app file-key))))
+
+(defn apply-diff-to-pages [app ^ModelDiff diff]
+  (if (and diff (instance? ModelDiff diff))
+    (let [app (reduce (fn [app [key item :as kitem]]
+                        (let [app (-> app
+                                      (assoc :project (core/set-model-item (:project app) kitem))
+                                      (app/save-model-to-file key)
+                                      (revert-model-page key)
+                                      (handle-model-modified app key))]
+                          (fs/delete-dir (core/item-key-to-file (:project app) key))
+                          app
+                          )
+                        ) app (:set diff))
+          app (reduce (fn [app key]
+                        (let [app (remove-model-page app key)]
+                          (fs/delete-dir (core/item-key-to-file (:project app) key))
+                          app
+                          )
+                        ) app (:remove diff))]
+      app)
+    app))
 
 (defn handle-exception [app e]
   (let [writer (StringWriter.)]

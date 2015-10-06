@@ -145,17 +145,15 @@
 (defn file-model-zipper [root]
   (zip/zipper file-model-branch? file-model-children file-model-make-node root))
 
-(defn append-addition
+(defn try-append-addition
   "appends addition file to the working directory file, creates files if not present"
-  ([^Project p ^File addition-file-rel ^Writer writer]
-   (let [file (io/file (get-additions-dir p) addition-file-rel)]
-     (when (fs/file? file)
-       (with-open [file-rdr (io/reader file)]
-         (loop []
-           (let [data (.read file-rdr)]
-             (when-not (== data -1)
-               (.write writer data)
-               (recur)))))))))
+  ([^Project p ^File addition-file-rel output]
+   (try
+     (let [file (io/file (get-additions-dir p) addition-file-rel)]
+       (when (fs/file? file)
+         (io/copy file output)))
+     (catch Exception e))
+   ))
 
 (defn relation-to-filename [[relname relarity]]
   (str relname "_" relarity ".pl"))
@@ -194,7 +192,7 @@
   [data]
   (->FileItem (instant data)))
 
-(defn- set-model-item [^Project p [key item]]
+(defn set-model-item [^Project p [key item]]
   (let [item (assoc item :name (last key))
         p (if (and (not-empty (butlast key)) (not (get-in p (apply model-map-keys (butlast key)))))
             ; parent not found - add with parent
@@ -203,7 +201,7 @@
             )]
     p))
 
-(defn- remove-model-item [^Project p key]
+(defn remove-model-item [^Project p key]
   (dissoc-in p (apply model-map-keys key)))
 
 (defn apply-diff [^Project p ^ModelDiff diff]

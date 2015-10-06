@@ -54,7 +54,7 @@
           (.append writer (str "\n % relation: "(api/relation-to-string rel) "\n"))
           (prolog/pretty-print-sentences parser-context ast writer)
           ))
-      (api/append-addition project (io/file filename) writer))))
+      (api/try-append-addition project (io/file "bg_and_settings") writer))))
 
 (defn build-f-file [plugin ^Project project]
   (let [working-dir (api/get-working-dir project)
@@ -63,7 +63,7 @@
         filename (str (get-db-name project) ".f")]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (prolog/pretty-print-sentences parser-context asts writer)
-      (api/append-addition project (io/file filename) writer))))
+      (api/try-append-addition project (io/file "positive") writer))))
 
 (defn build-n-file [plugin ^Project project]
   (let [working-dir (api/get-working-dir project)
@@ -72,7 +72,7 @@
         filename (str (get-db-name project) ".n")]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (prolog/pretty-print-sentences parser-context asts writer)
-      (api/append-addition project (io/file filename) writer))))
+      (api/try-append-addition project (io/file "negative") writer))))
 
 (defrecord AlephPlugin [parser-context]
   api/Plugin
@@ -95,7 +95,10 @@
     )
   (generate-output [this project run-result])
   (model-created [this project]
-    (core/->ModelDiff [[[:settings settings-filename] (core/file-item
+    (core/->ModelDiff [[[:additions "negative"] (core/file-item "%negative examples \n% file appended to the generated .n file")]
+                       [[:additions "positive"] (core/file-item "%positive examples \n% file appended to the generated .f file")]
+                       [[:additions "bg_and_settings"] (core/file-item "%background knowledge and aleph settings \n% file appended to the generated .b file")]
+                       [[:settings settings-filename] (core/file-item
                                                         {:target-rel     nil
                                                         :aleph-loc      ""
                                                         :swi-prolog-loc ""

@@ -27,7 +27,7 @@
           (.append writer (str "\n % relation: " (api/relation-to-string rel) "\n"))
           (prolog/pretty-print-sentences parser-context ast writer)
           ))
-      (api/append-addition project (io/file filename) writer))))
+      (api/try-append-addition project (io/file ".bg") writer))))
 
 
 (defn- build-knowledge-base-file [plugin project]
@@ -38,13 +38,13 @@
         filename (str (get-app-name project) ".kb")]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (prolog/pretty-print-sentences parser-context target-rel-asts writer)
-      (api/append-addition project (io/file filename) writer))))
+      (api/try-append-addition project (io/file ".kb") writer))))
 
 (defn- build-settings-file [plugin project]
   (let [working-dir (api/get-working-dir project)
         filename (str (get-app-name project) ".s")]
     (with-open [writer (io/writer (io/file working-dir filename))]
-      (api/append-addition project (io/file filename) writer))))
+      (api/try-append-addition project (io/file ".s") writer))))
 
 (defrecord AcePlugin [parser-context]
   api/Plugin
@@ -68,7 +68,10 @@
     )
   (generate-output [this project run-result])
   (model-created [this project]
-    (core/->ModelDiff [[[:settings settings-filename] (core/file-item {:target-rel nil
+    (core/->ModelDiff [[[:additions "bg"] (core/file-item "% background knowledge \n% file appended to the generated .bg file")]
+                        [[:additions "kb"] (core/file-item "% examples\n% file appended to the generated .kb file")]
+                        [[:additions "settings"] (core/file-item "% ace engine settings\n% file appended to the generated .s file")]
+                       [[:settings settings-filename] (core/file-item {:target-rel nil
                                                                        :ace-loc    ""
                                                                        })]] []))
   (model-loaded [this project])

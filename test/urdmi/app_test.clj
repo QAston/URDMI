@@ -62,7 +62,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
                      (app/load-additions)
                      (:project))
             additions (get-in base (core/model-map-keys core/additions-keyname :dir))]
-        (map first additions) => (just #{"pracownik.b"})))
+        (map first additions) => (just #{"bg_and_settings"})))
 
 (fact "load output"
       (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
@@ -95,7 +95,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 (facts get-model-item-keys
        (fact "returns file-name-keys for example project"
              (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
-               (get-model-item-keys (:project app))) => (just #{[:additions "pracownik.s"]
+               (get-model-item-keys (:project app))) => (just #{[:additions "settings"]
                                                                 [:settings "project.edn"]
                                                                 [:settings "ace.edn"]
                                                                 [:working-dir "pracownik.bg.w"]
@@ -158,5 +158,3 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
       (let [proj-dir (fs/file "dev-resources/projects/ace_tilde/")
             app (app/load-project (init-app) proj-dir)]
         (core/file-to-item-key (:project app) (fs/file "dev-resources/projects/ace_tilde/relations/dzial_6.pl")) => [:relations "dzial_6.pl"]))
-
-(future-fact "provide [apply] button for settings, settings until 'applied' are stored locally on screen")
