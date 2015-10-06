@@ -62,7 +62,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
                      (app/load-additions)
                      (:project))
             additions (get-in base (core/model-map-keys core/additions-keyname :dir))]
-        (map first additions) => (just #{"bg_and_settings"})))
+        (map first additions) => (just #{"bg_and_settings.pl"})))
 
 (fact "load output"
       (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
@@ -95,7 +95,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 (facts get-model-item-keys
        (fact "returns file-name-keys for example project"
              (let [app (app/load-project (init-app) (fs/file "dev-resources/projects/ace_tilde/"))]
-               (get-model-item-keys (:project app))) => (just #{[:additions "settings"]
+               (get-model-item-keys (:project app))) => (just #{[:additions "settings.pl"]
                                                                 [:settings "project.edn"]
                                                                 [:settings "ace.edn"]
                                                                 [:working-dir "pracownik.bg.w"]
