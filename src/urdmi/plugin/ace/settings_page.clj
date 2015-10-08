@@ -59,7 +59,8 @@
 
 (defn combo-box [list selected]
   (let [widget (doto (ComboBox.)
-                 (.setItems list))]
+                 (.setItems list)
+                 (.setEditable true))]
     (.addListener list
                   (reify ListChangeListener
                     (onChanged [this change]
