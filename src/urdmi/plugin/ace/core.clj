@@ -9,6 +9,8 @@
 
 (def settings-filename "ace.edn")
 
+(def example-commands #{"induce(tilde)" "induce(icl)" "induce(regrules)" "induce(Algo)" "induce(bagging(BasicAlgo, n))" "induce(boosting(BasicAlgo, n))" "induce(voting(BasicAlgo, n))" "warmr" "rrl" "mrrl(N)" "nfold(Algo,n)" "nfold(Algo,n,s)" "leave_one_out_from_list(Algo,list)"})
+
 (defn get-app-name [^Project p]
   (first (:target-rel (api/get-settings-data p settings-filename))))
 
@@ -75,7 +77,7 @@
     (let [
           plugin-settings (api/get-settings-data project settings-filename)
           ace-location (:ace-loc plugin-settings)
-          command "t\n"
+          command (:command plugin-settings)
           working-dir (api/get-working-dir project)]
       (shell/sh ace-location
                 :in (StringReader. command)
