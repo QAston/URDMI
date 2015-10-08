@@ -54,6 +54,8 @@
 
 (def fields [:ace-loc :target-term])
 
+;knowledgebase format: model, key
+
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support (StyleClassValidationDecoration.))
         current-page (atom nil)

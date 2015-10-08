@@ -6,7 +6,7 @@
 
 (use 'clojure.pprint)
 (fact 'aleph/split-by-relation-arg
-      (let [parser-context (prolog/ace-parser-context)
+      (let [parser-context (prolog/aleph-parser-context)
             rel-in (parse-string parser-context "pracownik(1,sprzedawca,1,null,08,2,0).
 pracownik(45,robotnik,1,null,02,1,1).
 pracownik(49,wiceprezes,3,2,00,1,1).
@@ -24,12 +24,12 @@ pracownik(3,sprzedawca,1,null,09,2).")
 pracownik(49,wiceprezes,3,2,00,1).
 pracownik(50,prezes,4,2,00,1).")
             rel-out [rel-true rel-false]
-            result (aleph/split-by-relation-arg rel-in 7)
+            result (aleph/split-by-relation-arg rel-in 6)
             ]
         (first result)  => (just (set (first rel-out)))
         (second result)  => (just (set (second rel-out)))))
 
-(fact "build project generates expected working_dir output for aleph"
+#_(fact "build project generates expected working_dir output for aleph"
       (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")
             backup-dir (fs/file "dev-resources/projects/aleph_default/working_dir_orig")]
         (try
@@ -63,7 +63,7 @@ pracownik(50,prezes,4,2,00,1).")
             (core/move-file backup-dir workdir-dir)
             ))))
 
-(fact "build project generates expected working_dir output for aleph"
+#_(fact "build project generates expected working_dir output for aleph"
       (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")
             backup-working-dir (fs/file "dev-resources/projects/aleph_default/working_dir_orig")]
         (try

@@ -209,7 +209,7 @@
   PAstConvertible
   (to-ast [^PString obj]
     (with-file-metadata obj
-                        {:type ast-string
+                        {:type  ast-string
                          :value (.getString obj)}
                         )))
 
@@ -388,3 +388,28 @@ root is the root node."
      (pretty-print-sentences context prolog-sentences writer)
      (.toString writer)
      )))
+
+(defn remove-term [term-idx sentence]
+  (let [sentence (update-in sentence[:children]
+                            (fn [children]
+                              (->> children
+                                   (map-indexed vector)
+                                   (remove #(= (first %) term-idx))
+                                   (map second)
+                                   )))]
+
+    (if (= 1 (count (:children sentence)))
+      (first (:children sentence))
+      sentence)
+    ))
+
+(defn extract-relation-arg
+  "returns relation gruped by given arg index, with relation having that arg removed"
+  [rel-asts rel-term-idx]
+  (let [child-idx (inc rel-term-idx)
+        grouped-rel (->> rel-asts
+                         (group-by (fn [ast]
+                                     (nth (:children ast) child-idx)))
+                         (map (fn [[arg asts]]
+                                [arg (map (partial remove-term child-idx) asts)])))]
+    (into {} grouped-rel)))

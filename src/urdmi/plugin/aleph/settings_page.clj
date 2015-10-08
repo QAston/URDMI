@@ -97,7 +97,7 @@
                         :target-term    (gui/make-target-term-item-editor "Target rel. term (values 0/1)"
                                                                           validation
                                                                           on-update-fn)
-                        :program (gui/->PropertyItemEditor (choice-box (gui/observable-list aleph/programs) program-property) "Learning program" program-property)
+                        :program (gui/->PropertyItemEditor (choice-box (gui/observable-list aleph/programs) program-property) "Mining program" program-property)
                         }
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]

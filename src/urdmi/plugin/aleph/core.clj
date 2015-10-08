@@ -12,25 +12,15 @@
 
 (def settings-filename "aleph.edn")
 
-(def programs #{"induce"   "induce_cover"  "induce_max"   "induce_incremental"
-  "induce_clauses"   "induce_theory"   "induce_tree"  "induce_constraints"  "induce_modes"   "induce_features"
+(def programs #{"induce" "induce_cover" "induce_max" "induce_incremental"
+                "induce_clauses" "induce_theory" "induce_tree" "induce_constraints" "induce_modes" "induce_features"
                 "custom"})
 
 (defn split-by-relation-arg [rel-asts rel-arg]
-  (let [grouped-rel (->> rel-asts
-                         (map (fn [ast]
-                                (let [child-idx rel-arg
-                                      arg (:value (nth (:children ast) (inc child-idx)))
-                                      newrel (update-in ast [:children] (fn [children]
-                                                                          (->> children
-                                                                               (map-indexed vector)
-                                                                               (remove #(= (first %) child-idx))
-                                                                               (map second)
-                                                                               )))]
-                                  [arg newrel])))
-                         (group-by first))]
-
-    [(sort-by hash (map second (get grouped-rel 1))) (sort-by hash (map second (get grouped-rel 0)))]))
+  ;convert prolog-atoms to int
+  (let [grouped-rel (into {} (map (fn [[k v]]
+                                    [(:value k) v]) (prolog/extract-relation-arg rel-asts rel-arg)))]
+    [(sort-by hash (get grouped-rel 1)) (sort-by hash (get grouped-rel 0))]))
 
 (defn get-training-examples [^Project project]
   (let [plugin-settings (api/get-settings-data project settings-filename)
@@ -39,7 +29,7 @@
         target-rel-asts @(:data (api/get-relation project target-relation))
         ]
     (split-by-relation-arg target-rel-asts target-relation-param)
-  ))
+    ))
 
 (defn get-db-name [^Project p]
   (first (:target-rel (api/get-settings-data p settings-filename))))
@@ -55,7 +45,7 @@
     (with-open [writer (io/writer (io/file working-dir filename))]
       (doseq [rel background-relations]
         (let [ast @(:data (api/get-relation project rel))]
-          (.append writer (str "\n % relation: "(api/relation-to-string rel) "\n"))
+          (.append writer (str "\n % relation: " (api/relation-to-string rel) "\n"))
           (prolog/pretty-print-sentences parser-context ast writer)
           ))
       (api/try-append-prolog-ext-file project (io/file "bg_and_settings.pl") writer))))
@@ -108,12 +98,12 @@
                        [[:prolog-ext "bg_and_settings.pl"] (core/file-item "%background knowledge and aleph settings \n% file appended to the generated .b file")]
                        [[:prolog-ext "custom_program.pl"] (core/file-item "%custom program run instead of the default induce_* command. can be enabled in aleph settings.")]
                        [[:settings settings-filename] (core/file-item
-                                                        {:target-rel     nil
+                                                        {:target-rel       nil
                                                          :target-rel-param nil
-                                                        :aleph-loc      ""
-                                                        :swi-prolog-loc ""
-                                                         :program "induce"
-                                                        })]] []))
+                                                         :aleph-loc        ""
+                                                         :swi-prolog-loc   ""
+                                                         :program          "induce"
+                                                         })]] []))
   (model-loaded [this project])
   (model-modified [this project key]))
 

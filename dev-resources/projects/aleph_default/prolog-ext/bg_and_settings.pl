@@ -1,10 +1,7 @@
-﻿%background knowledge and aleph settings 
+﻿%background knowledge and aleph settings
 % file appended to the generated .b file
 
 :-set(interactive,true).
-:-set(test_pos,'pracownik_test.f').
-:-set(test_neg,'pracownik_test.n').
-
 
 %DEFINICJA SKADOWYCH REGU
 

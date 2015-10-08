@@ -12,6 +12,29 @@
 (defn get-app-name [^Project p]
   (first (:target-rel (api/get-settings-data p settings-filename))))
 
+(defn relations-to-model-format [relations-map model-relation model-relation-index included-relations]
+  (let [indexed-model-relaton (prolog/extract-relation-arg (get relations-map model-relation) model-relation-index)
+
+        indexed-relations (keep identity
+                                (for [[[relation-name relation-arity :as relation] relation-term-idx] included-relations]
+                                  (when-let [sentences (get relations-map relation)]
+                                    (prolog/extract-relation-arg sentences relation-term-idx))))
+        ]
+    (apply concat
+      (for [[index-value sentences] indexed-model-relaton]
+       (let [model-idx-node {:children (list {:name "model", :type :ast-atom}
+                                                   index-value),
+                                   :type     :ast-functor}
+             begin-sentence {:children (list {:name "begin", :type :ast-atom}
+                                                   model-idx-node),
+                                   :type     :ast-functor}
+             end-sentence {:children (list {:name "end", :type :ast-atom}
+                                                 model-idx-node),
+                                 :type     :ast-functor}
+             relation-sentences (mapcat #(get % index-value) indexed-relations)
+             ]
+         (conj (into [begin-sentence] (concat sentences relation-sentences)) end-sentence)
+         )))))
 
 (defn- build-bg-knowledge-file [plugin project]
   (let [
@@ -69,8 +92,8 @@
   (generate-output [this project run-result])
   (model-created [this project]
     (core/->ModelDiff [[[:prolog-ext "bg.pl"] (core/file-item "% background knowledge \n% file appended to the generated .bg file")]
-                        [[:prolog-ext "kb.pl"] (core/file-item "% examples\n% file appended to the generated .kb file")]
-                        [[:prolog-ext "settings.pl"] (core/file-item "% ace engine settings\n% file appended to the generated .s file")]
+                       [[:prolog-ext "kb.pl"] (core/file-item "% examples\n% file appended to the generated .kb file")]
+                       [[:prolog-ext "settings.pl"] (core/file-item "% ace engine settings\n% file appended to the generated .s file")]
                        [[:settings settings-filename] (core/file-item {:target-rel nil
                                                                        :ace-loc    ""
                                                                        })]] []))
