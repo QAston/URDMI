@@ -1393,3 +1393,5 @@ zamowienieszczegoly(312,39,1,0).
 zamowienieszczegoly(312,29,1,0).
 zamowienieszczegoly(312,58,1,0).
 zamowienieszczegoly(312,70,15,5).
+% background knowledge 
+% file appended to the generated .bg file

@@ -1,9 +1,6 @@
 % ace engine settings
 % file appended to the generated .s file
-
-load(key).
 tilde_mode(classify).
-talking(4).
 predict(pracownik(+idpracownika,+stanowisko,+pensja,+premia,+rokzatrudnienia,+iddzialu,-grupa)).
 
 typed_language(yes).
@@ -18,7 +15,7 @@ type(zamowienie(idzamowienia,idklienta,idpracownika,data,platnosc)).
 type(zamowienieszczegoly(idzamowienia,idtowaru,ilosc,upust)).
 type(klient(idklienta,imie,nazwisko,nip,ulica,nrdomu,nrlokalu,kod,miejscowosc)).
 
-type(X=X).
+%type(X=X).
 
 rmode(pracownikpersonalia(+A,-B,-C,-D,-E,-F,-G,+-H)).
 

@@ -30,9 +30,7 @@
     (if modified
       (let [data (core/get-settings-data project (last key))
             relations (doall (map :rel (core/get-relations project)))
-            target-rel (let [index (.indexOf relations (:target-rel data))]
-                         (when-not (= index -1)
-                           (.get relations index)))
+            target-rel (:target-rel data)
             {:keys [relation relation-term relation-list]} (.getValue (:target-term properties-map))]
 
         (.setAll relation-list relations)
@@ -61,19 +59,6 @@
 
 (def fields [:aleph-loc :swi-prolog-loc :target-term :program])
 
-(defn choice-box [list selected]
-  (let [widget (doto (ChoiceBox.)
-                 (.setItems list))]
-    (.addListener list
-                  (reify ListChangeListener
-                    (onChanged [this change]
-                      (when-not (.contains list (.getValue selected))
-                        (.setValue selected nil))
-                      )))
-    (.bindBidirectional (.valueProperty widget) selected)
-    widget
-    ))
-
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support (StyleClassValidationDecoration.))
         current-page (atom nil)
@@ -97,7 +82,7 @@
                         :target-term    (gui/make-target-term-item-editor "Target rel. term (values 0/1)"
                                                                           validation
                                                                           on-update-fn)
-                        :program (gui/->PropertyItemEditor (choice-box (gui/observable-list aleph/programs) program-property) "Mining program" program-property)
+                        :program (gui/->PropertyItemEditor (gui/choice-box (gui/observable-list aleph/programs) program-property) "Mining program" program-property)
                         }
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]

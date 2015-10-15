@@ -1,1 +1,1 @@
-{:ace-loc "C:\\ML-Tools\\ACE-1.2.15\\windows\\bin\\ACE.exe", :target-rel ["pracownik" 7], :command "induce(tilde)"}
+{:ace-loc "C:\\ML-Tools\\ACE-1.2.15\\windows\\bin\\ACE.exe", :target-rel ["pracownik" 7], :command "induce(tilde)", :kb-format "key", :models-format {:joined-relations [[["pracownikprodukcja" 6] 1] [["pracownikpersonalia" 8] 0]], :target-relation-index 0}}

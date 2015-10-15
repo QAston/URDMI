@@ -3,7 +3,8 @@
             [clojure.java.io :as io]
             [fx-clj.core :as fx]
             [urdmi.core :as core]
-            [me.raynes.fs :as fs])
+            [me.raynes.fs :as fs]
+            [urdmi.util :as util])
   (:import (javafx.collections ObservableList FXCollections ListChangeListener)
            (java.util Collection)
            (javafx.beans.value ObservableValue ChangeListener WritableValue)
@@ -306,44 +307,54 @@
 
 ;(fx/sandbox #(make-directory-select-widget (fs/file ".") (SimpleStringProperty. "") "Select working directory dir" (validation-support (StyleClassValidationDecoration.))))
 
-(defn make-relation-select-widget [relations-list selected-relation validation]
+(defn choice-box [list selected]
   (let [widget (doto (ChoiceBox.)
-                 (.setConverter (proxy [StringConverter] []
-                                  (fromString [s])
-                                  (toString [v]
-                                    (str (first v) "_" (second v) ".pl"))))
-                 (.setItems relations-list))
+                 (.setItems list))
+        set-selection (fn [new]
+                        (.setValue selected (first (filter #(= new %) list))))
+        listener (reify ChangeListener
+                   (changed [this obs old new]
+                     (when-not (identical? old new)
+                       (set-selection new))))]
+    (.addListener list
+                  (reify ListChangeListener
+                    (onChanged [this change]
+                      (set-selection (.getValue selected)))))
+    (.addListener selected listener)
+    (.bindBidirectional (.valueProperty widget) selected)
+    widget
+    ))
+
+(def relation-string-converter (proxy [StringConverter] []
+                                 (fromString [s])
+                                 (toString [v]
+                                   (str (first v) "_" (second v) ".pl"))))
+
+(defn make-relation-select-widget [relations-list selected-relation validation]
+  (let [widget (doto (choice-box relations-list selected-relation)
+                 (.setConverter relation-string-converter))
         ]
     (validate-control validation
                       widget
                       (fn [val]
                         (boolean val)) "")
-    (.addListener relations-list
-                  (reify ListChangeListener
-                    (onChanged [this change]
-                      (when-not (.contains relations-list (.getValue selected-relation))
-                        (.setValue selected-relation nil))
-                      )))
-    (.bindBidirectional (.valueProperty widget) selected-relation)
     widget
     ))
 
-(defn make-relation-term-select-widget [relation-list selected-relation selected-relation-term validation]
+(defn make-relation-term-select-widget [selected-relation selected-relation-term validation]
   (let [arity (if-let [arity (second (.getValue selected-relation))]
                 arity
                 0)
         relation-term-list (observable-list (for [i (range arity)]
                                               i))
-        term-widget (doto (ChoiceBox.)
-                      (.setItems relation-term-list)
-                      )
-        widget (fx/h-box {}
-                         (make-relation-select-widget relation-list selected-relation validation)
-                         term-widget)]
+        term-widget (doto (choice-box relation-term-list selected-relation-term)
+                      (.setMaxWidth 30.0)
+                      (.setMinWidth 30.0)
+                      )]
     (validate-control validation
                       term-widget
                       (fn [val]
-                        (boolean val)) "Must select a valid binary term with 2 values")
+                        (boolean val)) "")
     (on-changed selected-relation
                 (fn [obs old new]
                   (when (not= old new)
@@ -353,14 +364,25 @@
                                                         (when (and old-val new-val)
                                                           (min old-val (dec new-val)))))
                     )))
-    (.bindBidirectional (.valueProperty term-widget) selected-relation-term)
-    widget))
+    term-widget))
+
+(defn make-relation-and-term-select-widget
+  [relation-list selected-relation selected-relation-term validation]
+   (let [relation-widget (make-relation-select-widget relation-list selected-relation validation)
+         relation-term-widget (make-relation-term-select-widget selected-relation selected-relation-term validation)
+         widget (fx/h-box {}
+                          (doto relation-widget
+                            (HBox/setHgrow Priority/ALWAYS)
+                            (.setMaxWidth Double/MAX_VALUE))
+                          relation-term-widget)
+         ]
+     widget))
 
 (defn make-target-term-item-editor [name validation on-update-fn]
   (let [selected-relation (SimpleObjectProperty. nil)
         relation-list (observable-list [])
         selected-relation-term (SimpleObjectProperty. nil)
-        widget (make-relation-term-select-widget relation-list selected-relation selected-relation-term validation)]
+        widget (make-relation-and-term-select-widget relation-list selected-relation selected-relation-term validation)]
     (on-changed selected-relation
                 (fn [obs old new]
                   (on-update-fn)))

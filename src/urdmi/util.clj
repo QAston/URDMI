@@ -10,3 +10,6 @@
 
 (defn args-vec[& args]
   (vec args))
+
+(defn find-thing [needle haystack]
+  (keep-indexed #(when (= %2 needle) %1) haystack))

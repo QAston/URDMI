@@ -565,5 +565,6 @@
       (.setScene stage (show-fn stage))
       (.show stage))))
 
+(do
 (watch-fs/stop-all-channel-watchers!)
-(show-on-test-stage #'main-scene)
+(show-on-test-stage #'main-scene))
