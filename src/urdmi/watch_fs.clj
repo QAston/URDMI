@@ -62,7 +62,10 @@
   (let [priority-events (remove #{:modify} events)]
     (if (empty? priority-events)
       [:modify path time]
-      [(first priority-events) path time])))
+      [(cond (= :delete (first priority-events)) :delete ; delete last - reduce to delete
+             (< 1 (count (set priority-events))) :modify ;delete/create reduce to modify
+             true :create
+         ) path time])))
 
 (defn- register-created-dir [file watcher spec event-time keys paths-to-events callback]
   ; because register doesn't catch up immediately, add the already existing files and dirs

@@ -190,12 +190,14 @@
     (do
       (fs/mkdirs (item-key-to-file (:project app) item-key))
       app)
-    (let [^File file (item-key-to-file (:project app) item-key)]
+    (let [^File file (item-key-to-file (:project app) item-key)
+          app (mark-file-write-synced app item-key)]
       (fs/mkdirs (fs/parent file))
       (with-open [writer (io/writer file)]
         (model-to-file item-key item-key app writer)
         )
-      (mark-file-write-synced app item-key))))
+      app
+      )))
 
 (defn zipiter-to-item-key [zipiter]
   (vec (into (list (:name (zip/node zipiter))) (reverse (map :name (zip/path zipiter))))))

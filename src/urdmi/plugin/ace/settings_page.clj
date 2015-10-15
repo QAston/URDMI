@@ -13,7 +13,7 @@
            (javafx.collections ListChangeListener ObservableList)
            (javafx.scene.layout GridPane ColumnConstraints HBox Priority RowConstraints)
            (javafx.geometry Pos HPos VPos)
-           (java.util List)
+           (java.util List Collection)
            (javafx.beans.binding BooleanExpression ObjectExpression ListExpression)
            (javafx.util Callback StringConverter)
            (javafx.scene.control.cell TextFieldListCell)))
@@ -48,8 +48,8 @@
           (.setValue (:command properties-map) (:command data))
           (.setValue (:kb-format properties-map) (:kb-format data))
           (.setValue target-relation-index (:target-relation-index (:models-format data)))
-          (.setAll joined-relations (:joined-relations (:models-format data)))
           (.setAll joinable-relations joinable-rels)
+          (.setAll joined-relations (:joined-relations (:models-format data)))
           )
         ; just modify relation list
         (let [{:keys [relation relation-list]} (.getValue (:target-term properties-map))
@@ -84,11 +84,11 @@
     widget
     ))
 
-(defn make-rel-term-list [^ObservableList relations-list ^ObservableList selected-relations-list validation]
+(defn make-rel-term-list [^ObservableList joinable-relations ^ObservableList joined-relations validation]
   (let [
         selected-rels-widget (doto (fx/list-view {:max-height 200.0
                                                   :min-width 300.0})
-                               (.setItems selected-relations-list)
+                               (.setItems joined-relations)
                                (.setCellFactory (reify Callback
                                                     (call [this list-view]
                                                       (TextFieldListCell. (proxy [StringConverter] []
@@ -97,10 +97,10 @@
                                                                               (str (first v) "_" (second v) ".pl" " " t)))))))
                                )
         unselected-relations (doto (gui/observable-list)
-                               (.addAll relations-list)
-                               (.removeAll (map first selected-relations-list)))
+                               (.addAll joinable-relations)
+                               (.removeAll (map first joined-relations)))
         added-fn (fn [^long idx]
-                   (let [[selected-relation selected-relation-term :as rel-item] (.get selected-relations-list idx)]
+                   (let [[selected-relation selected-relation-term :as rel-item] (.get joined-relations idx)]
                      (.remove unselected-relations selected-relation)
                      ))
         removed-fn (fn [idx [selected-relation selected-relation-term]]
@@ -117,51 +117,53 @@
                                            :disable   (.or (.isNull (ObjectExpression/objectExpression rel-to-add))
                                                             (.isNull (ObjectExpression/objectExpression term-to-add)))
                                            :on-action (fn [e]
-                                                        (.add selected-relations-list
+                                                        (.add joined-relations
                                                               [(.getValue rel-to-add) (.getValue term-to-add)]))})
                                (HBox/setHgrow Priority/NEVER))
                              (doto
                                (fx/button {:text "Del"
                                            :disable   (.isNull (ObjectExpression/objectExpression (.. selected-rels-widget getSelectionModel selectedItemProperty)))
                                            :on-action
-                                                 (fn [e] (.removeAll selected-relations-list (.. selected-rels-widget getSelectionModel getSelectedItems)))})))
+                                                 (fn [e] (.removeAll joined-relations (.. selected-rels-widget getSelectionModel getSelectedItems)))})))
         widget (fx/v-box {}
                          add-widget
                          selected-rels-widget
                          )
         ]
-    (doseq [idx (range 0 (count selected-relations-list))]
+    (doseq [idx (range 0 (count joined-relations))]
       (added-fn idx))
-    (.addListener selected-relations-list
+    (.addListener joined-relations
                   (reify ListChangeListener
                     (onChanged [this change]
                       (while (.next change)
+                        (when (.wasAdded change)
+                          (doseq [^long idx (range (.getFrom change) (.getTo change))]
+                            (added-fn idx)
+                            ))
                         (when (.wasRemoved change)
                           (let [removed (.getRemoved change)]
                             (doseq [^long idx (range (.getFrom change) (+ (.getFrom change) (.getRemovedSize change)))]
                               (removed-fn idx (.get removed (- idx (.getFrom change))))
                               )))
-                        (when (.wasAdded change)
-                          (doseq [^long idx (range (.getFrom change) (.getTo change))]
-                            (added-fn idx)
-                            ))))))
-    (.addListener relations-list
+                        ))))
+    (.addListener joinable-relations
                   (reify ListChangeListener
                     (onChanged [this change]
                       (while (.next change)
+                        (when (.wasRemoved change)
+                          (let [removed (.getRemoved change)
+                                sel (vec joined-relations)
+                                rem-set (set removed)]
+                            (.removeAll joined-relations ^Collection (vec (filter (fn [[rel term]]
+                                                                        (rem-set rel)) sel)))
+                            (.removeAll unselected-relations removed)))
                         (when (.wasAdded change)
                           (let [added (.getAddedSubList change)]
                             (.addAll unselected-relations added)))
-                        (when (.wasRemoved change)
-                          (let [removed (.getRemoved change)
-                                sel (vec selected-relations-list)
-                                rem-set (set removed)]
-                            (.setAll selected-relations-list (remove (fn [[rel term]]
-                                                                       (rem-set rel)) sel))
-                            (.removeAll unselected-relations removed)))))))
+                        ))))
     widget))
 
-(defn models-format-settings-widget [target-relation target-relation-index relations-list joined-relations validation]
+(defn models-format-settings-widget [target-relation target-relation-index joinable-relations joined-relations validation]
   (let [term-widget (gui/make-relation-term-select-widget target-relation target-relation-index validation)
         grid (doto (GridPane.)
                (.setAlignment Pos/CENTER)
@@ -182,7 +184,7 @@
                (.add (fx/label {:text "Target rel index term"}) 0 0)
                (.add term-widget 1 0)
                (.add (fx/label {:text "Join rels by index"}) 0 1)
-               (.add (make-rel-term-list relations-list joined-relations validation) 1 1)
+               (.add (make-rel-term-list joinable-relations joined-relations validation) 1 1)
                )]
     grid))
 
