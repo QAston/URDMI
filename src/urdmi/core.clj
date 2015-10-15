@@ -210,3 +210,15 @@
           p (reduce remove-model-item p (:remove diff))]
       p)
     p))
+
+(defn resolve-executable-loc ^String [^Project p loc-string]
+  (let [file (io/file loc-string)]
+    (cond (fs/absolute? file) (str file)
+          (> (.getNameCount (.toPath file)) 1) (fs/file (:project-dir p) loc-string)
+          true loc-string
+          )))
+
+(defn resolve-relative-loc ^String [^Project p loc-string]
+  (let [file (io/file loc-string)]
+    (cond (fs/absolute? file) (str file)
+          true (fs/file (:project-dir p) loc-string))))

@@ -95,7 +95,7 @@
 (defn- run-learning [project]
   (let [
         plugin-settings (api/get-settings-data project settings-filename)
-        ace-location (FilenameUtils/removeExtension (:ace-loc plugin-settings)); ace doesn't like being started with .exe extension
+        ace-location (core/resolve-executable-loc project (FilenameUtils/removeExtension (:ace-loc plugin-settings))); ace doesn't like being started with .exe extension
         command (:command plugin-settings)
         working-dir (api/get-working-dir project)]
     (shell/sh ace-location

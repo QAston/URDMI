@@ -72,8 +72,8 @@
   api/Plugin
   (run [this project]
     (let [plugin-settings (api/get-settings-data project settings-filename)
-          swiprolog-location (:swi-prolog-loc plugin-settings)
-          aleph-location (:aleph-loc plugin-settings)
+          swiprolog-location (core/resolve-executable-loc project (:swi-prolog-loc plugin-settings))
+          aleph-location (core/resolve-relative-loc project (:aleph-loc plugin-settings))
           working-dir (api/get-working-dir project)
           dbname (get-db-name project)
           learning-program (get plugin-settings :program "induce")
