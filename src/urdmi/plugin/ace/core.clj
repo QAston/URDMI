@@ -4,7 +4,7 @@
             [urdmi.core :as api]
             [urdmi.prolog :as prolog]
             [urdmi.core :as core])
-  (:import (java.io StringReader)
+  (:import (java.io StringReader IOException)
            (urdmi.core Project)
            (org.apache.commons.io FilenameUtils)))
 
@@ -12,6 +12,15 @@
 
 (def knowledgebase-models "models")
 (def knowledgebase-key "key")
+
+(defn check-ace-path [resolved-loc]
+  (try
+    (when-let [o (:out (shell/sh (FilenameUtils/removeExtension (str resolved-loc))
+                                :in (StringReader. "")
+                                ))]
+     (.startsWith o "Starting ACE"))
+    (catch IOException e
+      false)))
 
 (def example-commands #{"induce(tilde)" "induce(icl)" "induce(regrules)" "induce(Algo)" "induce(bagging(BasicAlgo, n))" "induce(boosting(BasicAlgo, n))" "induce(voting(BasicAlgo, n))" "warmr" "rrl" "mrrl(N)" "nfold(Algo,n)" "nfold(Algo,n,s)" "leave_one_out_from_list(Algo,list)"})
 
@@ -95,10 +104,10 @@
 (defn- run-learning [project]
   (let [
         plugin-settings (api/get-settings-data project settings-filename)
-        ace-location (core/resolve-executable-loc project (FilenameUtils/removeExtension (:ace-loc plugin-settings))); ace doesn't like being started with .exe extension
+        ace-location (core/resolve-executable-loc (:project-dir project) (FilenameUtils/removeExtension (:ace-loc plugin-settings))); ace doesn't like being started with .exe extension
         command (:command plugin-settings)
         working-dir (api/get-working-dir project)]
-    (shell/sh ace-location
+    (shell/sh (str ace-location)
               :in (StringReader. command)
               :dir working-dir
               )))

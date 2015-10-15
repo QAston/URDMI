@@ -216,8 +216,8 @@
         properties-map {:ace-loc       (gui/make-executable-item-editor "Ace executable"
                                                                            (:project-dir project)
                                                                            validation
-                                                                           (fn [^File f]
-                                                                             true)
+                                                                           (fn [s]
+                                                                             (ace/check-ace-path (core/resolve-executable-loc (:project-dir project) s)))
                                                                            on-update-fn)
                         :target-term   (gui/->PropertyItemEditor
                                          (gui/make-relation-select-widget relation-list target-relation validation)

@@ -273,9 +273,8 @@
 
     (validate-control validation text-field
                       (fn [value]
-                        (let [file (str-to-file base-dir value)]
-                          (validate-fn file)
-                          ))
+                          (validate-fn value)
+                          )
                       "")
     (doto (fx/h-box {:spacing 8}
                     (fx/button {:text "Browse" :on-action browsing-fn})

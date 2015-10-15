@@ -70,19 +70,19 @@
         properties-map {:aleph-loc      (gui/make-file-property-item-editor "Aleph.pl"
                                                                             (:project-dir project)
                                                                             validation
-                                                                            (fn [^File f]
+                                                                            (fn [s]
                                                                               true)
                                                                             on-update-fn)
                         :swi-prolog-loc (gui/make-executable-item-editor "Swiprolog plcon executable"
-                                                                            (:project-dir project)
-                                                                            validation
-                                                                            (fn [^File f]
-                                                                              true)
-                                                                            on-update-fn)
+                                                                         (:project-dir project)
+                                                                         validation
+                                                                         (fn [s]
+                                                                           (aleph/check-plcon-path (core/resolve-executable-loc (:project-dir project) s)))
+                                                                         on-update-fn)
                         :target-term    (gui/make-target-term-item-editor "Target rel. term (values 0/1)"
                                                                           validation
                                                                           on-update-fn)
-                        :program (gui/->PropertyItemEditor (gui/choice-box (gui/observable-list aleph/programs) program-property) "Mining program" program-property)
+                        :program        (gui/->PropertyItemEditor (gui/choice-box (gui/observable-list aleph/programs) program-property) "Mining program" program-property)
                         }
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]

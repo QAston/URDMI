@@ -211,14 +211,14 @@
       p)
     p))
 
-(defn resolve-executable-loc ^String [^Project p loc-string]
+(defn resolve-executable-loc ^File [base-loc loc-string]
   (let [file (io/file loc-string)]
-    (cond (fs/absolute? file) (str file)
-          (> (.getNameCount (.toPath file)) 1) (fs/file (:project-dir p) loc-string)
-          true loc-string
+    (cond (fs/absolute? file) file
+          (> (.getNameCount (.toPath file)) 1) (fs/file base-loc loc-string)
+          true file
           )))
 
-(defn resolve-relative-loc ^String [^Project p loc-string]
+(defn resolve-relative-loc ^File [base-loc loc-string]
   (let [file (io/file loc-string)]
-    (cond (fs/absolute? file) (str file)
-          true (fs/file (:project-dir p) loc-string))))
+    (cond (fs/absolute? file) file
+          true (fs/file base-loc loc-string))))

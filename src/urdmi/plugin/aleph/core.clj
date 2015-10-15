@@ -5,7 +5,7 @@
             [urdmi.core :as api]
             [clojure.zip :as zip]
             [urdmi.core :as core])
-  (:import (java.io StringReader)
+  (:import (java.io StringReader IOException)
            (urdmi.core Project)))
 
 (use 'clojure.pprint)
@@ -15,6 +15,15 @@
 (def programs #{"induce" "induce_cover" "induce_max" "induce_incremental"
                 "induce_clauses" "induce_theory" "induce_tree" "induce_constraints" "induce_modes" "induce_features"
                 "custom"})
+
+(defn check-plcon-path [resolved-loc]
+  (try
+    (when-let [o (:err (shell/sh (str resolved-loc)
+                                  :in (StringReader. "")
+                                  ))]
+      (.startsWith o "Welcome to SWI-Prolog"))
+    (catch IOException e
+      false)))
 
 (defn split-by-relation-arg [rel-asts rel-arg]
   ;convert prolog-atoms to int
@@ -72,16 +81,16 @@
   api/Plugin
   (run [this project]
     (let [plugin-settings (api/get-settings-data project settings-filename)
-          swiprolog-location (core/resolve-executable-loc project (:swi-prolog-loc plugin-settings))
-          aleph-location (core/resolve-relative-loc project (:aleph-loc plugin-settings))
+          swiprolog-location (core/resolve-executable-loc (:project-dir project) (:swi-prolog-loc plugin-settings))
+          aleph-location (core/resolve-relative-loc (:project-dir project) (:aleph-loc plugin-settings))
           working-dir (api/get-working-dir project)
           dbname (get-db-name project)
           learning-program (get plugin-settings :program "induce")
           learning-program (if (= learning-program "custom")
                              (slurp (io/file (core/get-prolog-ext-dir project) "custom_program.pl"))
                              (str learning-program ".\n"))]
-      (shell/sh swiprolog-location "-g" "true"
-                :in (StringReader. (str "consult('" (prolog/quote-atom aleph-location) "').\nread_all(" (prolog/quote-atom dbname) ").\n.\n" learning-program "\nhalt.\n"))
+      (shell/sh (str swiprolog-location) "-g" "true"
+                :in (StringReader. (str "consult('" (prolog/quote-atom (str aleph-location)) "').\nread_all(" (prolog/quote-atom dbname) ").\n.\n" learning-program "\nhalt.\n"))
                 :dir working-dir
                 )))
   (rebuild-working-dir [this project]
