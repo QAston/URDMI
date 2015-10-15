@@ -6,7 +6,7 @@
             [me.raynes.fs :as fs]
             [urdmi.util :as util])
   (:import (javafx.collections ObservableList FXCollections ListChangeListener)
-           (java.util Collection)
+           (java.util Collection List)
            (javafx.beans.value ObservableValue ChangeListener WritableValue)
            (org.controlsfx.validation ValidationSupport Validator Severity)
            (org.controlsfx.validation.decoration ValidationDecoration)
@@ -221,6 +221,69 @@
                                  (.setValue file-str-property (str file)))
                                )))))
 
+(defn make-executable-select-widget [^File base-dir file-str description ^ValidationSupport validation validate-fn]
+  (let [text-field (fx/text-field {})
+        relative-btn (ToggleButton. "Relative")
+        absolute-btn (ToggleButton. "Absolute")
+        path-btn (ToggleButton. "PATH")
+        absolute-relative-toggle (SegmentedButton.
+                                   ^ObservableList (observable-list (list path-btn
+                                                                          relative-btn
+                                                                          absolute-btn
+                                                                          )))
+        browsing-fn (fn [e]
+                      (let [file (.showOpenDialog
+                                   (doto (FileChooser.)
+                                     (.setInitialDirectory (let [dir (str-to-file base-dir (.getValue file-str))]
+                                                             (if (and (.exists dir) (.exists (fs/parent dir)))
+                                                               (fs/parent dir)
+                                                               base-dir)))
+                                     (.setTitle description)
+                                     )
+                                   nil)]
+                        (when file
+                          (.setValue file-str (str file)))
+                        ))]
+    (on-text-field-confirmed text-field (fn [text-field]
+                                          (.setValue file-str (.getText text-field))))
+    (loose-bind file-str (.textProperty text-field))
+    (on-changed (.. absolute-relative-toggle
+                    getToggleGroup
+                    selectedToggleProperty)
+                (fn [obs old type]
+                  (let [file ^File (io/file (.getValue file-str))
+                        new-file (cond (= type path-btn) (fs/base-name file)
+
+                                       (= type relative-btn) (let [relative (if (fs/absolute? file) (core/relativize-path base-dir file) file)]
+                                                               (if (> (.getNameCount (.toPath relative)) 1)
+                                                                 relative
+                                                                 (io/file "." relative)))
+
+                                       true (str-to-file base-dir file))]
+                    (.setValue file-str (str new-file))
+                    )))
+    (on-changed file-str
+                (fn [obs old new]
+                  (when (not= old new)
+                    (let [file (io/file new)]
+                      (cond (fs/absolute? file) (.setSelected absolute-btn true)
+                            (> (.getNameCount (.toPath file)) 1) (.setSelected relative-btn true)
+                            true (.setSelected path-btn true)
+                            )))))
+
+    (validate-control validation text-field
+                      (fn [value]
+                        (let [file (str-to-file base-dir value)]
+                          (validate-fn file)
+                          ))
+                      "")
+    (doto (fx/h-box {:spacing 8}
+                    (fx/button {:text "Browse" :on-action browsing-fn})
+                    (doto text-field
+                      (HBox/setHgrow Priority/ALWAYS))
+                    absolute-relative-toggle))
+    ))
+
 (defn make-absolute-directory-select-widget [^File starting-dir file-str-property description ^ValidationSupport validation validation-fn]
   (let [text-field (fx/text-field {})]
     (on-text-field-confirmed text-field (fn [text-field]
@@ -263,8 +326,7 @@
 
     (on-changed property
                 (fn [obs old new]
-                  (when (not= old new)
-                    (on-update-fn))))
+                  (on-update-fn)))
     (->PropertyItemEditor widget name property)))
 
 (defn make-file-property-item-editor [^String name ^File relative-to ^ValidationSupport validation validate-fn on-update-fn]
@@ -273,8 +335,16 @@
 
     (on-changed property
                 (fn [obs old new]
-                  (when (not= old new)
-                    (on-update-fn))))
+                  (on-update-fn)))
+    (->PropertyItemEditor widget name property)))
+
+(defn make-executable-item-editor [^String name ^File relative-to ^ValidationSupport validation validate-fn on-update-fn]
+  (let [property (SimpleStringProperty. "")
+        widget (make-executable-select-widget relative-to property (str "Select " name " location") validation validate-fn)]
+
+    (on-changed property
+                (fn [obs old new]
+                  (on-update-fn)))
     (->PropertyItemEditor widget name property)))
 
 (defn make-property-editor-factory []
@@ -368,15 +438,15 @@
 
 (defn make-relation-and-term-select-widget
   [relation-list selected-relation selected-relation-term validation]
-   (let [relation-widget (make-relation-select-widget relation-list selected-relation validation)
-         relation-term-widget (make-relation-term-select-widget selected-relation selected-relation-term validation)
-         widget (fx/h-box {}
-                          (doto relation-widget
-                            (HBox/setHgrow Priority/ALWAYS)
-                            (.setMaxWidth Double/MAX_VALUE))
-                          relation-term-widget)
-         ]
-     widget))
+  (let [relation-widget (make-relation-select-widget relation-list selected-relation validation)
+        relation-term-widget (make-relation-term-select-widget selected-relation selected-relation-term validation)
+        widget (fx/h-box {}
+                         (doto relation-widget
+                           (HBox/setHgrow Priority/ALWAYS)
+                           (.setMaxWidth Double/MAX_VALUE))
+                         relation-term-widget)
+        ]
+    widget))
 
 (defn make-target-term-item-editor [name validation on-update-fn]
   (let [selected-relation (SimpleObjectProperty. nil)

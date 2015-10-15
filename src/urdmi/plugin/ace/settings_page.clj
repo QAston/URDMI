@@ -213,7 +213,7 @@
         models-format-widget (models-format-settings-widget target-relation target-relation-index joinable-relations joined-relations validation)
 
 
-        properties-map {:ace-loc       (gui/make-file-property-item-editor "Ace executable"
+        properties-map {:ace-loc       (gui/make-executable-item-editor "Ace executable"
                                                                            (:project-dir project)
                                                                            validation
                                                                            (fn [^File f]

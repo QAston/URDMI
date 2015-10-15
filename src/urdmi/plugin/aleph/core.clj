@@ -101,7 +101,7 @@
                                                         {:target-rel       nil
                                                          :target-rel-param nil
                                                          :aleph-loc        ""
-                                                         :swi-prolog-loc   ""
+                                                         :swi-prolog-loc   "plcon"
                                                          :program          "induce"
                                                          })]] []))
   (model-loaded [this project])

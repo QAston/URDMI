@@ -5,7 +5,8 @@
             [urdmi.prolog :as prolog]
             [urdmi.core :as core])
   (:import (java.io StringReader)
-           (urdmi.core Project)))
+           (urdmi.core Project)
+           (org.apache.commons.io FilenameUtils)))
 
 (def settings-filename "ace.edn")
 
@@ -91,18 +92,21 @@
         )
       (api/try-append-prolog-ext-file project (io/file "settings.pl") writer))))
 
+(defn- run-learning [project]
+  (let [
+        plugin-settings (api/get-settings-data project settings-filename)
+        ace-location (FilenameUtils/removeExtension (:ace-loc plugin-settings)); ace doesn't like being started with .exe extension
+        command (:command plugin-settings)
+        working-dir (api/get-working-dir project)]
+    (shell/sh ace-location
+              :in (StringReader. command)
+              :dir working-dir
+              )))
+
 (defrecord AcePlugin [parser-context]
   api/Plugin
   (run [this project]
-    (let [
-          plugin-settings (api/get-settings-data project settings-filename)
-          ace-location (:ace-loc plugin-settings)
-          command (:command plugin-settings)
-          working-dir (api/get-working-dir project)]
-      (shell/sh ace-location
-                :in (StringReader. command)
-                :dir working-dir
-                ))
+    (run-learning project)
     )
   (rebuild-working-dir [this project]
     (build-bg-knowledge-file this project)
@@ -117,7 +121,7 @@
                        [[:prolog-ext "kb.pl"] (core/file-item "% examples\n% file appended to the generated .kb file")]
                        [[:prolog-ext "settings.pl"] (core/file-item "% ace engine settings\n% file appended to the generated .s file")]
                        [[:settings settings-filename] (core/file-item {:target-rel    nil
-                                                                       :ace-loc       ""
+                                                                       :ace-loc       "ace"
                                                                        :kb-format     knowledgebase-key
                                                                        :models-format {:target-relation-index 0
                                                                                        :joined-relations      []}})]] []))

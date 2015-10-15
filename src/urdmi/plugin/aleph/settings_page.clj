@@ -73,7 +73,7 @@
                                                                             (fn [^File f]
                                                                               true)
                                                                             on-update-fn)
-                        :swi-prolog-loc (gui/make-file-property-item-editor "Swiprolog plcon executable"
+                        :swi-prolog-loc (gui/make-executable-item-editor "Swiprolog plcon executable"
                                                                             (:project-dir project)
                                                                             validation
                                                                             (fn [^File f]
