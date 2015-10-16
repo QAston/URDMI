@@ -31,6 +31,21 @@
                                                  ))
                                            ) ButtonType/NO)))
 
+(def button-to-kw {ButtonType/YES :yes ButtonType/NO :no ButtonType/CANCEL :cancel})
+
+(defn yes-no-cancel-dialog [stage content-text title-text]
+  (button-to-kw (.orElse (.showAndWait (doto (Alert. Alert$AlertType/CONFIRMATION)
+                                             (.setTitle title-text)
+                                             (.. getDialogPane
+                                                 (setContentText content-text))
+                                             (.. getButtonTypes
+                                                 (setAll [ButtonType/YES ButtonType/NO ButtonType/CANCEL])
+                                                 ))
+                                           ) ButtonType/CANCEL)))
+
+(defn save-modified-on-exit [stage]
+  (yes-no-cancel-dialog stage "Save modified files on exit" "Some files are modified, but not saved. Do you wish to save them?"))
+
 
 (defn reload-modified-file [stage ^File file]
   (let [title-text "File was changed"

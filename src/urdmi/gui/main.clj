@@ -140,6 +140,8 @@
                     :save-file    (fx/menu-item {:text "Save" :disable true :on-action (put-ui-event-fn {:type :save-file}) :accelerator (gui/ctrl-key-accelerator KeyCode/S)})
                     :revert-file  (fx/menu-item {:text "Revert" :disable true :on-action (put-ui-event-fn {:type :revert-file})})
                     :reload-file  (fx/menu-item {:text "Reload" :disable true :on-action (put-ui-event-fn {:type :reload-file})})
+                    :new-window (fx/menu-item {:text "New window" :on-action (put-ui-event-fn {:type :new-window})})
+                    :save-project (fx/menu-item {:text "Save all files" :on-action (put-ui-event-fn {:type :save-project})})
                     }
 
         [logs-tabs add-app-log-entry add-dm-log-entry] (build-logs-tabs)
@@ -153,12 +155,15 @@
                                :pref-width        900
                                :focus-traversable true}
                               (doto (fx/menu-bar {:focus-traversable true}
+                                                 (fx/menu {:text "Application"}
+                                                          (:new-window menu-items))
                                                  (fx/menu {:text "Project"}
                                                           (:new-project menu-items)
                                                           (:open-project menu-items)
                                                           (:build menu-items)
                                                           (:run menu-items)
                                                           (:build-run menu-items)
+                                                          (:save-project menu-items)
                                                           )
                                                  (fx/menu {:text "File"}
                                                           (:save-file menu-items)

@@ -118,7 +118,7 @@
 
 (defn update-main-menu-for-current-page! [app]
   (let [project-jobs-enabled (and (:project app) (not (:job app)))]
-    (doseq [menu [:build :build-run :run]]
+    (doseq [menu [:build :build-run :run :save-project]]
       (main-gui/set-menu-item-enabled! (:main-screen app) menu project-jobs-enabled)))
   (main-gui/set-menu-item-enabled! (:main-screen app) :reload-file (not (app/is-dir app (:current-page-key app))))
   (main-gui/set-menu-item-enabled! (:main-screen app) :save-file (is-page-modified-or-desynced app (:current-page-key app)))
@@ -356,11 +356,6 @@
     (create-project app project-data)
     app))
 
-(defmethod handle-request :save-project [event app]
-  (if-let [project-data (fx/run<!! (dialogs/new-project (:stage app) (keys (:plugins app))))]
-    (create-project app project-data)
-    app))
-
 (defmethod handle-request :stop-job [event app]
   (stop-current-job app))
 
@@ -431,6 +426,10 @@
         (-> (Desktop/getDesktop)
             (.open file)))))
   app)
+
+(defmethod handle-request :save-project [event app]
+  (let [unsaved (unsaved-pages app)]
+    (save-model-pages app unsaved)))
 
 (defmethod handle-request :new-relation [{:keys [key]} app]
   (if-let [rel (fx/run<!! (dialogs/new-relation (:stage app) (app/plugin-parser-context app)))]
@@ -517,6 +516,7 @@
     (if-not (get-in (:project app) (apply core/model-map-keys file-key))
       app
       (remove-model-page app file-key))))
+
 
 (defn apply-diff-to-pages [app ^ModelDiff diff]
   (if (and diff (instance? ModelDiff diff))
@@ -609,6 +609,9 @@
     (.setScene stage (Scene. (main-gui/get-widget (:main-screen app))))
     (.show stage)))
 
+(defmethod handle-request :new-window [event app]
+  (fx/run! (show-main-scene (fx/stage)))
+  app)
 
 (when (dev?)
   (watch-fs/stop-all-channel-watchers!)
