@@ -92,6 +92,7 @@
   (let [app (app/init-app)
         pages {}
         ui-requests (chan)]
+    (fx/run! (.setTitle stage "URDMI"))
     (-> app
         (assoc :stage stage)
         (assoc :pages pages)
@@ -198,7 +199,8 @@
         proj (:project app)
         files-view-model (generate-menu-viewmodel proj)]
     (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
-             (update-main-menu-for-current-page! app))
+             (update-main-menu-for-current-page! app)
+             (.setTitle (:stage app) (str "URDMI - " (:project-dir proj))))
     (-> app
         (initialize-watching-fs)
         (switch-page []))))
