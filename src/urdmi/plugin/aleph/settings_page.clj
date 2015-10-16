@@ -60,7 +60,7 @@
 (def fields [:aleph-loc :swi-prolog-loc :target-term :program])
 
 (defn make-page [>ui-requests project]
-  (let [validation (gui/validation-support (StyleClassValidationDecoration.))
+  (let [validation (gui/validation-support)
         user-input (atom nil)
         on-update-fn (fn []
                        (when @user-input
@@ -77,7 +77,9 @@
                                                                          validation
                                                                          (fn [s]
                                                                            (aleph/check-plcon-path (core/resolve-executable-loc (:project-dir project) s)))
-                                                                         on-update-fn)
+                                                                         "Could not find plcon executable in specified path"
+                                                                         on-update-fn
+                                                                         )
                         :target-term    (gui/make-target-term-item-editor "Target rel. term (values 0/1)"
                                                                           validation
                                                                           on-update-fn)

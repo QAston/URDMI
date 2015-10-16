@@ -45,7 +45,7 @@
 (defn new-relation [stage parser-context]
   (.orElse
     (.showAndWait
-      (let [validation (gui/validation-support (StyleClassValidationDecoration.))
+      (let [validation (gui/validation-support)
             name-field ^TextField (fx/text-field {:prompt-text "Name"})
             arity-field ^TextField (fx/text-field {:prompt-text "Arity" :max-width 40})
             validate-arity-fn (fn [s]
@@ -75,10 +75,11 @@
                                                           (validate-arity-fn (.getText arity-field)))))
                             )]
         (.setDisable ok-button true)
-        (gui/validate-control validation arity-field validate-arity-fn "Arity must be a number")
-        (gui/validate-control validation name-field validate-name-fn "Name must be a valid prolog predicate")
+        (gui/validate-control validation arity-field validate-arity-fn "Arity must be a number > 0")
+        (gui/validate-control validation name-field validate-name-fn "Name must be a valid prolog atom")
         (gui/on-changed (.textProperty name-field) update-button)
         (gui/on-changed (.textProperty arity-field) update-button)
+        (gui/default-stylesheet dialog)
         dialog
         ))
     nil))
@@ -96,7 +97,7 @@
 (defn new-project [stage plugins-list]
     (.orElse
       (.showAndWait
-        (let [validation (gui/validation-support (StyleClassValidationDecoration.))
+        (let [validation (gui/validation-support)
               plugin-widget (make-plugin-selection-widget plugins-list)
 
               location-validation-fn (fn [value]
@@ -111,7 +112,8 @@
                                 location-property
                                 "Select project directory"
                                 validation
-                                location-validation-fn)
+                                location-validation-fn
+                                "Path must be absolute and point to a directory")
 
               grid (doto (GridPane.)
                      (.setAlignment Pos/CENTER)
@@ -145,6 +147,7 @@
                               ]
           (.setDisable ok-button true)
           (gui/on-changed location-property update-button)
+          (gui/default-stylesheet dialog)
           dialog
           ))
       nil))

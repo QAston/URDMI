@@ -17,7 +17,7 @@
            (org.controlsfx.tools ValueExtractor)
            (javafx.scene.input KeyCodeCombination KeyCode KeyEvent)
            (javafx.event EventHandler ActionEvent)
-           (javafx.scene.control ToggleButton ChoiceBox ComboBox)
+           (javafx.scene.control ToggleButton ChoiceBox ComboBox Tooltip)
            (java.io File)
            (javafx.scene.layout HBox Priority)
            (javafx.stage DirectoryChooser FileChooser)
@@ -57,13 +57,28 @@
 
 ;))
 
+(defn hover-decoration []
+  (reify ValidationDecoration
+    (removeDecorations [this control]
+      (.setTooltip control nil)
+      (.remove (.getStyleClass control) "error")
+      )
+    (applyValidationDecoration [this validation-message]
+      (.setTooltip (.getTarget validation-message) (Tooltip. (.getText validation-message)))
+      (.add (.getStyleClass (.getTarget validation-message)) "error"))
+    (applyRequiredDecoration [this control])))
+
+(defn default-stylesheet [^Node node]
+  (.. node getStylesheets (add (.toExternalForm (io/resource "main.css")))))
 
 (defn validation-support
   "controlsfx validation registrator"
-  ^ValidationSupport [^ValidationDecoration decoration]
+  (^ValidationSupport [^ValidationDecoration decoration]
   (doto (ValidationSupport.)
     (.setErrorDecorationEnabled true)
     (.setValidationDecorator decoration)))
+  (^ValidationSupport []
+   (validation-support (hover-decoration))))
 
 (defn validate-control
   "register validation for a given control. when pred false control displays validation message.
@@ -232,7 +247,7 @@
                                  (.setValue file-str-property (str file)))
                                )))))
 
-(defn make-executable-select-widget [^File base-dir file-str description ^ValidationSupport validation validate-fn]
+(defn make-executable-select-widget [^File base-dir file-str description ^ValidationSupport validation validate-fn invalid-msg]
   (let [text-field (fx/text-field {})
         relative-btn (ToggleButton. "Relative")
         absolute-btn (ToggleButton. "Absolute")
@@ -286,7 +301,7 @@
                       (fn [value]
                         (validate-fn value)
                         )
-                      "")
+                      invalid-msg)
     (doto (fx/h-box {:spacing 8}
                     (fx/button {:text "Browse" :on-action browsing-fn})
                     (doto text-field
@@ -294,12 +309,12 @@
                     absolute-relative-toggle))
     ))
 
-(defn make-absolute-directory-select-widget [^File starting-dir file-str-property description ^ValidationSupport validation validation-fn]
+(defn make-absolute-directory-select-widget [^File starting-dir file-str-property description ^ValidationSupport validation validation-fn invalid-msg]
   (let [text-field (fx/text-field {})]
     (on-text-field-confirmed text-field (fn [text-field]
                                           (.setValue file-str-property (.getText text-field))))
     (loose-bind file-str-property (.textProperty text-field))
-    (validate-control validation text-field validation-fn "")
+    (validate-control validation text-field validation-fn invalid-msg)
     (doto (fx/h-box {:spacing 8}
                     (fx/button {:text "Browse" :on-action (fn [e]
                                                             (let [file (.showDialog
@@ -348,9 +363,9 @@
                   (on-update-fn)))
     (->PropertyItemEditor widget name property)))
 
-(defn make-executable-item-editor [^String name ^File relative-to ^ValidationSupport validation validate-fn on-update-fn]
+(defn make-executable-item-editor [^String name ^File relative-to ^ValidationSupport validation validate-fn invalid-msg on-update-fn]
   (let [property (SimpleStringProperty. "")
-        widget (make-executable-select-widget relative-to property (str "Select " name " location") validation validate-fn)]
+        widget (make-executable-select-widget relative-to property (str "Select " name " location") validation validate-fn invalid-msg)]
 
     (on-changed property
                 (fn [obs old new]
@@ -384,8 +399,6 @@
       (on-update-fn)))
   (isEditable [this]
     (boolean editable)))
-
-;(fx/sandbox #(make-directory-select-widget (fs/file ".") (SimpleStringProperty. "") "Select working directory dir" (validation-support (StyleClassValidationDecoration.))))
 
 (defn choice-box [list selected]
   (let [widget (doto (ChoiceBox.)
@@ -428,7 +441,7 @@
     (validate-control validation
                       widget
                       (fn [val]
-                        (boolean val)) "")
+                        (boolean val)) "You must select a relation")
     widget
     ))
 
@@ -445,7 +458,7 @@
     (validate-control validation
                       term-widget
                       (fn [val]
-                        (boolean val)) "")
+                        (boolean val)) "You must select a term")
     (on-changed selected-relation
                 (fn [obs old new]
                   (when (not= old new)

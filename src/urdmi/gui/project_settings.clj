@@ -48,7 +48,7 @@
                                                            false)
                         :working-dir (gui/make-dir-property-item-editor  "Working directory"
                                                                          (:project-dir project)
-                                                                         (gui/validation-support (StyleClassValidationDecoration.))
+                                                                         (gui/validation-support)
                                                                          on-update-fn)}
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]

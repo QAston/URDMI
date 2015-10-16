@@ -186,7 +186,7 @@
 ;knowledgebase format: model, key
 
 (defn make-page [>ui-requests project]
-  (let [validation (gui/validation-support (StyleClassValidationDecoration.))
+  (let [validation (gui/validation-support)
         user-input (atom false)
         on-update-fn (fn []
                        (when @user-input
@@ -211,7 +211,9 @@
                                                                            validation
                                                                            (fn [s]
                                                                              (ace/check-ace-path (core/resolve-executable-loc (:project-dir project) s)))
-                                                                           on-update-fn)
+                                                                        "Could not find ace executable in specified path"
+                                                                           on-update-fn
+                                                                        )
                         :target-term   (gui/->PropertyItemEditor
                                          (gui/make-relation-select-widget relation-list target-relation validation)
                                          "Target relation"
@@ -227,7 +229,7 @@
         widget (make-widget properties-list)]
     (.bind (.disableProperty models-format-widget) (.isNotEqualTo (ObjectExpression/objectExpression kb-selected-format) ace/knowledgebase-models))
     (gui/validate-control validation command-widget (fn [cmd]
-                                                      (and cmd (not (.isEmpty cmd)))) "You must enter a command")
+                                                      (and cmd (not (.isEmpty cmd)))) "You must enter an ace command")
     (doseq [prop [target-relation command-property kb-selected-format]]
       (gui/on-changed prop
                       (fn [obs old new]

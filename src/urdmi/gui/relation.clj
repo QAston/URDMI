@@ -25,7 +25,7 @@
     (javafx.beans.value ChangeListener)
     (javafx.beans.binding StringExpression)))
 
-(def term-validation-msg "Text must be a valid term.")
+(def term-validation-msg "Entered text must be a valid term.")
 
 (defn- calc-cell-bounds [cells]
   (if (<= (count cells) 1)
@@ -370,7 +370,7 @@
                           (fn [obs old-size new-size]
                             (gui/resize-observable-list column-widths new-size (fn [i]
                                                                                  (SimpleLongProperty. 0)))))
-        validation (gui/validation-support (StyleClassValidationDecoration.))
+        validation (gui/validation-support)
         validate-term-fn (fn [s]
                            (if s
                              (prolog/parse-single-term parser-context s)

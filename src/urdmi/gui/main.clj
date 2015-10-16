@@ -180,7 +180,7 @@
                                 (VBox/setVgrow Priority/ALWAYS))
                               status-bar
                               )]
-    (.. main-screen getStylesheets (add (.toExternalForm (io/resource "main.css"))))
+    (gui/default-stylesheet main-screen)
     [main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry status-bar]))
 
 (deftype MainScreen [widget file-menu content-container menu-items app-requests add-app-log-entry add-dm-log-entry status-bar])
