@@ -14,12 +14,19 @@
             [urdmi.gui.dialogs :as dialogs]
             [urdmi.gui.relation-list :as relation-list-gui]
             [clojure.stacktrace :as stacktrace]
-            [urdmi.watch-fs :as watch-fs])
+            [urdmi.watch-fs :as watch-fs]
+            [environ.core :refer [env]]
+            [clojure.core.async :as async])
   (:import (urdmi.core Project ModelDiff)
            (java.io StringWriter File)
            (javafx.scene Scene)
-           (javafx.stage Stage)
-           (java.awt Desktop)))
+           (javafx.stage Stage WindowEvent)
+           (java.awt Desktop)
+           (javafx.event EventHandler)))
+
+
+(defn dev? []
+  (= (env :urdmi-development) "true"))
 
 (defn generate-menu-viewmodel [^Project p]
   (let [vm (for [file (app/get-model-item-keys p true)]

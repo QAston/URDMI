@@ -7,6 +7,7 @@
                               :update :daily}]]
             :dependencies [[org.clojure/clojure "1.7.0"]
                            [clj-antlr "0.2.2"]
+                           [environ "1.0.1"]
                            [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                            [fx-clj "0.2.0-alpha1" :exclusions [org.clojure/core.async]]
                            [differ "0.2.1"]
@@ -20,9 +21,12 @@
                            [me.raynes/fs "1.4.6" :exclusions [potemkin]]
                            [org.clojars.ato/clojure-jsr223 "1.5.1" :exclusions [org.clojure/clojure]]
                            ]
-            :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]}}
-            :plugins [[lein-midje "3.0.0"]
-                      [codox "0.8.13"]]
+            :profiles {:dev {:dependencies [[midje "1.7.0-beta1"]]
+                             :plugins      [[codox "0.8.13"]
+                                            [lein-midje "3.0.0"]
+                                            [lein-environ "1.0.1"]]
+                             :env {:urdmi-development "true"}}}
+            :plugins []
             :java-source-paths ["deps/jiprolog/src"]
             :javac-options ["-target" "1.8" "-source" "1.8"]
             :jvm-opts ["-Xmx2g"]
