@@ -120,7 +120,7 @@
   )
 
 (defn sync-page-data [app key]
-  (fx/run!
+  (fx/run<!!
     (gui/show-data
       (get-in app [:pages key :page])
       (:project app)
@@ -236,8 +236,9 @@
 (defmethod handle-request :switch-page [{:keys [type target]} app]
   (switch-page app target))
 
-(defmethod handle-request :modified-page [{:keys [type data-key]} app]
-  (let [app (assoc-in app [:pages data-key :modified] true)]
+(defmethod handle-request :modified-page [{:keys [type]} app]
+  (let [data-key (:current-page-key app)
+        app (assoc-in app [:pages data-key :modified] true)]
     (fx/run! (update-file-menu-for-page! app data-key)
              (update-main-menu-for-current-page! app))
     app))
@@ -288,7 +289,7 @@
         page (:page app-page)
         old-page-data (get-in (:project app) (apply core/model-map-keys page-key))
         page-data (merge old-page-data
-                         (gui/read-data page))
+                         (fx/run<!! (gui/read-data page)))
         new-page-key (conj (vec (butlast page-key)) (:name page-data))
         update-current-page-if-needed (fn [app]
                                         (if (= (:current-page-key app) page-key)

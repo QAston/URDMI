@@ -76,14 +76,6 @@
                                             (update :target-relation-index (memfn getValue))))
                        }))))
 
-(defn combo-box [list selected]
-  (let [widget (doto (ComboBox.)
-                 (.setItems list)
-                 (.setEditable true))]
-    (.bindBidirectional (.valueProperty widget) selected)
-    widget
-    ))
-
 (defn make-rel-term-list [^ObservableList joinable-relations ^ObservableList joined-relations validation]
   (let [
         selected-rels-widget (doto (fx/list-view {:max-height 200.0
@@ -209,7 +201,7 @@
         joinable-relations (gui/observable-list)
         target-relation (SimpleObjectProperty.)
         command-property (SimpleStringProperty.)
-        command-widget (combo-box (gui/observable-list (sort ace/example-commands)) command-property)
+        command-widget (gui/text-combo-box (gui/observable-list (sort ace/example-commands)) command-property)
 
         target-relation-index (SimpleObjectProperty. 0)
         models-format-widget (models-format-settings-widget target-relation target-relation-index joinable-relations joined-relations validation)

@@ -22,7 +22,8 @@
     (org.apache.commons.lang3.reflect FieldUtils)
     (org.controlsfx.validation.decoration GraphicValidationDecoration StyleClassValidationDecoration)
     (org.controlsfx.validation ValidationSupport)
-    (javafx.beans.value ChangeListener)))
+    (javafx.beans.value ChangeListener)
+    (javafx.beans.binding StringExpression)))
 
 (def term-validation-msg "Text must be a valid term.")
 
@@ -203,6 +204,8 @@
                                              (.commitEdit ^TextFieldTableCell cell
                                                           (.getText newTextField))
 
+
+
                                              ;this is a hack, because isEditing is false
                                              ;when changing to another cell
                                              (let [row-index (.getIndex cell)
@@ -211,7 +214,13 @@
                                                                                 getSelectionModel
                                                                                 getSelectedCells))]
                                                (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col-index) (not= (.getRow selected-cell-pos) row-index))
-                                                              (.setValue cell-val (.getText newTextField))))))))
+                                                              (.setValue cell-val (.getText newTextField)))))
+                                             )))
+                         (gui/trigger-action-on-app-shortcut newTextField (fn [text-field]
+                                                                            (let [row-index (.getIndex cell)
+                                                                                  cell-val (.get (.get (.getItems relation-table) row-index) col-index)]
+                                                                              (.setValue cell-val (.getText newTextField))
+                                                                              )))
                          ))))]
         (.setContextMenu cell context-menu)
         (gui/validate-control validation cell validate-term-fn term-validation-msg)
@@ -253,17 +262,10 @@
                                      update-name-prop (fn []
                                                         (.setValue name-property (.getText text-field)))
                                      ]
-                                 (gui/on-changed (.focusedProperty text-field)
-                                                 (fn [observable old new]
-                                                   (when-not new
-                                                     (update-name-prop))))
-                                 (.setOnAction text-field (reify EventHandler
-                                                            (handle [this e]
-                                                              (update-name-prop))))
-                                 (gui/on-changed name-property
-                                                 (fn [obs old new]
-                                                   (when (not= old new)
-                                                     (.setText text-field new))))
+                                 (gui/on-text-field-confirmed text-field
+                                                              (fn [text-field]
+                                                                (update-name-prop)))
+                                 (gui/loose-bind name-property (.textProperty text-field))
                                  (gui/validate-control validation text-field (fn [s] (prolog/parse-single-atom parser-context s))
                                                        "Name must be a valid prolog atom")
                                  text-field)
@@ -276,26 +278,17 @@
                                                    false)))
                                      update-arity-prop (fn []
                                                          (let [text (.getText text-field)]
-                                                           (when (test-fn text)
+                                                           (when (and (test-fn text) (not= (Long/valueOf ^String text) (.getValue arity-property)) )
                                                              (.setValue arity-property (Long/valueOf ^String text)))))
                                      ]
 
                                  (gui/validate-control validation text-field test-fn
                                                        "Arity must be a number > 0")
-                                 (gui/on-changed (.focusedProperty text-field)
-                                                 (fn [observable old new]
-                                                   (when-not new
-                                                     (update-arity-prop))))
-
-                                 (.setOnAction text-field (reify EventHandler
-                                                            (handle [this e]
-                                                              (update-arity-prop))))
-
-                                 (gui/on-changed arity-property
-                                                 (fn [obs old new]
-                                                   (when (not= old new)
-                                                     (.setText text-field (str new)))))
-
+                                 (gui/on-text-field-confirmed text-field
+                                                              (fn [text-field]
+                                                                (update-arity-prop)))
+                                 (gui/loose-bind (StringExpression/stringExpression arity-property)
+                                                 (.textProperty text-field))
 
                                  text-field))
 
@@ -498,17 +491,17 @@
 
 (defn relations-viewmodel-to-model [parser-context viewmodel]
   (let [data (let [items (:items viewmodel)
-                     head {:type :ast-atom :name (:name viewmodel)}]
+                   head {:type :ast-atom :name (:name viewmodel)}]
                (doall (for [row items]
-                  {:type     :ast-functor
-                   :children (doall
-                               (cons head
-                                     (for [item row
-                                           :let [term (prolog/parse-single-term parser-context item)]]
-                                       (if term
-                                         term
-                                         {:type     :ast-functor
-                                          :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))})))]
+                        {:type     :ast-functor
+                         :children (doall
+                                     (cons head
+                                           (for [item row
+                                                 :let [term (prolog/parse-single-term parser-context item)]]
+                                             (if term
+                                               term
+                                               {:type     :ast-functor
+                                                :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))})))]
 
     {:name (str (:name viewmodel) "_" (:arity viewmodel) ".pl")
      :rel  [(:name viewmodel) (:arity viewmodel)]
@@ -521,8 +514,8 @@
   (show-data [this project data-key modified]
     (when modified
       (let [rel-view-model (relations-model-to-viewmodel parser-context
-                                                        (get-in project (apply core/model-map-keys data-key)))]
-       (fx/run! (gui/set-data! widget rel-view-model data-key)))))
+                                                         (get-in project (apply core/model-map-keys data-key)))]
+        (fx/run! (gui/set-data! widget rel-view-model data-key)))))
   (read-data [this]
     (core/map->FileItem (relations-viewmodel-to-model parser-context (gui/get-data widget)))
     ))

@@ -13,10 +13,11 @@
     (javafx.util Callback StringConverter)
     (javafx.scene.control.cell TextFieldTreeCell)
     (javafx.scene.control TreeView TreeItem ScrollPane MenuItem Tab Button TextArea ContextMenu)
-    (javafx.scene.input KeyCode)
+    (javafx.scene.input KeyCode MouseEvent)
     (org.controlsfx.control StatusBar)
     (javafx.beans.value ChangeListener)
-    (java.awt Desktop)))
+    (java.awt Desktop)
+    (javafx.event EventHandler)))
 
 (defn create-file-entry-context-menu [>app-requests tree-item-value]
   (let [base-menu (ContextMenu.)
@@ -37,7 +38,7 @@
       (make-file-entry-menu! "New Relation" :new-relation))
 
     (when (and deletable (or (= menu-type :output) (= menu-type :working-dir) (= menu-type :relations)))
-          (make-file-entry-menu! "Delete" :delete-file))
+      (make-file-entry-menu! "Delete" :delete-file))
     base-menu)
   )
 
@@ -78,7 +79,9 @@
         (gui/on-changed
           (fn [obs old ^TreeItem new]
             (when new
+              (.requestFocus tree-view)
               (put! >app-requests {:type :switch-page :target (:path (.getValue new))})))))
+
     (VBox/setVgrow tree-view Priority/ALWAYS)
     {:view tree-view :items (atom {})}))
 
@@ -120,10 +123,7 @@
        (add-log-entry 1 dm-log-text-area text))]))
 
 (defn- build-main-screen [>app-requests]
-  (let [font (Font/font 11.0)
-        text-fill (Color/color 0.625 0.625 0.625)
-
-        put-ui-event-fn (fn [event-data]
+  (let [put-ui-event-fn (fn [event-data]
                           (fn [e]
                             (put! >app-requests event-data)))
 
@@ -149,20 +149,24 @@
                      (VBox/setVgrow Priority/NEVER)
                      )
 
-        main-screen (fx/v-box {:pref-height 600
-                               :pref-width  900}
-                              (doto (fx/menu-bar
-                                      (fx/menu {:text "Project"}
-                                               (:new-project menu-items)
-                                               (:open-project menu-items)
-                                               (:build menu-items)
-                                               (:run menu-items)
-                                               (:build-run menu-items)
-                                               )
-                                      (fx/menu {:text "File"}
-                                               (:save-file menu-items)
-                                               (:revert-file menu-items)
-                                               (:reload-file menu-items)))
+        main-screen (fx/v-box {:pref-height       600
+                               :pref-width        900
+                               :focus-traversable true}
+                              (doto (fx/menu-bar {:focus-traversable true}
+                                                 (fx/menu {:text "Project"}
+                                                          (:new-project menu-items)
+                                                          (:open-project menu-items)
+                                                          (:build menu-items)
+                                                          (:run menu-items)
+                                                          (:build-run menu-items)
+                                                          )
+                                                 (fx/menu {:text "File"}
+                                                          (:save-file menu-items)
+                                                          (:revert-file menu-items)
+                                                          (:reload-file menu-items)))
+                                (.addEventFilter MouseEvent/MOUSE_CLICKED (reify EventHandler
+                                                                            (handle [this e]
+                                                                              (.requestFocus (.getTarget ^MouseEvent e)))))
                                 (VBox/setVgrow Priority/NEVER))
                               (doto (fx/split-pane {:divider-positions (double-array [0.8])
                                                     :focus-traversable true
@@ -196,9 +200,9 @@
         (swap! items assoc path item)))))
 
 (defn update-file-viewmodel! [^MainScreen screen path update-fn]
-  (let [^TreeItem tree-item (get @(:items (.file_menu screen)) path)
-        new-model (update-fn (.getValue tree-item))
-        new-path (:path new-model)]
+  (when-let [^TreeItem tree-item (get @(:items (.file_menu screen)) path)
+             new-model (update-fn (.getValue tree-item))
+             new-path (:path new-model)]
     (.setValue tree-item new-model)
     (when-not (= path new-path)
       (swap! (:items (.file_menu screen)) dissoc path)

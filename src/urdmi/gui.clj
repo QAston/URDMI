@@ -15,16 +15,17 @@
            (clojure.lang IFn)
            (javafx.util Callback StringConverter)
            (org.controlsfx.tools ValueExtractor)
-           (javafx.scene.input KeyCodeCombination KeyCode)
-           (javafx.event EventHandler)
-           (javafx.scene.control ToggleButton ChoiceBox)
+           (javafx.scene.input KeyCodeCombination KeyCode KeyEvent)
+           (javafx.event EventHandler ActionEvent)
+           (javafx.scene.control ToggleButton ChoiceBox ComboBox)
            (java.io File)
            (javafx.scene.layout HBox Priority)
            (javafx.stage DirectoryChooser FileChooser)
            (org.controlsfx.validation ValidationSupport)
            (javafx.beans.property SimpleStringProperty SimpleObjectProperty)
            (org.controlsfx.control SegmentedButton PropertySheet$Item)
-           (org.controlsfx.property.editor PropertyEditor DefaultPropertyEditorFactory)))
+           (org.controlsfx.property.editor PropertyEditor DefaultPropertyEditorFactory)
+           (javafx.scene Node)))
 
 (defn load-fxml [filename]
   (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
@@ -114,14 +115,25 @@
 (defn ctrl-key-accelerator [^KeyCode code]
   (KeyCodeCombination. code (into-array (list KeyCodeCombination/SHORTCUT_DOWN))))
 
+(defn trigger-action-on-app-shortcut [^Node node fn]
+  (let [keys #{KeyCode/CONTROL KeyCode/COMMAND}]
+    (.addEventFilter node KeyEvent/KEY_PRESSED (reify EventHandler
+                             (handle [this e]
+                               (when (keys (.getCode ^KeyEvent e))
+                                 #_(.fireEvent node (ActionEvent. node node))
+                                 (fn node))
+                               )))))
+
 (defn on-text-field-confirmed
   "textfield-fn is called when focus lost, or field confirmed using [enter]
   textfield-fn is (fn [text-field])"
   [^TextField text-field textfield-fn]
+
   (on-changed (.focusedProperty text-field)
               (fn [observable old new]
                 (when-not new
                   (textfield-fn text-field))))
+  (trigger-action-on-app-shortcut text-field textfield-fn)
   (.setOnAction text-field (reify EventHandler
                              (handle [this e]
                                (textfield-fn text-field)))))
@@ -129,7 +141,7 @@
 (defn loose-bind [src-property ^WritableValue target-property]
   (on-changed src-property
               (fn [obs old new]
-                (when (not= old new)
+                (when (not= (.getValue target-property) new)
                   (.setValue target-property new)))))
 
 (defn str-to-file [^File base-dir s]
@@ -273,8 +285,8 @@
 
     (validate-control validation text-field
                       (fn [value]
-                          (validate-fn value)
-                          )
+                        (validate-fn value)
+                        )
                       "")
     (doto (fx/h-box {:spacing 8}
                     (fx/button {:text "Browse" :on-action browsing-fn})
@@ -390,6 +402,17 @@
                     (onChanged [this change]
                       (set-selection (.getValue selected)))))
     (.addListener selected listener)
+    (.bindBidirectional (.valueProperty widget) selected)
+    widget
+    ))
+
+(defn text-combo-box [list selected]
+  (let [widget (doto (ComboBox.)
+                 (.setItems list)
+                 (.setEditable true))]
+    (on-text-field-confirmed (.getEditor widget)
+                             (fn [text-field]
+                               (.setValue selected (.getText text-field))))
     (.bindBidirectional (.valueProperty widget) selected)
     widget
     ))
