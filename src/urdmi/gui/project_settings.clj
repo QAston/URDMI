@@ -20,27 +20,26 @@
 
 (def fields [:active-plugin :working-dir])
 
-(deftype ProjectSettingsPage [widget properties-map current-page]
+(deftype ProjectSettingsPage [widget properties-map user-input]
   gui/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]
-    (reset! current-page nil)
+    (reset! user-input false)
     (when modified
       (let [data @(:data (get-in project (apply core/model-map-keys key)))]
         (.setValue (:active-plugin properties-map) (name (:active-plugin data)))
         (.setValue (:working-dir properties-map) (str (:working-dir data)))))
-    (reset! current-page key))
+    (reset! user-input true))
   (read-data [this]
     (core/file-item {:active-plugin (keyword (.getValue (:active-plugin properties-map)))
              :working-dir   (io/file (.getValue (:working-dir properties-map)))})))
 
 (defn make-page [>ui-requests project]
-  (let [current-page (atom nil)
+  (let [user-input (atom false)
         on-update-fn (fn []
-                       (when-let [key @current-page]
-                         (async/put! >ui-requests {:type     :modified-page
-                                                   :data-key key})))
+                       (when @user-input
+                         (async/put! >ui-requests {:type     :modified-page})))
         properties-map {:active-plugin (gui/->PropertyItem "Active Plugin"
                                                            "Curently active dataminging plugin"
                                                            String
@@ -53,4 +52,4 @@
                                                                          on-update-fn)}
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]
-    (->ProjectSettingsPage widget properties-map current-page)))
+    (->ProjectSettingsPage widget properties-map user-input)))

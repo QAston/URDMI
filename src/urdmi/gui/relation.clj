@@ -278,7 +278,7 @@
                                                    false)))
                                      update-arity-prop (fn []
                                                          (let [text (.getText text-field)]
-                                                           (when (and (test-fn text) (not= (Long/valueOf ^String text) (.getValue arity-property)) )
+                                                           (when (and (test-fn text) (not= (Long/valueOf ^String text) (.getValue arity-property)))
                                                              (.setValue arity-property (Long/valueOf ^String text)))))
                                      ]
 
@@ -364,8 +364,6 @@
 
 ;usability improvements:
 ; edit table when typing
-;todo: on file save expressions that are not valid prolog should be put in urdmi_editor("expr") to be safely saved
-
 (defn build-relation-edit-widget [name-property arity-property items-list parser-context]
   (let [column-widths (gui/observable-list)
         _ (gui/on-changed arity-property
@@ -392,12 +390,12 @@
       (.. getChildren (setAll (gui/observable-list widget))))
     ))
 
-(deftype RelationWidget [name-property arity-property items-list widget shown-data-key]
+(deftype RelationWidget [name-property arity-property items-list widget user-input]
   gui/DataWidget
   (get-node [this]
     widget)
   (set-data! [this data data-key]
-    (reset! shown-data-key nil)
+    (reset! user-input false)
     (.setValue arity-property (:arity data))
     (.setValue name-property (:name data))
     (.setAll items-list ^Collection (->> (:items data)
@@ -405,7 +403,7 @@
                                                           (->> row
                                                                (map (fn [el]
                                                                       (SimpleStringProperty. el)))))))))
-    (reset! shown-data-key data-key))
+    (reset! user-input true))
 
   (get-data [this]
     {:arity (.getValue arity-property)
@@ -418,12 +416,11 @@
                            row))))}
     ))
 
-(defn- register-data-change-listeners [>ui-requests name-property arity-property items-list shown-data-key]
+(defn- register-data-change-listeners [>ui-requests name-property arity-property items-list data-modified-fn]
   (let [change-listener (reify ChangeListener
                           (changed [this obs old new]
-                            (if-let [data-key @shown-data-key]
-                              (put! >ui-requests {:type     :modified-page
-                                                  :data-key data-key}))))]
+                            (data-modified-fn)
+                            ))]
     (.addListener items-list
                   (reify ListChangeListener
                     (onChanged [this change]
@@ -441,9 +438,7 @@
                                               )))
                             ))
                         (when (.wasRemoved change)
-                          (if-let [data-key @shown-data-key]
-                            (put! >ui-requests {:type     :modified-page
-                                                :data-key data-key}))))
+                          (data-modified-fn)))
                       )))
     (.addListener name-property change-listener)
     (.addListener arity-property change-listener)
@@ -453,16 +448,19 @@
   (let [name-property (SimpleStringProperty. "")
         arity-property (SimpleLongProperty. 0)
         items-list (gui/observable-list)
-        shown-data-key (atom nil)
+        user-input (atom nil)
         relation-edit-widget (build-relation-edit-widget name-property arity-property items-list parser-context)
+        data-modified-fn (fn []
+                           (if @user-input
+                             (put! >ui-requests {:type :modified-page})))
         ]
-    (register-data-change-listeners >ui-requests name-property arity-property items-list shown-data-key)
+    (register-data-change-listeners >ui-requests name-property arity-property items-list data-modified-fn)
     (->RelationWidget
       name-property
       arity-property
       items-list
       relation-edit-widget
-      shown-data-key)))
+      user-input)))
 
 (defn- unwrap-urdmi-edit [ast]
   (when (and (= (:type ast) :ast-functor) (= "urdmi_edit" (:name (first (:children ast)))))

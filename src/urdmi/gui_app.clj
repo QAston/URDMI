@@ -301,11 +301,7 @@
                                        (-> app
                                            (app/delete-model-page page-key)
                                            (dissoc-in [:pages page-key])
-                                           (handle-model-modified old-app page-key)
-                                           ; todo:
-                                           ; this is only to trace current key by the view
-                                           ; give it ref managed by framework, or add page-key to ui-requests from framework
-                                           (mark-page-needs-data-sync new-page-key))
+                                           (handle-model-modified old-app page-key))
                                        app))
         proj (-> (:project app)
                  (dissoc-in (apply core/model-map-keys page-key))

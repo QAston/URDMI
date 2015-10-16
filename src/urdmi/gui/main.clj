@@ -200,13 +200,13 @@
         (swap! items assoc path item)))))
 
 (defn update-file-viewmodel! [^MainScreen screen path update-fn]
-  (when-let [^TreeItem tree-item (get @(:items (.file_menu screen)) path)
-             new-model (update-fn (.getValue tree-item))
-             new-path (:path new-model)]
-    (.setValue tree-item new-model)
-    (when-not (= path new-path)
-      (swap! (:items (.file_menu screen)) dissoc path)
-      (swap! (:items (.file_menu screen)) assoc new-path tree-item))))
+  (when-let [^TreeItem tree-item (get @(:items (.file_menu screen)) path)]
+    (let [new-model (update-fn (.getValue tree-item))
+          new-path (:path new-model)]
+      (.setValue tree-item new-model)
+      (when-not (= path new-path)
+        (swap! (:items (.file_menu screen)) dissoc path)
+        (swap! (:items (.file_menu screen)) assoc new-path tree-item)))))
 
 (defn remove-file! [^MainScreen screen path]
   (if-let [^TreeItem item (get @(:items (.file_menu screen)) path)]

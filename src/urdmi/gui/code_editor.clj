@@ -55,30 +55,29 @@
     (.setContextMenu code-area (build-context-menu code-area))
     code-area))
 
-(defn- register-data-change-listeners [>ui-requests text-property shown-data-key]
+(defn- register-data-change-listeners [>ui-requests text-property user-input]
     (gui/on-changed text-property
                     (fn [obs old new]
-                      (if-let [data-key @shown-data-key]
-                        (put! >ui-requests {:type :modified-page
-                                            :data-key data-key})))))
+                      (if @user-input
+                        (put! >ui-requests {:type :modified-page})))))
 
-(deftype CodeEditorWidget [^CodeArea widget shown-data-key]
+(deftype CodeEditorWidget [^CodeArea widget user-input]
   gui/DataWidget
   (get-node [this]
     widget)
   (set-data! [this data data-key]
-    (reset! shown-data-key nil)
+    (reset! user-input false)
     (.replaceText widget data)
-    (reset! shown-data-key data-key))
+    (reset! user-input true))
   (get-data [this]
     (.getValue (.textProperty widget))))
 
 (defn make-widget [>ui-requests]
   (let [widget (build-code-editor)
         text-property (.textProperty widget)
-        shown-data-key (atom nil)]
-    (register-data-change-listeners >ui-requests text-property shown-data-key)
-    (->CodeEditorWidget widget shown-data-key)))
+        user-input (atom false)]
+    (register-data-change-listeners >ui-requests text-property user-input)
+    (->CodeEditorWidget widget user-input)))
 
 (deftype CodeEditorPage [widget]
   gui/ContentPage

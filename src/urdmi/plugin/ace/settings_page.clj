@@ -27,13 +27,13 @@
     (.setPropertyEditorFactory gui/property-editor-factory)
     ))
 
-(deftype AceSettingsPage [widget properties-map current-page]
+(deftype AceSettingsPage [widget properties-map user-input]
   gui/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]
     (fx/run!
-      (reset! current-page nil)
+      (reset! user-input false)
       (if modified
         ; reload whole page
         (let [data (core/get-settings-data project (last key))
@@ -63,7 +63,7 @@
           (.removeAll joinable-relations to-remove)
           (.addAll joinable-relations to-add))
         )
-      (reset! current-page key)))
+      (reset! user-input true)))
   (read-data [this]
     (let [{:keys [relation]} (.getValue (:target-term properties-map))]
       (core/file-item {:ace-loc    (.getValue (:ace-loc properties-map))
@@ -187,11 +187,10 @@
 
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support (StyleClassValidationDecoration.))
-        current-page (atom nil)
+        user-input (atom false)
         on-update-fn (fn []
-                       (when-let [key @current-page]
-                         (async/put! >ui-requests {:type     :modified-page
-                                                   :data-key key})))
+                       (when @user-input
+                         (async/put! >ui-requests {:type     :modified-page})))
 
         kb-formats-list (gui/observable-list (list ace/knowledgebase-key ace/knowledgebase-models))
         kb-selected-format (SimpleStringProperty. ace/knowledgebase-key)
@@ -235,7 +234,7 @@
                         (on-update-fn))))
     (gui/on-changed target-relation
                     (fn [obs old new]
-                      (when @current-page
+                      (when @user-input
                         (when old
                           (.add joinable-relations old))
                         (when new
@@ -247,4 +246,4 @@
                       (when (or (.wasRemoved change) (.wasAdded change))
                         (on-update-fn))
                       ))))
-    (->AceSettingsPage widget properties-map current-page)))
+    (->AceSettingsPage widget properties-map user-input)))

@@ -21,12 +21,12 @@
     (.setPropertyEditorFactory gui/property-editor-factory)
     ))
 
-(deftype AlephSettingsPage [widget properties-map current-page]
+(deftype AlephSettingsPage [widget properties-map user-input]
   gui/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]
-    (reset! current-page nil)
+    (reset! user-input false)
     (if modified
       (let [data (core/get-settings-data project (last key))
             relations (doall (map :rel (core/get-relations project)))
@@ -46,7 +46,7 @@
             to-remove (set/difference edited-relations model-relations)]
         (.removeAll relation-list to-remove)
         (.addAll relation-list to-add)))
-    (reset! current-page key)
+    (reset! user-input true)
     )
   (read-data [this]
     (let [{:keys [relation relation-term]} (.getValue (:target-term properties-map))]
@@ -61,11 +61,10 @@
 
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support (StyleClassValidationDecoration.))
-        current-page (atom nil)
+        user-input (atom nil)
         on-update-fn (fn []
-                       (when-let [key @current-page]
-                         (async/put! >ui-requests {:type     :modified-page
-                                                   :data-key key})))
+                       (when @user-input
+                         (async/put! >ui-requests {:type     :modified-page})))
         program-property (SimpleStringProperty. "induce")
         properties-map {:aleph-loc      (gui/make-file-property-item-editor "Aleph.pl"
                                                                             (:project-dir project)
@@ -89,4 +88,4 @@
     (gui/on-changed program-property
                     (fn [obs old new]
                         (on-update-fn)))
-    (->AlephSettingsPage widget properties-map current-page)))
+    (->AlephSettingsPage widget properties-map user-input)))

@@ -120,7 +120,6 @@
     (.addEventFilter node KeyEvent/KEY_PRESSED (reify EventHandler
                              (handle [this e]
                                (when (keys (.getCode ^KeyEvent e))
-                                 #_(.fireEvent node (ActionEvent. node node))
                                  (fn node))
                                )))))
 
