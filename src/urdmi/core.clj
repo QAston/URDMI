@@ -6,11 +6,15 @@
             [me.raynes.fs :as fs]
             [clojure.zip :as zip]
             [clojure.edn :as edn]
+            [environ.core :refer [env]]
             [clojure.string :as string]
             [urdmi.prolog :as prolog])
   (:import (java.io Writer Reader File)
            (java.nio.file Files CopyOption)
            (clojure.lang ISeq)))
+
+(defn dev? []
+  (= (env :urdmi-development) "true"))
 
 (defrecord FileItem [data])
 

@@ -11,6 +11,10 @@
 (defn -start
   "Implements javafx.application.Application.start(javafx.stage.Stage)."
   [app ^javafx.stage.Stage stage]
+  (require 'urdmi.gui)
+  ((var-get (resolve (symbol "urdmi.gui" "init-toolkit"))))
   (require 'urdmi.gui-app)
+
+
   (let [ args (into-array String (-> app .getParameters .getRaw))]
     ((var-get (resolve (symbol "urdmi.gui-app" "show-main-scene"))) stage)))

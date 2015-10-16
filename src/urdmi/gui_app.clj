@@ -15,7 +15,7 @@
             [urdmi.gui.relation-list :as relation-list-gui]
             [clojure.stacktrace :as stacktrace]
             [urdmi.watch-fs :as watch-fs]
-            [environ.core :refer [env]]
+
             [clojure.core.async :as async])
   (:import (urdmi.core Project ModelDiff)
            (java.io StringWriter File)
@@ -25,9 +25,6 @@
            (javafx.event EventHandler)))
 
 (def instances (atom 0))
-
-(defn dev? []
-  (= (env :urdmi-development) "true"))
 
 (defn generate-menu-viewmodel [^Project p]
   (let [vm (for [file (app/get-model-item-keys p true)]
@@ -558,7 +555,7 @@
   (when-let [c (get app :fs-changes)]
     (watch-fs/close! c))
   (swap! instances dec)
-  (when (and (not (dev?)) (zero? @instances))
+  (when (and (not (core/dev?)) (zero? @instances))
     (System/exit 0)))
 
 (defn handle-close-request [app ^WindowEvent e]
@@ -575,7 +572,7 @@
 
 (defn show-main-scene [stage]
   (let [app (init-app stage)
-        app (if (dev?)
+        app (if (core/dev?)
               (-> app
                   ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
                   (load-project (fs/file "dev-resources/projects/ace_tilde/")))
@@ -613,6 +610,6 @@
   (fx/run! (show-main-scene (fx/stage)))
   app)
 
-(when (dev?)
+(when (core/dev?)
   (watch-fs/stop-all-channel-watchers!)
   (fx/run! (show-main-scene (fx/stage))))

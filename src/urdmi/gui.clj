@@ -47,15 +47,19 @@
   (set-data! [this data data-key])
   (get-data [this]))
 
-(ValueExtractor/addObservableValueExtractor (reify Predicate
-                                              (test [this control]
-                                                (instance? Labeled control)))
-                                            (reify Callback
-                                              (call [this control]
-                                                (let [^Labeled control control]
-                                                  (.textProperty control)))))
-
+(defn init-toolkit []
+  (javafx.embed.swing.JFXPanel.)
+  (ValueExtractor/addObservableValueExtractor (reify Predicate
+                                                (test [this control]
+                                                  (instance? Labeled control)))
+                                              (reify Callback
+                                                (call [this control]
+                                                  (let [^Labeled control control]
+                                                    (.textProperty control))))))
 ;))
+
+(when (core/dev?)
+  (defonce t (init-toolkit)))
 
 (defn hover-decoration []
   (reify ValidationDecoration

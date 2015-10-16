@@ -19,7 +19,7 @@
     (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent KeyEvent)
     (javafx.event EventHandler)
     (javafx.util.converter DefaultStringConverter)
-    (org.apache.commons.lang3.reflect FieldUtils)
+    (org.apache.commons.lang3.reflect FieldUtils ConstructorUtils)
     (org.controlsfx.validation.decoration GraphicValidationDecoration StyleClassValidationDecoration)
     (org.controlsfx.validation ValidationSupport)
     (javafx.beans.value ChangeListener)
@@ -177,56 +177,49 @@
 (defn- column-cell-factory [^TableView relation-table ^ContextMenu context-menu col-index ^ValidationSupport validation validate-term-fn]
   (reify Callback
     (call [this table-column]
-      (let [cell (proxy [TextFieldTableCell] [(DefaultStringConverter.)]
-                   (startEdit []
-                     (let [cell this
-                           oldTextField (FieldUtils/readField this "textField", true)
-                           _ (proxy-super startEdit)
-                           ^TextField newTextField (FieldUtils/readField this "textField", true)]
-                       (when-not (identical? oldTextField newTextField)
-                         ; select next cell on enter
-                         (let [old-action (.getOnAction newTextField)]
-                           (.setOnAction newTextField (reify EventHandler
-                                                        (handle [this e]
-                                                          (.handle old-action e)
-                                                          (.requestFocus relation-table)
-                                                          (let [selection-model (.getSelectionModel relation-table)
-                                                                focus-index (.getFocusedIndex selection-model)]
-                                                            (.clearSelection selection-model focus-index table-column)
-                                                            (.selectNext selection-model)
-                                                            )))))
-                         (gui/validate-control validation newTextField validate-term-fn term-validation-msg)
-                         ;commit on lost focus
-                         (gui/on-changed (.focusedProperty newTextField)
-                                         (fn [observale old new]
-                                           (when-not new
+      (let [start-edit-fn (fn [cell oldTextField newTextField]
+                            (when-not (identical? oldTextField newTextField)
+                              ; select next cell on enter
+                              (let [old-action (.getOnAction newTextField)]
+                                (.setOnAction newTextField (reify EventHandler
+                                                             (handle [this e]
+                                                               (.handle old-action e)
+                                                               (.requestFocus relation-table)
+                                                               (let [selection-model (.getSelectionModel relation-table)
+                                                                     focus-index (.getFocusedIndex selection-model)]
+                                                                 (.clearSelection selection-model focus-index table-column)
+                                                                 (.selectNext selection-model)
+                                                                 )))))
+                              (gui/validate-control validation newTextField validate-term-fn term-validation-msg)
+                              ;commit on lost focus
+                              (gui/on-changed (.focusedProperty newTextField)
+                                              (fn [observale old new]
+                                                (when-not new
 
-                                             (.commitEdit ^TextFieldTableCell cell
-                                                          (.getText newTextField))
+                                                  (.commitEdit ^TextFieldTableCell cell
+                                                               (.getText newTextField))
 
-
-
-                                             ;this is a hack, because isEditing is false
-                                             ;when changing to another cell
-                                             (let [row-index (.getIndex cell)
-                                                   cell-val (.get (.get (.getItems relation-table) row-index) col-index)
-                                                   selected-cell-pos (first (.. relation-table
-                                                                                getSelectionModel
-                                                                                getSelectedCells))]
-                                               (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col-index) (not= (.getRow selected-cell-pos) row-index))
-                                                              (.setValue cell-val (.getText newTextField)))))
-                                             )))
-                         (gui/trigger-action-on-app-shortcut newTextField (fn [text-field]
-                                                                            (let [row-index (.getIndex cell)
-                                                                                  cell-val (.get (.get (.getItems relation-table) row-index) col-index)]
-                                                                              (.setValue cell-val (.getText newTextField))
-                                                                              )))
-                         ))))]
+                                                  ;this is a hack, because isEditing is false
+                                                  ;when changing to another cell
+                                                  (let [row-index (.getIndex cell)
+                                                        cell-val (.get (.get (.getItems relation-table) row-index) col-index)
+                                                        selected-cell-pos (first (.. relation-table
+                                                                                     getSelectionModel
+                                                                                     getSelectedCells))]
+                                                    (when-not (and selected-cell-pos (or (not= (.getColumn selected-cell-pos) col-index) (not= (.getRow selected-cell-pos) row-index))
+                                                                   (.setValue cell-val (.getText newTextField)))))
+                                                  )))
+                              (gui/trigger-action-on-app-shortcut newTextField (fn [text-field]
+                                                                                 (let [row-index (.getIndex cell)
+                                                                                       cell-val (.get (.get (.getItems relation-table) row-index) col-index)]
+                                                                                   (.setValue cell-val (.getText newTextField))
+                                                                                   )))
+                              ))
+            cell (ConstructorUtils/invokeConstructor (Class/forName "urdmi.gui.aot.TermTableCell") (into-array (list start-edit-fn)))]
         (.setContextMenu cell context-menu)
         (gui/validate-control validation cell validate-term-fn term-validation-msg)
         cell
-        ))
-    ))
+        ))))
 
 (defn- build-table-columns [^TableView relation-table arity-property column-widths validation validate-term-fn]
   (let [context-menu (build-context-menu relation-table arity-property)

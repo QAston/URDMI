@@ -3,13 +3,11 @@
             :url "https://github.com/QAston/URDMI"
             :license {:name "GNU General Public License, version 3"
                       :url  "https://www.gnu.org/licenses/gpl.html"}
-        :repositories [["snapshots" {:url "https://oss.sonatype.org/content/repositories/snapshots/"
-                              :update :daily}]]
             :dependencies [[org.clojure/clojure "1.7.0"]
                            [clj-antlr "0.2.2"]
                            [environ "1.0.1"]
                            [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                           [fx-clj "0.2.0-alpha1" :exclusions [org.clojure/core.async]]
+                           [org.clojars.qaston/fx-clj "0.2.1-SNAPSHOT" :exclusions [org.clojure/core.async]]
                            [differ "0.2.1"]
                            [org.clojure/core.incubator "0.1.3"]
                            [org.controlsfx/controlsfx "8.40.9"]
@@ -25,12 +23,12 @@
                              :plugins      [[codox "0.8.13"]
                                             [lein-midje "3.0.0"]
                                             [lein-environ "1.0.1"]]
-                             :env {:urdmi-development "true"}}}
+                             :env {:urdmi-development "true"}}
+                       :uberjar {:main urdmi.launcher
+                             :aot [urdmi.gui-app]}}
             :plugins []
-            :java-source-paths ["deps/jiprolog/src"]
+            :java-source-paths ["deps/jiprolog/src" "javasrc"]
             :javac-options ["-target" "1.8" "-source" "1.8"]
-            :jvm-opts ["-Xmx2g"]
+            ;:jvm-opts ["-Xmx2g"]
             :resource-paths ["deps/jiprolog/src" "resources"] ; for jiprolog engine
-            :main urdmi.launcher
-            :aot [urdmi.launcher]
             )
