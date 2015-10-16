@@ -12,8 +12,5 @@
   "Implements javafx.application.Application.start(javafx.stage.Stage)."
   [app ^javafx.stage.Stage stage]
   (require 'urdmi.gui-app)
-  (let [ args (into-array String (-> app .getParameters .getRaw))
-        main-scene ((var-get (resolve (symbol "urdmi.gui-app" "main-scene"))) stage)]
-    (doto stage
-      (.setScene main-scene)
-      (.show))))
+  (let [ args (into-array String (-> app .getParameters .getRaw))]
+    ((var-get (resolve (symbol "urdmi.gui-app" "show-main-scene"))) stage)))

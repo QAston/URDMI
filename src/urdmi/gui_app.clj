@@ -24,6 +24,7 @@
            (java.awt Desktop)
            (javafx.event EventHandler)))
 
+(def instances (atom 0))
 
 (defn dev? []
   (= (env :urdmi-development) "true"))
@@ -59,7 +60,7 @@
   (let [proj (:project app)
         item (get-in proj (apply core/model-map-keys orig-key))]
     (if-not (and (:data item) (instance? String @(:data item)))
-              empty-gui/empty-page
+      empty-gui/empty-page
       (code-editor-gui/make-page (:ui-requests app))
       )))
 
@@ -99,6 +100,7 @@
   (let [app (app/init-app)
         pages {}
         ui-requests (chan)]
+
     (fx/run! (.setTitle stage "URDMI"))
     (-> app
         (assoc :stage stage)
@@ -354,6 +356,11 @@
     (create-project app project-data)
     app))
 
+(defmethod handle-request :save-project [event app]
+  (if-let [project-data (fx/run<!! (dialogs/new-project (:stage app) (keys (:plugins app))))]
+    (create-project app project-data)
+    app))
+
 (defmethod handle-request :stop-job [event app]
   (stop-current-job app))
 
@@ -543,34 +550,66 @@
       (main-gui/add-app-log-entry! (:main-screen app) (str writer)))
     app))
 
-(defn main-scene [stage]
-  (let [app (->
-              (init-app stage)
-              ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
-              (load-project (fs/file "dev-resources/projects/ace_tilde/"))
-              )
+(defn handle-window-closed [app]
+  (-> app
+      (switch-page [])
+      (dissoc :pages)
+      (stop-current-job))
+  (when-let [c (get app :fs-changes)]
+    (watch-fs/close! c))
+  (swap! instances dec)
+  (when (and (not (dev?)) (zero? @instances))
+    (System/exit 0)))
+
+(defn handle-close-request [app ^WindowEvent e]
+  (let [unsaved (unsaved-pages app)
+        save (if (empty? unsaved)
+                  :no
+                  (dialogs/save-modified-on-exit (:stage app)))]
+    (case save
+          :yes [(save-model-pages app unsaved) false]
+          :no [app false]
+          :cancel (do
+                    (.consume e)
+                    [app true]))))
+
+(defn show-main-scene [stage]
+  (let [app (init-app stage)
+        app (if (dev?)
+              (-> app
+                  ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
+                  (load-project (fs/file "dev-resources/projects/ace_tilde/")))
+              app)
+
+        close (chan)
+        app-ref (atom app)
         ]
+    (swap! instances inc)
+    (.setOnCloseRequest stage (reify EventHandler
+                                (handle [this e]
+                                  (put! close (handle-close-request @app-ref e)))))
     (go
-      (loop [app app]
-        (recur
-          (try
-            (alt! (:ui-requests app) ([ui-request]
-                                       (handle-request ui-request app))
-                  (:fs-changes app) ([change]
-                                      (handle-fs-change change app)))
-            (catch Exception e
-              (handle-exception app e)
-              )))))
+      (handle-window-closed
+        (loop [app app]
+          (let [[next-app continue] (try
+                                      (alt! (:ui-requests app) ([ui-request]
+                                                                 [(handle-request ui-request app) true])
+                                            (:fs-changes app) ([change]
+                                                                [(handle-fs-change change app) true])
+                                            close ([result]
+                                                    result))
+                                      (catch Exception e
+                                        (handle-exception app e)
+                                        ))]
+            (reset! app-ref app)
+            (if continue
+              (recur next-app)
+              next-app)))))
 
-    (Scene. (main-gui/get-widget (:main-screen app)))))
+    (.setScene stage (Scene. (main-gui/get-widget (:main-screen app))))
+    (.show stage)))
 
 
-(defn show-on-test-stage [show-fn]
-  (fx/run!
-    (let [^Stage stage (fx/stage)]
-      (.setScene stage (show-fn stage))
-      (.show stage))))
-
-(do
-(watch-fs/stop-all-channel-watchers!)
-(show-on-test-stage #'main-scene))
+(when (dev?)
+  (watch-fs/stop-all-channel-watchers!)
+  (fx/run! (show-main-scene (fx/stage))))
