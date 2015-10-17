@@ -100,7 +100,7 @@
         (gui/validate-control validation name-field validate-name-fn "Name must be a valid prolog atom")
         (gui/on-changed (.textProperty name-field) update-button)
         (gui/on-changed (.textProperty arity-field) update-button)
-        (gui/default-stylesheet dialog)
+        (gui/default-stylesheet (.getDialogPane dialog))
         dialog
         ))
     nil))
@@ -168,7 +168,7 @@
                               ]
           (.setDisable ok-button true)
           (gui/on-changed location-property update-button)
-          (gui/default-stylesheet dialog)
+          (gui/default-stylesheet (.getDialogPane dialog))
           dialog
           ))
       nil))
