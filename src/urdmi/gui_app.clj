@@ -87,9 +87,18 @@
   app)
 
 (declare apply-diff-to-pages)
+(declare update-file-menu-for-page!)
 
 (defn validate-model-page [app key]
-  (assoc-in app [:invalid-files key] (core/is-model-invalid (app/plugin app) (:project app) key)))
+  (let [app (assoc-in app [:invalid-files key] (core/is-model-invalid (app/plugin app) (:project app) key))]
+    (fx/run! (update-file-menu-for-page! app key))
+    app))
+
+(defn validate-model [app]
+  (reduce validate-model-page app (app/get-model-item-keys (:project app) false)))
+
+(defn is-model-valid [app]
+  (every? not (vals (get app :invalid-files))))
 
 (defn handle-model-modified [app old-app key]
   (let [app (if (app/plugin app)
@@ -219,8 +228,10 @@
              (update-main-menu-for-current-page! app)
              (.setTitle (:stage app) (str "URDMI - " (:project-dir proj))))
     (-> app
+        (validate-model)
         (initialize-watching-fs)
-        (switch-page []))))
+        (switch-page [])
+        )))
 
 (defn load-project [app dir]
   (let [apply-diff (fn [app]
@@ -397,7 +408,11 @@
         proceed (or (empty? unsaved) (fx/run<!! (dialogs/confirm-saving-all (:stage app) operation)))]
     (if proceed
       (let [app (save-model-pages app unsaved)]
-        (app-fn app))
+        (if (is-model-valid app)
+          (app-fn app)
+          (do
+            (fx/run<!! (dialogs/error-alert (:stage app) "Files with errors" (str "Cannot " operation " because project files contain invalid data.")))
+            app)))
       app)))
 
 (defmethod handle-request :build [event app]

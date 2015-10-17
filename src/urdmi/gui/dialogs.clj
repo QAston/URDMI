@@ -21,6 +21,12 @@
       )
     stage))
 
+(defn error-alert [stage title text]
+  (.showAndWait
+    (doto (Alert. Alert$AlertType/ERROR)
+     (.setTitle title)
+     (.setContentText text))))
+
 (defn yes-no-dialog [stage content-text title-text]
   (= ButtonType/YES (.orElse (.showAndWait (doto (Alert. Alert$AlertType/CONFIRMATION)
                                              (.setTitle title-text)
