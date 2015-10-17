@@ -57,9 +57,16 @@
                                                                                               (when (:modified obj)
                                                                                                 "*"))
                                                                                          )))
+
+                                                            cell-change (fn [new-data]
+                                                                          (.remove (.getStyleClass cell) "error")
+                                                                          (.setContextMenu cell (create-file-entry-context-menu >app-requests new-data))
+                                                                          (if (:invalid new-data)
+                                                                            (.add (.getStyleClass cell) "error")))
                                                             item-value-change-listener ^ChangeListener (reify ChangeListener
                                                                                                          (changed [this obs old new]
-                                                                                                           (.setContextMenu cell (create-file-entry-context-menu >app-requests new))))
+                                                                                                           (cell-change new)
+                                                                                                           ))
 
                                                             item-change-listener (reify ChangeListener
                                                                                    (changed [this obs old new]
@@ -68,7 +75,8 @@
                                                                                      (when new
                                                                                        (.addListener (.valueProperty new) item-value-change-listener)
                                                                                        (when (.getValue new)
-                                                                                         (.setContextMenu cell (create-file-entry-context-menu >app-requests (.getValue new)))))))
+                                                                                         (cell-change (.getValue new))
+                                                                                         ))))
 
                                                             ]
                                                         (.addListener (.treeItemProperty cell) item-change-listener)
@@ -140,8 +148,8 @@
                     :save-file    (fx/menu-item {:text "Save" :disable true :on-action (put-ui-event-fn {:type :save-file}) :accelerator (gui/ctrl-key-accelerator KeyCode/S)})
                     :revert-file  (fx/menu-item {:text "Revert" :disable true :on-action (put-ui-event-fn {:type :revert-file})})
                     :reload-file  (fx/menu-item {:text "Reload" :disable true :on-action (put-ui-event-fn {:type :reload-file})})
-                    :new-window (fx/menu-item {:text "New window" :on-action (put-ui-event-fn {:type :new-window})})
-                    :save-project (fx/menu-item {:text "Save all files" :on-action (put-ui-event-fn {:type :save-project})})
+                    :new-window   (fx/menu-item {:text "New window" :on-action (put-ui-event-fn {:type :new-window})})
+                    :save-project (fx/menu-item {:text "Save all files" :disable true :on-action (put-ui-event-fn {:type :save-project})})
                     }
 
         [logs-tabs add-app-log-entry add-dm-log-entry] (build-logs-tabs)

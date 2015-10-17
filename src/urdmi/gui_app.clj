@@ -88,20 +88,28 @@
 
 (declare apply-diff-to-pages)
 
+(defn validate-model-page [app key]
+  (assoc-in app [:invalid-files key] (core/is-model-invalid (app/plugin app) (:project app) key)))
+
 (defn handle-model-modified [app old-app key]
-  (when (app/plugin app)
-    (apply-diff-to-pages app (core/model-modified (app/plugin app) (:project app) key)))
-  (model-modified app old-app key key))
+  (let [app (if (app/plugin app)
+              (apply-diff-to-pages app (core/model-modified (app/plugin app) (:project app) key))
+              app)]
+    (-> app
+      (model-modified old-app key key)
+      (validate-model-page key))))
 
 (defn init-app [stage]
   (let [app (app/init-app)
         pages {}
+        invalid-files {}
         ui-requests (chan)]
 
     (fx/run! (.setTitle stage "URDMI"))
     (-> app
         (assoc :stage stage)
         (assoc :pages pages)
+        (assoc :invalid-files invalid-files)
         (assoc :ui-requests ui-requests)
         (assoc :fs-changes (chan))
         (assoc :main-screen (main-gui/make-main-screen ui-requests))
@@ -123,7 +131,9 @@
   )
 
 (defn update-file-menu-for-page! [app page-key]
-  (main-gui/update-file-viewmodel! (:main-screen app) page-key #(assoc % :modified (is-page-modified-or-desynced app page-key)))
+  (main-gui/update-file-viewmodel! (:main-screen app) page-key #(-> %
+                                                                    (assoc :invalid (get-in app [:invalid-files page-key] nil))
+                                                                    (assoc :modified (is-page-modified-or-desynced app page-key))))
   )
 
 (defn sync-page-data [app key]
@@ -198,7 +208,8 @@
 (defn change-project [app project-fn]
   (let [app (-> app
                 (switch-page [])
-                (dissoc :pages)
+                (assoc :pages {})
+                (assoc :invalid-files {})
                 (stop-current-job)
                 (project-fn)
                 )
@@ -561,21 +572,22 @@
 (defn handle-close-request [app ^WindowEvent e]
   (let [unsaved (unsaved-pages app)
         save (if (empty? unsaved)
-                  :no
-                  (dialogs/save-modified-on-exit (:stage app)))]
+               :no
+               (dialogs/save-modified-on-exit (:stage app)))]
     (case save
-          :yes [(save-model-pages app unsaved) false]
-          :no [app false]
-          :cancel (do
-                    (.consume e)
-                    [app true]))))
+      :yes [(save-model-pages app unsaved) false]
+      :no [app false]
+      :cancel (do
+                (.consume e)
+                [app true]))))
 
 (defn show-main-scene [stage]
   (let [app (init-app stage)
         app (if (core/dev?)
               (-> app
-                  ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
-                  (load-project (fs/file "dev-resources/projects/ace_tilde/")))
+                  (load-project (fs/file "dev-resources/projects/aleph_default/"))
+                  ;(load-project (fs/file "dev-resources/projects/ace_tilde/"))
+                  )
               app)
 
         close (chan)

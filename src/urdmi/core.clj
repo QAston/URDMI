@@ -30,6 +30,7 @@
   (model-created [this project] "A hook on project creation. Should initialize model with default plugin settings. Returns ModelDiff object which is applied afterwards to the model.")
   (model-loaded [this project] "A hook on model loading. Returns ModelDiff object which is afterwards applied to the model.")
   (model-modified [this project key] "A hook on model modification. Returns ModelDiff object which is afterwards applied to the model.")
+  (is-model-invalid [this project key] "A hook on model validation. Returns true if data for given key is not valid.")
   )
 
 (defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])
@@ -66,7 +67,7 @@
 (defn base-project [project-dir]
   (->Project {settings-keyname (map->DirItem {:name settings-keyname
                                               :dir  {"project.edn" (map->FileItem {:name "project.edn"
-                                                                                  :data (instant {:working-dir (io/file working-dir-default-folder)})})}})}
+                                                                                   :data (instant {:working-dir (io/file working-dir-default-folder)})})}})}
              project-dir nil))
 (defn model-map-keys
   "constructs a vector of keys into project :dir map from given node names (name-keys)"
@@ -100,10 +101,10 @@
   (fs/file (:project-dir p) output-dir-name))
 
 (def ^:private model-path-to-file-map
-  {relations-keyname get-relations-dir
-   workdir-keyname   get-working-dir
-   output-keyname    get-output-dir
-   settings-keyname  get-settings-dir
+  {relations-keyname  get-relations-dir
+   workdir-keyname    get-working-dir
+   output-keyname     get-output-dir
+   settings-keyname   get-settings-dir
    prolog-ext-keyname get-prolog-ext-dir})
 
 (defn item-key-to-file
@@ -157,7 +158,7 @@
        (when (fs/file? file)
          (io/copy file output)))
      (catch Exception e))
-   ))
+    ))
 
 (defn relation-to-filename [[relname relarity]]
   (str relname "_" relarity ".pl"))
@@ -173,6 +174,12 @@
 
 (defn get-relations [^Project p]
   (map second (get-in p (model-map-keys relations-keyname :dir))))
+
+(defn check-relation-term [^Project p [relation term :as relation-term-pair]]
+  (and relation
+       (get-relation p relation)
+       term
+       (< term (second relation))))
 
 (defn thread-interruped? []
   (Thread/interrupted))
