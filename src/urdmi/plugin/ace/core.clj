@@ -16,9 +16,9 @@
 (defn check-ace-path [resolved-loc]
   (try
     (when-let [o (:out (shell/sh (FilenameUtils/removeExtension (str resolved-loc))
-                                :in (StringReader. "")
-                                ))]
-     (.startsWith o "Starting ACE"))
+                                 :in (StringReader. "")
+                                 ))]
+      (.startsWith o "Starting ACE"))
     (catch IOException e
       false)))
 
@@ -101,16 +101,33 @@
         )
       (api/try-append-prolog-ext-file project (io/file "settings.pl") writer))))
 
+(defn- get-ace-loc [project plugin-settings]
+  (core/resolve-executable-loc (:project-dir project) (FilenameUtils/removeExtension (:ace-loc plugin-settings)))) ; ace doesn't like being started with .exe extension
+
 (defn- run-learning [project]
   (let [
         plugin-settings (api/get-settings-data project settings-filename)
-        ace-location (core/resolve-executable-loc (:project-dir project) (FilenameUtils/removeExtension (:ace-loc plugin-settings))); ace doesn't like being started with .exe extension
+        ace-location (get-ace-loc project plugin-settings)
         command (:command plugin-settings)
         working-dir (api/get-working-dir project)]
     (shell/sh (str ace-location)
               :in (StringReader. command)
               :dir working-dir
               )))
+
+(defn- validate-settings [project key]
+  (let [plugin-settings (api/get-settings-data project settings-filename)
+        ace-location (get-ace-loc project plugin-settings)]
+    (not (and (check-ace-path ace-location)
+              (:target-rel plugin-settings)
+              (core/get-relation project (:target-rel plugin-settings))
+              (not (empty? (:command plugin-settings)))
+              (and (= (get-kb-format plugin-settings) knowledgebase-models)
+                   (let [models-data (:models-format plugin-settings)]
+                     (and (:target-relation-index models-data)
+                          (< (:target-relation-index models-data) (second (:target-rel plugin-settings)))
+                          (every? #(core/check-relation-term project %) (:joined-relations models-data))))
+                   )))))
 
 (defrecord AcePlugin [parser-context]
   api/Plugin
@@ -135,7 +152,11 @@
                                                                        :models-format {:target-relation-index 0
                                                                                        :joined-relations      []}})]] []))
   (model-loaded [this project])
-  (model-modified [this project key]))
+  (model-modified [this project key])
+  (is-model-invalid [this project key]
+    (condp = key
+      [:settings settings-filename] (validate-settings project key)
+      false)))
 
 (defn create []
   (->AcePlugin (prolog/ace-parser-context)))

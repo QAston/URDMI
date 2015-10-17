@@ -4,7 +4,8 @@
             [urdmi.prolog :as prolog]
             [urdmi.core :as api]
             [clojure.zip :as zip]
-            [urdmi.core :as core])
+            [urdmi.core :as core]
+            [me.raynes.fs :as fs])
   (:import (java.io StringReader IOException)
            (urdmi.core Project)))
 
@@ -77,6 +78,15 @@
       (prolog/pretty-print-sentences parser-context asts writer)
       (api/try-append-prolog-ext-file project (io/file "negative.pl") writer))))
 
+(defn- validate-settings [project key]
+  (let [plugin-settings (api/get-settings-data project settings-filename)]
+    (not (and (core/check-relation-term project [(:target-rel plugin-settings) (:target-rel-param plugin-settings)])
+          (:program plugin-settings)
+          (let [aleph-loc (fs/file (core/resolve-relative-loc (:project-dir project) (:aleph-loc plugin-settings)))
+                swi-prol-loc (core/resolve-executable-loc (:project-dir project) (:swi-prolog-loc plugin-settings))]
+            (and (fs/exists? aleph-loc)
+                 (check-plcon-path swi-prol-loc)))))))
+
 (defrecord AlephPlugin [parser-context]
   api/Plugin
   (run [this project]
@@ -114,7 +124,11 @@
                                                          :program          "induce"
                                                          })]] []))
   (model-loaded [this project])
-  (model-modified [this project key]))
+  (model-modified [this project key])
+  (is-model-invalid [this project key]
+    (condp = key
+      [:settings settings-filename] (validate-settings project key)
+      false)))
 
 (defn create []
   (->AlephPlugin (prolog/aleph-parser-context)))
