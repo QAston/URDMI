@@ -1,2 +1,1 @@
-{:working-dir "working_dir"
- :active-plugin :aleph}
+{:active-plugin :aleph, :working-dir "working_dir"}

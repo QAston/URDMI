@@ -290,6 +290,10 @@
 
       (instantiate-plugin)))
 
+(defn validate-settings [project]
+  (let [data (core/get-settings-data project "project.edn")]
+    (not (fs/exists? (core/get-working-dir project)))))
+
 (defn init-app []
   (register-plugins (->
                       (->App nil {})

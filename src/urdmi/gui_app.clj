@@ -72,13 +72,14 @@
 (declare load-pages)
 
 (defmethod model-modified [:settings "project.edn"] [app old-app cascade-key orig-key]
-  (let [old-project (:project app)
-        project (:project old-app)]
+
+  (let [old-project (:project old-app)
+        project (:project app)]
     (if (not= (core/get-working-dir old-project) (core/get-working-dir project))
       (-> app
-          (remove-pages (->> (:project app)
-                             (app/get-model-item-keys true)
-                             (filter #(= :working-dir (first %)))))
+          (remove-pages (->>
+                          (app/get-model-item-keys old-project true)
+                          (filter #(and (= :working-dir (first %)) (< 1 (count %))))))
           (initialize-watching-fs)
           (load-pages (core/dir-seq (:project app) [:working-dir])))
       app)))
@@ -89,8 +90,13 @@
 (declare apply-diff-to-pages)
 (declare update-file-menu-for-page!)
 
+(defn handle-is-model-invalid [app key]
+  (condp = key
+    [:settings "project.edn"] (app/validate-settings (:project app))
+    (core/is-model-invalid (app/plugin app) (:project app) key)))
+
 (defn validate-model-page [app key]
-  (let [app (assoc-in app [:invalid-files key] (core/is-model-invalid (app/plugin app) (:project app) key))]
+  (let [app (assoc-in app [:invalid-files key] (handle-is-model-invalid app key))]
     (fx/run! (update-file-menu-for-page! app key))
     app))
 
@@ -105,8 +111,8 @@
               (apply-diff-to-pages app (core/model-modified (app/plugin app) (:project app) key))
               app)]
     (-> app
-      (model-modified old-app key key)
-      (validate-model-page key))))
+        (model-modified old-app key key)
+        (validate-model-page key))))
 
 (defn init-app [stage]
   (let [app (app/init-app)
@@ -623,7 +629,7 @@
                                             close ([result]
                                                     result))
                                       (catch Exception e
-                                        (handle-exception app e)
+                                        [(handle-exception app e) true]
                                         ))]
             (reset! app-ref app)
             (if continue
