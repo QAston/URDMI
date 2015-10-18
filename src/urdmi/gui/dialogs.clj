@@ -115,16 +115,11 @@
     (.. getItems (setAll plugins-list))
     (.setValue (first plugins-list))))
 
-(defn new-project [stage plugins-list]
+(defn new-project [stage plugins-list location-validation-fn]
     (.orElse
       (.showAndWait
         (let [validation (gui/validation-support)
               plugin-widget (make-plugin-selection-widget plugins-list)
-
-              location-validation-fn (fn [value]
-                                       (if-let [file (io/file value)]
-                                         (and (fs/absolute? file) (or (not (.exists file)) (.isDirectory file)))
-                                         ))
 
               location-property (SimpleStringProperty. "")
 
@@ -134,7 +129,7 @@
                                 "Select project directory"
                                 validation
                                 location-validation-fn
-                                "Path must be absolute and point to a directory")
+                                "Path must be absolute and point to a directory, directory must not have an existing project in it.")
 
               grid (doto (GridPane.)
                      (.setAlignment Pos/CENTER)

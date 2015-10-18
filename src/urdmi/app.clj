@@ -294,6 +294,9 @@
   (let [data (core/get-settings-data project "project.edn")]
     (not (fs/exists? (core/get-working-dir project)))))
 
+(defn is-project-dir [^File file]
+  (and (fs/exists? file) (fs/directory? (fs/file file core/settings-dir-name)) (fs/exists? (fs/file file core/settings-dir-name "project.edn"))))
+
 (defn init-app []
   (register-plugins (->
                       (->App nil {})

@@ -16,7 +16,8 @@
             [clojure.stacktrace :as stacktrace]
             [urdmi.watch-fs :as watch-fs]
 
-            [clojure.core.async :as async])
+            [clojure.core.async :as async]
+            [clojure.java.io :as io])
   (:import (urdmi.core Project ModelDiff)
            (java.io StringWriter File)
            (javafx.scene Scene)
@@ -372,12 +373,21 @@
     (save-model-page app page-key)))
 
 (defmethod handle-request :open-project [event app]
-  (if-let [location (fx/run<!! (dialogs/open-project (:stage app) (fs/file ".")))]
+  (if-let [location (fx/run<!! (let [loc (dialogs/open-project (:stage app) (fs/file "."))]
+                                 (if (app/is-project-dir loc)
+                                   loc
+                                   (do
+                                     (dialogs/error-alert (:stage app) "Not a project dir!" (str "Location " loc " is not an urdmi project directory!"))
+                                     nil))))]
     (load-project app location)
     app))
 
 (defmethod handle-request :new-project [event app]
-  (if-let [project-data (fx/run<!! (dialogs/new-project (:stage app) (keys (:plugins app))))]
+  (if-let [project-data (fx/run<!! (dialogs/new-project (:stage app) (keys (:plugins app))
+                                                        (fn [value]
+                                                          (if-let [file (io/file value)]
+                                                            (and (fs/absolute? file) (or (not (.exists file)) (and (.isDirectory file) (not (app/is-project-dir file)))))
+                                                            ))))]
     (create-project app project-data)
     app))
 
