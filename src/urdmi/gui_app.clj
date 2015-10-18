@@ -631,7 +631,7 @@
                                       (catch Exception e
                                         [(handle-exception app e) true]
                                         ))]
-            (reset! app-ref app)
+            (reset! app-ref next-app)
             (if continue
               (recur next-app)
               next-app)))))
