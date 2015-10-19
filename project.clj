@@ -9,7 +9,6 @@
                            [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                            [org.clojars.qaston/fx-clj "0.2.1-SNAPSHOT" :exclusions [org.clojure/core.async]]
                            [differ "0.2.1"]
-                           [org.clojure/core.incubator "0.1.3"]
                            [org.controlsfx/controlsfx "8.40.9"]
                            [com.stuartsierra/component "0.2.3"]
                            [org.fxmisc.richtext/richtextfx	"0.6.10"]

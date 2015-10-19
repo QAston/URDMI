@@ -17,7 +17,9 @@
     (org.controlsfx.control StatusBar)
     (javafx.beans.value ChangeListener)
     (java.awt Desktop)
-    (javafx.event EventHandler)))
+    (javafx.event EventHandler)
+    (java.text SimpleDateFormat)
+    (java.util Date)))
 
 (defn create-file-entry-context-menu [>app-requests tree-item-value]
   (let [base-menu (ContextMenu.)
@@ -107,8 +109,12 @@
         pane (fx/tab-pane)
         selected-tab (.selectedIndexProperty (.getSelectionModel pane))
         widget (fx/stack-pane)
+        date-format (new SimpleDateFormat "yyyy-MM-dd HH:mm:ss")
         add-log-entry (fn [page-index text-area text]
+                        (.appendText text-area (.format date-format (Date.)))
+                        (.appendText text-area ": ")
                         (.appendText text-area text)
+                        (.appendText text-area "\n")
                         (.select (.getSelectionModel pane) page-index))]
     (doto widget
       (.. getChildren (add (doto pane

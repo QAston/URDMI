@@ -1,5 +1,5 @@
 (ns urdmi.gui-app
-  (:use clojure.core.incubator)
+  (:use urdmi.util)
   (:require [clojure.core.async :refer [chan go <! >! alt! put!]]
             [urdmi.core :as core]
             [urdmi.gui.relation :as relation-gui]
@@ -78,9 +78,7 @@
         project (:project app)]
     (if (not= (core/get-working-dir old-project) (core/get-working-dir project))
       (-> app
-          (remove-pages (->>
-                          (app/get-model-item-keys old-project true)
-                          (filter #(and (= :working-dir (first %)) (< 1 (count %))))))
+          (remove-pages (app/get-model-item-keys-by-key old-project [:working-dir] false))
           (initialize-watching-fs)
           (load-pages (core/dir-seq (:project app) [:working-dir])))
       app)))
@@ -392,9 +390,13 @@
     app))
 
 (defmethod handle-request :stop-job [event app]
+  (fx/run!
+    (main-gui/add-app-log-entry! (:main-screen app) (str "Job: " (:name (:job app)) " stopped.")))
   (stop-current-job app))
 
 (defmethod handle-request :job-finished [{:keys [type]} app]
+  (fx/run!
+    (main-gui/add-app-log-entry! (:main-screen app) (str "Job: " (:name (:job app)) " finished.")))
   (stop-current-job app))
 
 (defmethod handle-request :log-datamining [{:keys [type message]} app]
@@ -425,7 +427,8 @@
     (if proceed
       (let [app (save-model-pages app unsaved)]
         (if (is-model-valid app)
-          (app-fn app)
+          (do
+            (app-fn app))
           (do
             (fx/run<!! (dialogs/error-alert (:stage app) "Files with errors" (str "Cannot " operation " because project files contain invalid data.")))
             app)))
@@ -535,10 +538,7 @@
     app))
 
 (defn remove-model-page [app file-key]
-  (let [app (remove-pages app
-                          (->> (:project app)
-                               (app/get-model-item-keys true)
-                               (filter #(= file-key (butlast %)))))]
+  (let [app (remove-pages app (app/get-model-item-keys-by-key (:project app) file-key false))]
     (fx/run!
       (main-gui/remove-file! (:main-screen app) file-key))
     (-> app

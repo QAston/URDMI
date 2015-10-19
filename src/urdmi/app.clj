@@ -2,7 +2,7 @@
   "stuff depending both on core and plugins namespace
   mainly plugin loading and app init."
   (:use urdmi.core
-        clojure.core.incubator)
+        urdmi.util)
   (:require [urdmi.plugin.ace.core :as ace]
             [urdmi.plugin.ace.gui :as ace-gui]
             [urdmi.plugin.aleph.core :as aleph]
@@ -219,6 +219,14 @@
                            (recur (zip/next zipiter) (conj ret (zipiter-to-item-key zipiter))))))))))
   ([^Project p]
    (get-model-item-keys p false)))
+
+(defn get-model-item-keys-by-key [^Project p key include-key]
+  (let [min-key-length (if include-key
+                         (count key)
+                         (inc (count key)))]
+    (->>
+     (get-model-item-keys p true)
+     (filter #(and (<= min-key-length (count %)) (= key (subvec % 0 (count key))))))))
 
 (defn get-model-dirs [^Project p]
   (vec (for [k [prolog-ext-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]

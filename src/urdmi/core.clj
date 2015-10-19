@@ -1,6 +1,6 @@
 (ns urdmi.core
   (:use clojure.pprint
-        clojure.core.incubator)
+        urdmi.util)
   (:require [clojure.core.async :refer [chan go <! >!]]
             [clojure.java.io :as io]
             [me.raynes.fs :as fs]
