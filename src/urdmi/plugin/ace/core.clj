@@ -122,12 +122,13 @@
               (:target-rel plugin-settings)
               (core/get-relation project (:target-rel plugin-settings))
               (not (empty? (:command plugin-settings)))
-              (and (= (get-kb-format plugin-settings) knowledgebase-models)
-                   (let [models-data (:models-format plugin-settings)]
-                     (and (:target-relation-index models-data)
-                          (< (:target-relation-index models-data) (second (:target-rel plugin-settings)))
-                          (every? #(core/check-relation-term project %) (:joined-relations models-data))))
-                   )))))
+              (or (= (get-kb-format plugin-settings) knowledgebase-key)
+                  (and (= (get-kb-format plugin-settings) knowledgebase-models)
+                       (let [models-data (:models-format plugin-settings)]
+                         (and (:target-relation-index models-data)
+                              (< (:target-relation-index models-data) (second (:target-rel plugin-settings)))
+                              (every? #(core/check-relation-term project %) (:joined-relations models-data))))
+                       ))))))
 
 (defrecord AcePlugin [parser-context]
   api/Plugin
