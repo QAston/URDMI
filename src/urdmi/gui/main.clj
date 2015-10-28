@@ -168,7 +168,7 @@
         main-screen (fx/v-box {:pref-height       600
                                :pref-width        900
                                :focus-traversable true}
-                              (doto (fx/menu-bar {:focus-traversable true}
+                              (doto (fx/menu-bar {}
                                                  (fx/menu {:text "Application"}
                                                           (:new-window menu-items))
                                                  (fx/menu {:text "Project"}
@@ -185,7 +185,7 @@
                                                           (:reload-file menu-items)))
                                 (.addEventFilter MouseEvent/MOUSE_CLICKED (reify EventHandler
                                                                             (handle [this e]
-                                                                              (.requestFocus (.getTarget ^MouseEvent e)))))
+                                                                              (.requestFocus status-bar))))
                                 (VBox/setVgrow Priority/NEVER))
                               (doto (fx/split-pane {:divider-positions (double-array [0.8])
                                                     :focus-traversable true
@@ -199,6 +199,7 @@
                                 (VBox/setVgrow Priority/ALWAYS))
                               status-bar
                               )]
+    (.requestFocus main-screen)
     (gui/default-stylesheet main-screen)
     [main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry status-bar]))
 
