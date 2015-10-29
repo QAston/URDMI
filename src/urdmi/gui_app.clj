@@ -30,7 +30,7 @@
 (defn generate-menu-viewmodel [^Project p]
   (let [vm (for [file (app/get-model-item-keys p true)]
              (case file
-               [:working-dir] {:name "Working dir" :path file}
+               [:working-dir] {:name "Build dir" :path file}
                [:prolog-ext] {:name "Prolog ext" :path file}
                [:output] {:name "Output" :path file}
                [:relations] {:name "Relations" :path file}

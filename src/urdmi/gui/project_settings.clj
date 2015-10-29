@@ -46,7 +46,7 @@
                                                            (SimpleObjectProperty. "")
                                                            on-update-fn
                                                            false)
-                        :working-dir (gui/make-dir-property-item-editor  "Working directory"
+                        :working-dir (gui/make-dir-property-item-editor  "Build directory"
                                                                          (:project-dir project)
                                                                          (gui/validation-support)
                                                                          on-update-fn)}

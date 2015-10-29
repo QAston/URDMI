@@ -54,7 +54,7 @@
 (def settings-dir-name "settings")
 (def output-dir-name "output")
 (def relations-dir-name "relations")
-(def working-dir-default-folder "working_dir")
+(def working-dir-default-folder "build_dir")
 
 (defn instant [data]
   "opposite of clojure.core/delay, because it's a fn, not a macro
