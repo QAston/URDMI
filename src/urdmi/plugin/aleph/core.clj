@@ -87,6 +87,11 @@
             (and (fs/exists? aleph-loc)
                  (check-plcon-path swi-prol-loc)))))))
 
+(defn- remove-old-files [plugin project]
+  (let [working-dir (api/get-working-dir project)]
+    (doseq [file (fs/glob working-dir "*")]
+      (fs/delete-dir file))))
+
 (defrecord AlephPlugin [parser-context]
   api/Plugin
   (run [this project]
@@ -104,6 +109,7 @@
                 :dir working-dir
                 )))
   (rebuild-working-dir [this project]
+    (remove-old-files this project)
     (build-b-file this project)
     (build-f-file this project)
     (build-n-file this project))

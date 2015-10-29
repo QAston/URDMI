@@ -3,7 +3,8 @@
             [clojure.java.io :as io]
             [urdmi.core :as api]
             [urdmi.prolog :as prolog]
-            [urdmi.core :as core])
+            [urdmi.core :as core]
+            [me.raynes.fs :as fs])
   (:import (java.io StringReader IOException)
            (urdmi.core Project)
            (org.apache.commons.io FilenameUtils)))
@@ -91,6 +92,11 @@
           ))
       (api/try-append-prolog-ext-file project (io/file "kb.pl") writer))))
 
+(defn- remove-old-files [plugin project]
+  (let [working-dir (api/get-working-dir project)]
+    (doseq [file (fs/glob working-dir "*")]
+      (fs/delete-dir file))))
+
 (defn- build-settings-file [plugin project]
   (let [working-dir (api/get-working-dir project)
         plugin-settings (api/get-settings-data project settings-filename)
@@ -136,6 +142,7 @@
     (run-learning project)
     )
   (rebuild-working-dir [this project]
+    (remove-old-files this project)
     (build-bg-knowledge-file this project)
     (build-knowledge-base-file this project)
     (build-settings-file this project))
