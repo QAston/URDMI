@@ -430,7 +430,7 @@
           (do
             (app-fn app))
           (do
-            (fx/run<!! (dialogs/error-alert (:stage app) "Files with errors" (str "Cannot " operation " because project files contain invalid data.")))
+            (fx/run<!! (dialogs/error-alert (:stage app) "Input contains errors" (str "Cannot " operation " because input files contain invalid data. Please check input menu for files marked red and correct them.")))
             app)))
       app)))
 
