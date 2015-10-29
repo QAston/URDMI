@@ -67,7 +67,7 @@
         filename (str (get-db-name project) ".f")]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (prolog/pretty-print-sentences parser-context asts writer)
-      (api/try-append-prolog-ext-file project (io/file "positive.pl") writer))))
+      (api/try-append-prolog-ext-file project (io/file "positive_examples.pl") writer))))
 
 (defn build-n-file [plugin ^Project project]
   (let [working-dir (api/get-working-dir project)
@@ -76,7 +76,7 @@
         filename (str (get-db-name project) ".n")]
     (with-open [writer (io/writer (io/file working-dir filename))]
       (prolog/pretty-print-sentences parser-context asts writer)
-      (api/try-append-prolog-ext-file project (io/file "negative.pl") writer))))
+      (api/try-append-prolog-ext-file project (io/file "negative_examples.pl") writer))))
 
 (defn- validate-settings [project key]
   (let [plugin-settings (api/get-settings-data project settings-filename)]
@@ -112,8 +112,8 @@
     )
   (generate-output [this project run-result])
   (model-created [this project]
-    (core/->ModelDiff [[[:prolog-ext "negative.pl"] (core/file-item "%negative examples \n% file appended to the generated .n file")]
-                       [[:prolog-ext "positive.pl"] (core/file-item "%positive examples \n% file appended to the generated .f file")]
+    (core/->ModelDiff [[[:prolog-ext "negative_examples.pl"] (core/file-item "%negative examples \n% file appended to the generated .n file")]
+                       [[:prolog-ext "positive_examples.pl"] (core/file-item "%positive examples \n% file appended to the generated .f file")]
                        [[:prolog-ext "bg_and_settings.pl"] (core/file-item "%background knowledge and aleph settings \n% file appended to the generated .b file")]
                        [[:prolog-ext "custom_program.pl"] (core/file-item "%custom program run instead of the default induce_* command. can be enabled in aleph settings.")]
                        [[:settings settings-filename] (core/file-item
