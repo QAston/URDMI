@@ -46,7 +46,8 @@
 
 (defn- build-file-menu-widget [>app-requests]
   (let [tree-view ^TreeView (fx/tree-view
-                              {:focus-traversable true
+                              {:show-root         false
+                               :focus-traversable true
                                :cell-factory
                                                   (reify
                                                     Callback
@@ -209,14 +210,42 @@
   (let [[main-screen file-menu content-container menu-items add-app-log-entry add-dm-log-entry status-bar] (build-main-screen >app-requests)]
     (->MainScreen main-screen file-menu content-container menu-items >app-requests add-app-log-entry add-dm-log-entry status-bar)))
 
+(defn get-parent-menu-item-for-path [path]
+  (condp = path
+    [:settings] nil
+    [:relations] :input
+    [:prolog-ext] :input
+    [:working-dir] :output
+    [:output] nil
+    :input []
+    :output []
+    [] []
+    (let [ppath (vec (butlast path))]
+      (condp = ppath
+        [:output] :output
+        [:settings] :input
+        ppath)
+      )))
+
 (defn add-menu-files! [^MainScreen screen files-model]
   (let [{:keys [view items]} (.file_menu screen)]
     (doseq [{:keys [path name] :as data} files-model]
       (let [item (doto (fx/tree-item {:value data})
-                   (.setExpanded true))]
-        (if (= path [])
-          (.setRoot view item)
-          (.add (.getChildren (get @items (vec (butlast path)))) item))
+                   (.setExpanded false))]
+        (condp = path []
+                      (let [input-menu (doto (fx/tree-item {:value {:path [] :name "Input"}})
+                                         (.setExpanded true))
+                            output-menu (doto (fx/tree-item {:value {:path [] :name "Output"}})
+                                         (.setExpanded true))]
+                        (doto (.getChildren item)
+                          (.add input-menu)
+                          (.add output-menu))
+                        (swap! items assoc :input input-menu)
+                        (swap! items assoc :output output-menu)
+                        (.setExpanded item true)
+                        (.setRoot view item))
+                      (when-let [parent-path (get-parent-menu-item-for-path path)]
+                        (.add (.getChildren (get @items parent-path)) item)))
         (swap! items assoc path item)))))
 
 (defn update-file-viewmodel! [^MainScreen screen path update-fn]

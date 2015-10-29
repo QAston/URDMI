@@ -28,16 +28,15 @@
 (def instances (atom 0))
 
 (defn generate-menu-viewmodel [^Project p]
-  (let [vm (for [file (app/get-model-item-keys p true)]
-             (case file
-               [:working-dir] {:name "Build dir" :path file}
-               [:prolog-ext] {:name "Prolog ext" :path file}
-               [:output] {:name "Output" :path file}
-               [:relations] {:name "Relations" :path file}
-               [:settings] {:name "Settings" :path file}
-               {:name (last file) :path file})
-             )]
-    (into [{:name "Project" :path []}] vm)))
+  (let [vm (->> (app/get-model-item-keys p true)
+                          (remove #{[:working-dir] [:prolog-ext] [:output] [:relations] [:settings]})
+                           (map (fn [key] {:name (last key) :path key})))]
+    (into [{:name "Project" :path []}
+           {:name "Build dir (Advanced)" :path [:working-dir]}
+           {:name "Prolog extensions (Advanced)" :path [:prolog-ext]}
+           {:name "Output" :path [:output]}
+           {:name "Relations" :path [:relations]}
+           {:name "Settings" :path [:settings]}] vm)))
 
 ;cascading dispatch
 (defmulti generate-page (fn [cascade-key orig-key app]
