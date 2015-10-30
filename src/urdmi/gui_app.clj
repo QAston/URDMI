@@ -374,7 +374,8 @@
                                  (if (app/is-project-dir loc)
                                    loc
                                    (do
-                                     (dialogs/error-alert (:stage app) "Not a project dir!" (str "Location " loc " is not an urdmi project directory!"))
+                                     (when loc
+                                       (dialogs/error-alert (:stage app) "Not a project dir!" (str "Location " loc " is not an urdmi project directory!")))
                                      nil))))]
     (load-project app location)
     app))
@@ -429,7 +430,7 @@
           (do
             (app-fn app))
           (do
-            (fx/run<!! (dialogs/error-alert (:stage app) "Input contains errors" (str "Cannot " operation " because input files contain invalid data. Please check input menu for files marked red and correct them.")))
+            (fx/run<!! (dialogs/error-alert (:stage app) "Input files contain errors" (str "Cannot " operation " because input files contain invalid data. Please check input menu for files marked red and correct them.")))
             app)))
       app)))
 
