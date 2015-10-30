@@ -1,0 +1,9 @@
+closed(car_12).
+closed(car_23).
+closed(car_32).
+closed(car_33).
+closed(car_43).
+closed(car_52).
+closed(car_53).
+closed(car_61).
+closed(car_81).

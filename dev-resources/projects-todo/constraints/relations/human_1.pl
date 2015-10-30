@@ -1,0 +1,2 @@
+human('Fred').
+human('Wilma').

@@ -1,0 +1,9 @@
+humidity(65).
+humidity(70).
+humidity(75).
+humidity(80).
+humidity(85).
+humidity(86).
+humidity(90).
+humidity(95).
+humidity(96).

@@ -1,0 +1,14 @@
+class(d1,play,1).
+class(d2,dont_play,1).
+class(d3,dont_play,1).
+class(d4,dont_play,1).
+class(d5,play,1).
+class(d6,play,1).
+class(d7,play,1).
+class(d8,play,1).
+class(d9,play,1).
+class(d10,dont_play,1).
+class(d11,dont_play,1).
+class(d12,play,1).
+class(d13,play,1).
+class(d14,play,1).

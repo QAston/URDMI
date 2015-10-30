@@ -1,0 +1,2 @@
+windy(true).
+windy(false).

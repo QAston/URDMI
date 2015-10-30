@@ -1,0 +1,10 @@
+train(east1).
+train(east2).
+train(east3).
+train(east4).
+train(east5).
+train(west6).
+train(west7).
+train(west8).
+train(west9).
+train(west10).

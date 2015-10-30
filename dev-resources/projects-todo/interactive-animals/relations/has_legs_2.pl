@@ -1,0 +1,16 @@
+has_legs(dog,4).
+has_legs(dolphin,0).
+has_legs(platypus,2).
+has_legs(bat,2).
+has_legs(trout,0).
+has_legs(herring,0).
+has_legs(shark,0).
+has_legs(eel,0).
+has_legs(lizard,4).
+has_legs(crocodile,4).
+has_legs(t_rex,4).
+has_legs(snake,0).
+has_legs(turtle,4).
+has_legs(eagle,2).
+has_legs(ostrich,2).
+has_legs(penguin,2).

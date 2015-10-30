@@ -1,0 +1,11 @@
+temp(64).
+temp(65).
+temp(68).
+temp(69).
+temp(70).
+temp(71).
+temp(75).
+temp(80).
+temp(81).
+temp(83).
+temp(85).

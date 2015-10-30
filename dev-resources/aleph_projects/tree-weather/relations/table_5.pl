@@ -1,0 +1,14 @@
+table(d1,sunny,75,70,true).
+table(d2,sunny,80,90,true).
+table(d3,sunny,85,85,false).
+table(d4,sunny,72,95,false).
+table(d5,sunny,69,70,false).
+table(d6,overcast,72,90,true).
+table(d7,overcast,83,86,false).
+table(d8,overcast,64,65,true).
+table(d9,overcast,81,75,false).
+table(d10,rain,71,80,true).
+table(d11,rain,65,70,true).
+table(d12,rain,75,80,false).
+table(d13,rain,68,80,false).
+table(d14,rain,70,96,false).
