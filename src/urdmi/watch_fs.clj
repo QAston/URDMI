@@ -100,7 +100,7 @@
                                                 (second)
                                                 (:time))) (seq @paths-to-events))]
         (when (> (- (System/currentTimeMillis) (.getTime ^Date (:time path-events)))
-                 1000)
+                 300)
           (apply (:callback path-events) (reduce-to-single-event path-events))
           (swap! paths-to-events dissoc path)))
       (Thread/sleep 100)
