@@ -104,6 +104,10 @@
 (defn is-model-valid [app]
   (every? not (vals (get app :invalid-files))))
 
+(defn get-first-invalid [app]
+  (first (first (filter (fn [[k v]]
+                    v) (get app :invalid-files)))))
+
 (defn handle-model-modified [app old-app key]
   (let [app (if (app/plugin app)
               (apply-diff-to-pages app (core/model-modified (app/plugin app) (:project app) key))
@@ -431,7 +435,7 @@
             (app-fn app))
           (do
             (fx/run<!! (dialogs/error-alert (:stage app) "Input files contain errors" (str "Cannot " operation " because input files contain invalid data. Please check input menu for files marked red and correct them.")))
-            app)))
+            (switch-page app (get-first-invalid app)))))
       app)))
 
 (defmethod handle-request :build [event app]
