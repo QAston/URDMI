@@ -6,11 +6,11 @@
             [clojure.set :as set]
             [urdmi.plugin.aleph.core :as aleph]
             [urdmi.util :as util])
-  (:import (javafx.scene.control TableView TreeTableView TreeTableColumn TreeItem TreeTableColumn$CellDataFeatures TableColumn TableView$TableViewSelectionModel SelectionMode Dialog ButtonType)
+  (:import (javafx.scene.control TableView TreeTableView TreeTableColumn TreeItem TreeTableColumn$CellDataFeatures TableColumn TableView$TableViewSelectionModel SelectionMode Dialog ButtonType CheckBox)
            (javafx.scene.layout GridPane ColumnConstraints Region HBox Priority)
            (javafx.geometry Pos HPos)
            (javafx.util Callback StringConverter)
-           (javafx.beans.property SimpleStringProperty SimpleObjectProperty SimpleLongProperty SimpleIntegerProperty)
+           (javafx.beans.property SimpleStringProperty SimpleObjectProperty SimpleLongProperty SimpleIntegerProperty SimpleBooleanProperty)
            (javafx.beans.binding ObjectExpression)
            (org.controlsfx.control PropertySheet PropertySheet$Mode)
            (javafx.scene.input KeyCode KeyCodeCombination KeyCombination$Modifier)
@@ -250,7 +250,7 @@
                 (.setMaxWidth Double/MAX_VALUE)
                 (HBox/setHgrow Priority/ALWAYS))
               (doto (fx/button {:text       "Add"
-                                :pref-width 100.0
+                                :pref-width 70.0
                                 :disable    (.or (.isNull (ObjectExpression/objectExpression new-hypothesis-head))
                                                  (.isNull (ObjectExpression/objectExpression new-hypothesis-body)))
                                 :on-action  (fn [e]
@@ -260,9 +260,18 @@
                                                       (.getValue new-hypothesis-head)
                                                       (gui/observable-list [(.getValue new-hypothesis-body)]))))})
                 (HBox/setHgrow Priority/NEVER))
+              (doto (fx/button {:text       "Add all"
+                                :pref-width 100.0
+                                :disable    (.isNull (ObjectExpression/objectExpression new-hypothesis-head))
+                                :on-action  (fn [e]
+                                              (.remove head-body-clauses (.getValue new-hypothesis-head))
+                                              (.put ^Map head-body-clauses
+                                                    (.getValue new-hypothesis-head)
+                                                    (gui/observable-list available-body-rels)))})
+                (HBox/setHgrow Priority/NEVER))
               )))
 
-(defn make-clause-hypothesis-view [update-fn validation-support head-body-clauses unique-relation-spec-names]
+(defn make-clause-hypothesis-view [update-fn validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses]
   (let [new-clause (make-hypothesis-table-entry unique-relation-spec-names head-body-clauses validation-support)
 
         tree-items (doto (TreeItem. "Root")
@@ -311,6 +320,7 @@
                                                                                    ))
                                                                                )))})
                                              ])))
+        check-box ^CheckBox (fx/check-box {:text "Generate from learning examples (default)"})
         ]
     (.setContextMenu tree-table-view context-menu)
     (.setRoot tree-table-view tree-items)
@@ -342,8 +352,12 @@
                                             (let [tree-item (.get value-to-tree-item (.getKey map-change))]
                                               (.remove value-to-tree-item (.getKey map-change))
                                               (.remove ^ObservableList (.getChildren tree-items) tree-item)))))))
+    (.bindBidirectional (.selectedProperty check-box) generate-head-body-clauses)
+    (.bind (.disableProperty new-clause) (.selectedProperty check-box))
+    (.bind (.disableProperty tree-table-view)  (.selectedProperty check-box))
     (fx/v-box {:spacing 5.0}
               (fx/label {:text "Hypothesised clauses"})
+              check-box
               new-clause
               tree-table-view)
     ))
@@ -368,10 +382,11 @@
                                                   ["=" 1]
                                                   ["=" 0]])
         specs-list (gui/observable-list)
+        generate-head-body-clauses (SimpleBooleanProperty. true)
         ]
     (fx/v-box {}
               (make-clause-specs-table update-fn available-relations validation-support specs-list)
-              (make-clause-hypothesis-view update-fn validation-support head-body-clauses unique-relation-spec-names)
+              (make-clause-hypothesis-view update-fn validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses)
               )))
 
 (defn make-page [>ui-requests project]
