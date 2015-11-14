@@ -6,7 +6,7 @@
             [me.raynes.fs :as fs]
             [urdmi.util :as util])
   (:import (javafx.collections ObservableList FXCollections ListChangeListener)
-           (java.util Collection List)
+           (java.util Collection List Map)
            (javafx.beans.value ObservableValue ChangeListener WritableValue)
            (org.controlsfx.validation ValidationSupport Validator Severity)
            (org.controlsfx.validation.decoration ValidationDecoration)
@@ -130,6 +130,13 @@
    (FXCollections/observableArrayList))
   ([^Collection col]
    (FXCollections/observableArrayList col)))
+
+(defn observable-map
+  "creates a new instance of observable map from given map"
+  ([]
+   (FXCollections/observableHashMap))
+  ([^Map col]
+   (FXCollections/observableMap col)))
 
 (defn ctrl-key-accelerator [^KeyCode code]
   (KeyCodeCombination. code (into-array (list KeyCodeCombination/SHORTCUT_DOWN))))

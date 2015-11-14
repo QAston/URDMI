@@ -1,4 +1,5 @@
-(ns urdmi.util)
+(ns urdmi.util
+  (:import (java.util.function Predicate)))
 
 (defmacro ldef
   "Form working exactly like let, but defining globals instead of locals"
@@ -26,3 +27,9 @@
         )
       m)
     (dissoc m k)))
+
+(defn predicate [pred-fn]
+  (reify Predicate
+    (test [this param]
+      (pred-fn param)
+      )))

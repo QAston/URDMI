@@ -12,6 +12,7 @@
 (use 'clojure.pprint)
 
 (def settings-filename "aleph.edn")
+(def hypothesis-name "hypothesis.edn")
 
 (def programs #{"induce" "induce_cover" "induce_max" "induce_incremental"
                 "induce_clauses" "induce_theory" "induce_tree" "induce_constraints" "induce_modes" "induce_features"
@@ -43,6 +44,9 @@
 
 (defn get-db-name [^Project p]
   (first (:target-rel (api/get-settings-data p settings-filename))))
+
+(defn term-spec-to-string [{:keys [type value] :as term-spec}]
+  (str type value))
 
 (defn build-b-file [plugin ^Project project]
   (let [

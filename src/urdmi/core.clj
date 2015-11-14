@@ -163,6 +163,9 @@
 (defn relation-to-filename [[relname relarity]]
   (str relname "_" relarity ".pl"))
 
+(defn relation-to-stringname [[relname relarity]]
+  (str relname "/" relarity))
+
 (defn relation-to-string [[relname relarity]]
   (str relname "/" relarity))
 
