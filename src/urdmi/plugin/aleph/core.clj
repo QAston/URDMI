@@ -13,6 +13,7 @@
 
 (def settings-filename "aleph.edn")
 (def hypothesis-name "hypothesis.edn")
+(def datamining-name "datamining.edn")
 
 (def programs #{"induce" "induce_cover" "induce_max" "induce_incremental"
                 "induce_clauses" "induce_theory" "induce_tree" "induce_constraints" "induce_modes" "induce_features"
