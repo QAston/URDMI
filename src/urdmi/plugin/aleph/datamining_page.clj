@@ -33,7 +33,7 @@
         neg-value-select-widget (gui/choice-box current-term-values new-negative-value)
 
         ]
-    (fx/h-box {:spacing 5.0
+    (fx/h-box {:spacing   5.0
                :alignment Pos/CENTER_LEFT}
               (fx/label {:text "Relation term"})
               (gui/make-relation-select-widget relations-list new-relation validation-support)
@@ -94,9 +94,7 @@
                       (.setValue property nil))))
   (gui/on-changed property (fn [obs old new]
                              (if new
-                               (do (println new)
-                                   (println ((zipmap toggle-vals (.getToggles toggle-group)) new))
-                               (.selectToggle toggle-group ((zipmap toggle-vals (.getToggles toggle-group)) new)))
+                               (.selectToggle toggle-group ((zipmap toggle-vals (.getToggles toggle-group)) new))
                                (.selectToggle toggle-group nil)))))
 
 (defn make-example-data-widget []
@@ -171,7 +169,7 @@
         grid (.. (Borders/wrap
                    vbox)
                  (lineBorder)
-                 (title "Select example data")
+                 (title "Select learning example data")
                  (build)
                  (build))]
     (.. cb-group getToggles (setAll [cb-simple cb-advanced]))
@@ -182,9 +180,9 @@
                                                 (when new
                                                   (.add (.getChildren vbox)
                                                         (if (= new :simple)
-                                                               simple-widget
-                                                               advanced-widget)))))
-     (.setValue simple-advanced-selection :simple)
+                                                          simple-widget
+                                                          advanced-widget)))))
+    (.setValue simple-advanced-selection :simple)
     (.setContextMenu table-view context-menu)
 
     grid
@@ -263,5 +261,3 @@
                          (async/put! >ui-requests {:type :modified-page})))
         widget (make-widget)]
     (->DataminingPage widget nil user-input)))
-
-(fx/sandbox make-widget)

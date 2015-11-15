@@ -14,7 +14,7 @@
            (java.util.function Predicate)
            (clojure.lang IFn)
            (javafx.util Callback StringConverter)
-           (org.controlsfx.tools ValueExtractor)
+           (org.controlsfx.tools ValueExtractor Borders)
            (javafx.scene.input KeyCodeCombination KeyCode KeyEvent)
            (javafx.event EventHandler ActionEvent)
            (javafx.scene.control ToggleButton ChoiceBox ComboBox Tooltip)
@@ -506,4 +506,12 @@
                   (on-update-fn)))
     (->PropertyItemEditor widget name (SimpleObjectProperty. {:relation selected-relation :relation-list relation-list :relation-term selected-relation-term}))
     ))
+
+(defn border-wrap [node name]
+  (.. (Borders/wrap
+        node)
+      (lineBorder)
+      (title name)
+      (build)
+      (build)))
 

@@ -206,10 +206,12 @@
                                   ))
     (.setContextMenu table-view context-menu)
     (.setItems table-view specs-list)
-    (fx/v-box {:spacing 5.0}
-              (fx/label {:text "Clause specification"})
-              new-clause
-              table-view)))
+    (gui/border-wrap
+      (fx/v-box {:spacing 5.0}
+               new-clause
+               table-view)
+      "Clause specification")
+    ))
 
 (defn new-head-tree-item [rel]
   (TreeItem. rel))
@@ -320,7 +322,7 @@
                                                                                    ))
                                                                                )))})
                                              ])))
-        check-box ^CheckBox (fx/check-box {:text "Generate from learning examples (default)"})
+        check-box ^CheckBox (fx/check-box {:text "Generate from datamining learning example (default)"})
         ]
     (.setContextMenu tree-table-view context-menu)
     (.setRoot tree-table-view tree-items)
@@ -355,11 +357,12 @@
     (.bindBidirectional (.selectedProperty check-box) generate-head-body-clauses)
     (.bind (.disableProperty new-clause) (.selectedProperty check-box))
     (.bind (.disableProperty tree-table-view)  (.selectedProperty check-box))
-    (fx/v-box {:spacing 5.0}
-              (fx/label {:text "Hypothesised clauses"})
-              check-box
-              new-clause
-              tree-table-view)
+    (gui/border-wrap
+      (fx/v-box {:spacing 5.0}
+               check-box
+               new-clause
+               tree-table-view)
+      "Hypothesised clauses")
     ))
 
 (deftype HypothesisPage [widget data user-input]
