@@ -1,0 +1,9 @@
+'*$*pracownik'(A,B,C,D,E,F,G):-
+        bim_recorded(testmodel,H),
+        model_name__M_knowledge(H, [A,B,C,D,E,F,G]).
+hack_query(A,B):-
+        hack_query1__M_knowledge(A, B).
+hack_query_old(A,B):-
+        hack_query1__M_knowledge(A, B).
+select_example(A):-
+        bim_rerecord(testmodel,A).

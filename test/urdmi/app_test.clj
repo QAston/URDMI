@@ -62,7 +62,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
                      (app/load-prolog-ext)
                      (:project))
             items (get-in base (core/model-map-keys core/prolog-ext-keyname :dir))]
-        (map first items) => (just #{"negative.pl" "bg_and_settings.pl" "positive.pl"})))
+        (map first items) => (just #{"negative_examples.pl" "bg_and_settings.pl" "positive_examples.pl" "custom_program.pl"})))
 
 (fact "load output"
       (let [base (-> (base-app (fs/file "dev-resources/projects/aleph_default/"))
@@ -78,8 +78,8 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 (fact "load settings"
       (let [app (base-app (fs/file "dev-resources/projects/aleph_default/"))
             settings (get-in (:project app) (core/model-map-keys core/settings-keyname :dir))]
-        (map first settings) => (just #{"project.edn" "aleph.edn"})
-        @(get-in settings ["project.edn" :data]) => {:working-dir (io/file "working_dir") :active-plugin :aleph}
+        (map first settings) => (just #{"project.edn" "aleph.edn" "datamining.edn" "hypothesis.edn"})
+        @(get-in settings ["project.edn" :data]) => {:working-dir (io/file "build_dir") :active-plugin :aleph}
         @(get-in settings ["aleph.edn" :data]) => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
         (core/get-settings-data (:project app) "aleph.edn") => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
         (extends? core/Plugin (class (get-in app [:project :plugin]))) => truthy))
@@ -160,3 +160,8 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
       (let [proj-dir (fs/file "dev-resources/projects/ace_tilde/")
             app (app/load-project (init-app) proj-dir)]
         (core/file-to-item-key (:project app) (fs/file "dev-resources/projects/ace_tilde/relations/dzial_6.pl")) => [:relations "dzial_6.pl"]))
+
+(fact core/generate-relation-term-values-map
+      (let [proj-dir (fs/file "dev-resources/projects/ace_tilde/")
+            app (app/load-project (init-app) proj-dir)]
+        (get-in (core/generate-relation-term-values-map (:project app)) [["pracownik" 7] 6]) =>  #{"0" "1"}))
