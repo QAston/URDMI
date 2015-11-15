@@ -9,7 +9,7 @@
             [environ.core :refer [env]]
             [clojure.string :as string]
             [urdmi.prolog :as prolog])
-  (:import (java.io Writer Reader File)
+  (:import (java.io Writer Reader File StringWriter)
            (java.nio.file Files CopyOption)
            (clojure.lang ISeq)))
 
@@ -236,3 +236,20 @@
   (let [file (io/file loc-string)]
     (cond (fs/absolute? file) file
           true (fs/file base-loc loc-string))))
+
+(defn get-all-relation-names [^Project p]
+  (map :rel (get-relations p)))
+
+(defn generate-relation-term-values-map [^Project p]
+  (let [parser-context (get-parser-context (:plugin p))]
+    (into {} (for [{:keys [data rel]} (get-relations p)]
+               (let [asts @data
+                     [name arity] rel]
+                 [rel (into {} (for [i (range arity)]
+                                 [i (set (map (fn [ast]
+                                                (let [writer (StringWriter.)]
+                                                  (prolog/pretty-print (nth (:children ast) (inc i)) parser-context writer)
+                                                  (.toString writer))
+                                                ) asts))]
+                                 ))]
+                 )))))

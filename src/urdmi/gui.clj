@@ -4,7 +4,8 @@
             [fx-clj.core :as fx]
             [urdmi.core :as core]
             [me.raynes.fs :as fs]
-            [urdmi.util :as util])
+            [urdmi.util :as util]
+            [clojure.set :as set])
   (:import (javafx.collections ObservableList FXCollections ListChangeListener)
            (java.util Collection List Map)
            (javafx.beans.value ObservableValue ChangeListener WritableValue)
@@ -12,7 +13,7 @@
            (org.controlsfx.validation.decoration ValidationDecoration)
            (javafx.scene.control Control TableCell Labeled TextField)
            (java.util.function Predicate)
-           (clojure.lang IFn)
+           (clojure.lang IFn ISeq)
            (javafx.util Callback StringConverter)
            (org.controlsfx.tools ValueExtractor Borders)
            (javafx.scene.input KeyCodeCombination KeyCode KeyEvent)
@@ -78,9 +79,9 @@
 (defn validation-support
   "controlsfx validation registrator"
   (^ValidationSupport [^ValidationDecoration decoration]
-  (doto (ValidationSupport.)
-    (.setErrorDecorationEnabled true)
-    (.setValidationDecorator decoration)))
+   (doto (ValidationSupport.)
+     (.setErrorDecorationEnabled true)
+     (.setValidationDecorator decoration)))
   (^ValidationSupport []
    (validation-support (hover-decoration))))
 
@@ -131,6 +132,16 @@
   ([^Collection col]
    (FXCollections/observableArrayList col)))
 
+(defn sync-list
+  "updates list to have contents of sync-with, but without unnecesary changes to the list"
+  [^List list-to-sync sync-with]
+  (let [sync-with (set sync-with)
+        list-set (set list-to-sync)
+        to-add (set/difference sync-with list-set)
+        to-remove (set/difference list-set sync-with)]
+    (.addAll list-to-sync to-add)
+    (.removeAll list-to-sync to-remove)))
+
 (defn observable-map
   "creates a new instance of observable map from given map"
   ([]
@@ -144,10 +155,10 @@
 (defn trigger-action-on-app-shortcut [^Node node fn]
   (let [keys #{KeyCode/CONTROL KeyCode/COMMAND}]
     (.addEventFilter node KeyEvent/KEY_PRESSED (reify EventHandler
-                             (handle [this e]
-                               (when (keys (.getCode ^KeyEvent e))
-                                 (fn node))
-                               )))))
+                                                 (handle [this e]
+                                                   (when (keys (.getCode ^KeyEvent e))
+                                                     (fn node))
+                                                   )))))
 
 (defn on-text-field-confirmed
   "textfield-fn is called when focus lost, or field confirmed using [enter]
@@ -515,3 +526,44 @@
       (build)
       (build)))
 
+(defprotocol PMutableToImut
+  (to-imut [this]))
+
+(defprotocol PMutableFromImut
+  (from-imut [this imut]))
+
+(extend-type ObservableList
+  PMutableToImut
+  (to-imut [this]
+    (vec this))
+  PMutableFromImut
+  (from-imut [this imut]
+    (.setAll this (vec imut))))
+
+(extend-type Map
+  PMutableToImut
+  (to-imut [this]
+    (into {} this))
+  PMutableFromImut
+  (from-imut [this imut]
+    (.putAll this (vec imut))
+    ))
+
+(extend-type WritableValue
+  PMutableFromImut
+  (from-imut [this imut]
+    (.setValue this imut)))
+
+(extend-type ObservableValue
+  PMutableToImut
+  (from-imut [this imut]
+    (.getValue this)))
+
+(defn map-of-mut-to-map-of-imut[map-of-mut]
+  (into {}
+        (for [[k v] map-of-mut]
+          [k (to-imut v)])))
+
+(defn map-of-mut-from-map-of-imut[map-of-mut map-of-imut]
+  (doseq [[k v] map-of-mut]
+    (from-imut v (k map-of-imut))))

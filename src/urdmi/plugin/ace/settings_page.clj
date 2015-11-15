@@ -54,14 +54,9 @@
         ; just modify relation list
         (let [{:keys [relation relation-list]} (.getValue (:target-term properties-map))
               {:keys [joinable-relations]} (.getValue (:models-format properties-map))
-              model-relations (set (map :rel (core/get-relations project)))
-              edited-relations (set relation-list)
-              to-add (set/difference model-relations edited-relations)
-              to-remove (set/difference edited-relations model-relations)]
-          (.removeAll relation-list to-remove)
-          (.addAll relation-list to-add)
-          (.removeAll joinable-relations to-remove)
-          (.addAll joinable-relations to-add))
+              model-relations (map :rel (core/get-relations project))]
+          (gui/sync-list relation-list model-relations)
+          (gui/sync-list joinable-relations model-relations))
         )
       (reset! user-input true)))
   (read-data [this]

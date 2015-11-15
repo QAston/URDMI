@@ -29,7 +29,7 @@
     (reset! user-input false)
     (if modified
       (let [data (core/get-settings-data project (last key))
-            relations (doall (map :rel (core/get-relations project)))
+            relations (doall (core/get-all-relation-names project))
             target-rel (:target-rel data)
             {:keys [relation relation-term relation-list]} (.getValue (:target-term properties-map))]
 
@@ -39,13 +39,8 @@
         (.setValue relation target-rel)
         (.setValue relation-term (:target-rel-param data))
         (.setValue (:program properties-map) (get data :program "induce")))
-      (let [{:keys [relation-list]} (.getValue (:target-term properties-map))
-            model-relations (set (map :rel (core/get-relations project)))
-            edited-relations (set relation-list)
-            to-add (set/difference model-relations edited-relations)
-            to-remove (set/difference edited-relations model-relations)]
-        (.removeAll relation-list to-remove)
-        (.addAll relation-list to-add)))
+      (let [{:keys [relation-list]} (.getValue (:target-term properties-map))]
+        (gui/sync-list relation-list (core/get-all-relation-names project))))
     (reset! user-input true)
     )
   (read-data [this]

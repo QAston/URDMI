@@ -225,13 +225,9 @@
         available-body-rels (gui/observable-list)
         recalc-available-body-res (fn []
                                     (let [possible (set unique-relation-spec-names)
-                                          current (set available-body-rels)
                                           selected (set (.get head-body-clauses (.getValue new-hypothesis-head)))
-                                          target (set/difference possible selected)
-                                          to-remove (set/difference current target)
-                                          to-add (set/difference target current)]
-                                      (.removeAll available-body-rels to-remove)
-                                      (.addAll available-body-rels to-add)))]
+                                          target (set/difference possible selected)]
+                                      (gui/sync-list available-body-rels target)))]
     (gui/on-changed new-hypothesis-head
                     (fn [obs old new]
                       (recalc-available-body-res)))
