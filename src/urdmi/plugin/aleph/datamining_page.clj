@@ -20,6 +20,10 @@
 (def type-str {:positive "Positive"
                :negative "Negative"})
 
+(def program-string {"custom" "custom (Advanced)"
+                      "induce" "induce (Default)"
+                      })
+
 (defn make-simple-example-data-widget []
   (let [validation-support (gui/validation-support)
         relations-list (gui/observable-list [["asd" 1] ["wqe" 3]])
@@ -193,7 +197,14 @@
              :alignment Pos/CENTER_LEFT
              :padding   (Insets. 0 0 5.0 10.0)}
             (fx/label {:text "Datamining program"})
-            (gui/choice-box (gui/observable-list aleph/programs) (SimpleObjectProperty.))))
+            (doto (gui/choice-box (gui/observable-list aleph/programs) (SimpleObjectProperty.))
+              (.setConverter (proxy
+                               [StringConverter] []
+                               (toString [obj]
+                                 (if-let [s (program-string obj)]
+                                   s
+                                   obj)
+                                 ))))))
 
 (defn make-background-data-widget []
   (let [available-relations (gui/observable-list [["asd" 1] ["we" 2]])
