@@ -546,7 +546,9 @@
     (into {} this))
   PMutableFromImut
   (from-imut [this imut]
-    (.putAll this (vec imut))
+    (if imut
+      (.putAll this imut)
+      (.clear this))
     ))
 
 (extend-type WritableValue

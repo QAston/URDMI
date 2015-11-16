@@ -24,8 +24,6 @@
    :determinacy "1"
    :terms       (vec (repeat arity {:type "+" :value "typename"}))})
 
-
-
 (def m {"+" "+(input)"
         "-" "-(output)"
         "#" "#(constant)"
@@ -115,13 +113,14 @@
     (.. getColumns
         (setAll []))))
 
-(defn make-clause-specs-table [update-fn available-relations validation-support specs-list]
+(defn make-clause-specs-table [available-relations validation-support specs-list]
   (let [terms-count (SimpleIntegerProperty. 0)
 
         new-clause (make-clause-specs-table-entry available-relations specs-list validation-support)
 
 
         table-view (doto (TableView.)
+                     (.setMinHeight 300.0)
                      (.. getColumns
                          (setAll [(doto (TableColumn. "RelationName/Arity")
                                     (.setPrefWidth 150.0)
@@ -208,13 +207,14 @@
     (.setItems table-view specs-list)
     (gui/border-wrap
       (fx/v-box {:spacing 5.0}
-               new-clause
-               table-view)
+                new-clause
+                table-view)
       "Clause specification")
     ))
 
 (defn new-head-tree-item [rel]
-  (TreeItem. rel))
+  (doto (TreeItem. rel)
+    (.setExpanded true)))
 
 (defn new-body-tree-item [rel]
   (TreeItem. rel))
@@ -269,16 +269,17 @@
                 (HBox/setHgrow Priority/NEVER))
               )))
 
-(defn make-clause-hypothesis-view [update-fn validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses]
+(defn make-clause-hypothesis-view [validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses]
   (let [new-clause (make-hypothesis-table-entry unique-relation-spec-names head-body-clauses validation-support)
 
         tree-items (doto (TreeItem. "Root")
                      (.setExpanded true))
 
         tree-table-view (doto (TreeTableView.)
+                          (.setMinHeight 300.0)
                           (.. getColumns
                               (setAll [(doto (TreeTableColumn. "Head")
-                                         (.setPrefWidth 100.0)
+                                         (.setPrefWidth 200.0)
                                          (.setCellValueFactory (reify Callback
                                                                  (call [this value]
                                                                    (let [^TreeTableColumn$CellDataFeatures value value
@@ -289,7 +290,7 @@
                                                                          "")))
                                                                    ))))
                                        (doto (TreeTableColumn. "Body")
-                                         (.setPrefWidth 200.0)
+                                         (.setPrefWidth 250.0)
                                          (.setCellValueFactory (reify Callback
                                                                  (call [this value]
                                                                    (let [^TreeTableColumn$CellDataFeatures value value
@@ -352,47 +353,62 @@
                                               (.remove ^ObservableList (.getChildren tree-items) tree-item)))))))
     (.bindBidirectional (.selectedProperty check-box) generate-head-body-clauses)
     (.bind (.disableProperty new-clause) (.selectedProperty check-box))
-    (.bind (.disableProperty tree-table-view)  (.selectedProperty check-box))
+    (.bind (.disableProperty tree-table-view) (.selectedProperty check-box))
     (gui/border-wrap
       (fx/v-box {:spacing 5.0}
-               check-box
-               new-clause
-               tree-table-view)
+                check-box
+                new-clause
+                tree-table-view)
       "Hypothesised clauses")
     ))
 
-(deftype HypothesisPage [widget data user-input]
+(deftype HypothesisPage [widget clause-settings hypothesis-settings dependencies user-input]
   gui/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]
     (reset! user-input false)
-    (if modified
-      nil
-      nil)
+    (let [{:keys [all-relations]} dependencies]
+      (gui/sync-list all-relations (concat (core/get-all-relation-names project) default-relations)))
+    (when modified
+      (let [data (core/get-settings-data project (last key))]
+        (gui/map-of-mut-from-map-of-imut clause-settings (:clause data))
+        (let [{:keys [hypothesis-list autogenerate-hypothesis]} hypothesis-settings]
+          (gui/from-imut autogenerate-hypothesis (:autogenerate-hypothesis (:hypothesis data)))
+          (gui/from-imut hypothesis-list (into {} (for [[k v] (:hypothesis-list (:hypothesis data))]
+                                                    [k (gui/observable-list v)]))))
+        ))
     (reset! user-input true)
     )
-  (read-data [this]))
+  (read-data [this]
+    (core/file-item {:clause     (gui/map-of-mut-to-map-of-imut clause-settings)
+                     :hypothesis (let [{:keys [hypothesis-list autogenerate-hypothesis]} hypothesis-settings]
+                                   {:autogenerate-hypothesis (gui/to-imut autogenerate-hypothesis)
+                                    :hypothesis-list         (into {} (for [[k v] hypothesis-list]
+                                                                        [k (gui/to-imut v)]))})})))
 
-(defn make-widget [update-fn validation-support]
-  (let [unique-relation-spec-names (gui/observable-list [["pracownik" 7] ["dzial" 4]])
-        head-body-clauses (gui/observable-map)
-        available-relations (gui/observable-list [["=" 2]
-                                                  ["=" 1]
-                                                  ["=" 0]])
-        specs-list (gui/observable-list)
-        generate-head-body-clauses (SimpleBooleanProperty. true)
+(defn make-widget [{specs-list :clause-list} {head-body-clauses :hypothesis-list generate-head-body-clauses :autogenerate-hypothesis} {available-relations :all-relations} validation-support]
+  (let [unique-relation-spec-names (gui/observable-list)
         ]
+    (gui/on-any-change specs-list (fn []
+                                    (gui/sync-list unique-relation-spec-names
+                                                   (set (map :relation specs-list)))))
     (fx/v-box {}
-              (make-clause-specs-table update-fn available-relations validation-support specs-list)
-              (make-clause-hypothesis-view update-fn validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses)
+              (make-clause-specs-table available-relations validation-support specs-list)
+              (make-clause-hypothesis-view validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses)
               )))
 
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support)
+        clause-settings {:clause-list (gui/observable-list)}
+        hypothesis-settings {:hypothesis-list         (gui/observable-map)
+                             :autogenerate-hypothesis (SimpleBooleanProperty. true)}
+        dependencies {:all-relations (gui/observable-list)}
         user-input (atom nil)
         on-update-fn (fn []
                        (when @user-input
                          (async/put! >ui-requests {:type :modified-page})))
-        widget (make-widget on-update-fn validation)]
-    (->HypothesisPage widget nil user-input)))
+        widget (make-widget clause-settings hypothesis-settings dependencies validation)]
+    (gui/map-of-mut-on-any-change clause-settings on-update-fn)
+    (gui/map-of-mut-on-any-change hypothesis-settings on-update-fn)
+    (->HypothesisPage widget clause-settings hypothesis-settings dependencies user-input)))
