@@ -9,7 +9,7 @@
            (javafx.beans.property SimpleStringProperty SimpleObjectProperty)
            (javafx.util Callback StringConverter)
            (javafx.scene.input KeyCodeCombination KeyCombination$Modifier KeyCode)
-           (javafx.collections ObservableList)
+           (javafx.collections ObservableList MapChangeListener MapChangeListener$Change ListChangeListener)
            (javafx.geometry Insets HPos Pos)
            (org.controlsfx.control ListSelectionView SegmentedButton)
            (javafx.scene.control.cell TextFieldListCell)
@@ -21,26 +21,41 @@
                :negative "Negative"})
 
 (def program-string {"custom" "custom (Advanced)"
-                      "induce" "induce (Default)"
-                      })
+                     "induce" "induce (Default)"
+                     })
 
-(defn make-simple-example-data-widget []
-  (let [validation-support (gui/validation-support)
-        relations-list (gui/observable-list [["asd" 1] ["wqe" 3]])
-        new-relation (SimpleObjectProperty. nil)
-        new-relation-term (SimpleObjectProperty. nil)
-        relations-to-term-values (gui/observable-map {["asd" 1] [#{"0" "1"}]})
-        current-term-values (gui/observable-list)
-        new-positive-value (SimpleStringProperty. nil)
-        new-negative-value (SimpleStringProperty. nil)
+(defn make-simple-example-data-widget [new-relation
+                                       new-relation-term
+                                       new-positive-value
+                                       new-negative-value
+                                       all-relations
+                                       relations-to-term-values
+                                       validation-support]
+  (let [current-term-values (gui/observable-list)
         pos-value-select-widget (gui/choice-box current-term-values new-positive-value)
         neg-value-select-widget (gui/choice-box current-term-values new-negative-value)
 
+        recalc-available-term-values (fn []
+                                       (let [new-term-vals (if (and (.getValue new-relation) (.getValue new-relation-term))
+                                                             (get-in relations-to-term-values [(.getValue new-relation) (.getValue new-relation-term)])
+                                                             [])]
+                                         (gui/sync-list current-term-values new-term-vals)))
         ]
+    (gui/on-changed new-relation
+                    (fn [obs old new]
+                      (recalc-available-term-values)))
+    (gui/on-changed new-relation-term
+                    (fn [obs old new]
+                      (recalc-available-term-values)))
+    (.addListener relations-to-term-values
+                  (reify MapChangeListener
+                    (onChanged [this map-change]
+                      (recalc-available-term-values)
+                      )))
     (fx/h-box {:spacing   5.0
                :alignment Pos/CENTER_LEFT}
               (fx/label {:text "Relation term"})
-              (gui/make-relation-select-widget relations-list new-relation validation-support)
+              (gui/make-relation-select-widget all-relations new-relation validation-support)
               (gui/make-relation-term-select-widget new-relation new-relation-term validation-support)
               (fx/label {:text "Positive value"})
               pos-value-select-widget
@@ -49,12 +64,9 @@
               )
     ))
 
-(defn make-new-advanced-example-data-widget [advanced-examples-list table-cols]
-  (let [validation-support (gui/validation-support)
-        relations-list (gui/observable-list [["asd" 1] ["wqe" 3]])
-        new-relation (SimpleObjectProperty. nil)
+(defn make-new-advanced-example-data-widget [advanced-examples-list table-cols relations-list relations-to-term-values validation-support]
+  (let [new-relation (SimpleObjectProperty. nil)
         new-relation-term (SimpleObjectProperty. nil)
-        relations-to-term-values (gui/observable-map {["asd" 1] [#{"0" "1"}]})
         current-term-values (gui/observable-list)
         new-value-type (SimpleObjectProperty. nil)
         new-value (SimpleStringProperty. nil)
@@ -68,7 +80,23 @@
         rel-select-widget (gui/make-relation-select-widget relations-list new-relation validation-support)
         rel-term-select-widget (gui/make-relation-term-select-widget new-relation new-relation-term validation-support)
 
+        recalc-available-term-values (fn []
+                                       (let [new-term-vals (if (and (.getValue new-relation) (.getValue new-relation-term))
+                                                             (get-in relations-to-term-values [(.getValue new-relation) (.getValue new-relation-term)])
+                                                             [])]
+                                         (gui/sync-list current-term-values new-term-vals)))
         ]
+    (gui/on-changed new-relation
+                    (fn [obs old new]
+                      (recalc-available-term-values)))
+    (gui/on-changed new-relation-term
+                    (fn [obs old new]
+                      (recalc-available-term-values)))
+    (.addListener relations-to-term-values
+                  (reify MapChangeListener
+                    (onChanged [this map-change]
+                      (recalc-available-term-values)
+                      )))
     (doseq [[widget col] (map vector [rel-select-widget rel-term-select-widget
                                       value-type-select-widget value-select-widget]
                               table-cols)]
@@ -101,11 +129,16 @@
                                (.selectToggle toggle-group ((zipmap toggle-vals (.getToggles toggle-group)) new))
                                (.selectToggle toggle-group nil)))))
 
-(defn make-example-data-widget []
-  (let [advanced-examples-list (gui/observable-list)
-
-        table-view (doto (TableView.)
+(defn make-example-data-widget [{simple-advanced-selection :type
+                                 relation-selection        :relation
+                                 term-selection            :term
+                                 true-val-selection        :true-val
+                                 false-val-selection       :false-val :keys [advanced-list]}
+                                {:keys [all-relations relations-term-values]}
+                                validation-support]
+  (let [table-view (doto (TableView.)
                      (.setMinHeight 140.0)
+                     (.setItems advanced-list)
                      (.. getColumns
                          (setAll [(doto (TableColumn. "RelationName/Arity")
                                     (.setPrefWidth 150.0)
@@ -122,7 +155,7 @@
                                                             (call [this data]
                                                               (let [row (.getValue data)]
                                                                 (SimpleStringProperty.
-                                                                  (:relation-term row))
+                                                                  (str (:relation-term row)))
                                                                 )))))
                                   (doto (TableColumn. "Pos/Neg")
                                     (.setPrefWidth 100.0)
@@ -144,7 +177,7 @@
                          )
                      (.. getSelectionModel (setSelectionMode SelectionMode/MULTIPLE)))
 
-        new-advanced-entry-widget (make-new-advanced-example-data-widget advanced-examples-list (.getColumns table-view))
+        new-advanced-entry-widget (make-new-advanced-example-data-widget advanced-list (.getColumns table-view) all-relations relations-term-values validation-support)
 
         context-menu (doto (fx/context-menu)
                        (.. getItems (setAll [(fx/menu-item {:text        "Remove"
@@ -152,16 +185,20 @@
                                                             :on-action   (fn [e]
                                                                            (when-not (.isEmpty (.getSelectedItems (.getSelectionModel table-view)))
                                                                              (doseq [idx (reverse (sort (.getSelectedIndices (.getSelectionModel table-view))))]
-                                                                               (.remove ^ObservableList advanced-examples-list ^int (int idx)))))})
+                                                                               (.remove ^ObservableList advanced-list ^int (int idx)))))})
                                              ])))
 
-        simple-widget (make-simple-example-data-widget)
+        simple-widget (make-simple-example-data-widget relation-selection
+                                                       term-selection
+                                                       true-val-selection
+                                                       false-val-selection
+                                                       all-relations
+                                                       relations-term-values
+                                                       validation-support)
 
         advanced-widget (fx/v-box {}
                                   new-advanced-entry-widget
                                   table-view)
-
-        simple-advanced-selection (SimpleObjectProperty. nil)
 
         cb-simple (fx/radio-button {:text "Simple (default)"})
         cb-advanced (fx/radio-button {:text "Advanced"})
@@ -170,12 +207,7 @@
                        cb-simple
                        cb-advanced)
 
-        grid (.. (Borders/wrap
-                   vbox)
-                 (lineBorder)
-                 (title "Select learning example data")
-                 (build)
-                 (build))]
+        grid (gui/border-wrap vbox "Select learning example data")]
     (.. cb-group getToggles (setAll [cb-simple cb-advanced]))
     (bidirectional-bind-toggle-to-property cb-group [:simple :advanced] simple-advanced-selection)
     (gui/on-changed simple-advanced-selection (fn [obs old new]
@@ -192,12 +224,12 @@
     grid
     ))
 
-(defn make-select-program-widget []
+(defn make-select-program-widget [{:keys [program]} validation]
   (fx/h-box {:spacing   5.0
              :alignment Pos/CENTER_LEFT
              :padding   (Insets. 0 0 5.0 10.0)}
             (fx/label {:text "Datamining program"})
-            (doto (gui/choice-box (gui/observable-list aleph/programs) (SimpleObjectProperty.))
+            (doto (gui/choice-box (gui/observable-list aleph/programs) program)
               (.setConverter (proxy
                                [StringConverter] []
                                (toString [obj]
@@ -206,9 +238,8 @@
                                    obj)
                                  ))))))
 
-(defn make-background-data-widget []
-  (let [available-relations (gui/observable-list [["asd" 1] ["we" 2]])
-        selected-relations (gui/observable-list)
+(defn make-background-data-widget [{include-setting :type selected-relations :relation-list} {:keys [all-relations]} validation-support]
+  (let [available-relations (gui/observable-list all-relations)
         list (doto (ListSelectionView.)
                (.setSourceHeader (fx/label {:text "Available relations"}))
                (.setTargetHeader (fx/label {:text "Included in background knowledge"}))
@@ -224,51 +255,74 @@
         cb-all (fx/radio-button {:text "Include all"})
         cb-all-but-example (fx/radio-button {:text "Include all but examples (default)"})
         cb-selected (fx/radio-button {:text "Include selected"})
-        include-setting (SimpleObjectProperty.)
         cb-group (ToggleGroup.)
         ]
+    (.addListener all-relations
+                  (reify ListChangeListener
+                    (onChanged [this c]
+                      (while (.next c))
+                      (gui/sync-list available-relations all-relations)
+                      (.removeAll available-relations selected-relations))))
+
     (.. cb-group getToggles (setAll [cb-all-but-example cb-all cb-selected]))
     (bidirectional-bind-toggle-to-property cb-group [:all-but-example :all :selected] include-setting)
     (gui/on-changed include-setting (fn [obs old new]
                                       (.setDisable list (not (= new :selected)))))
     (.setValue include-setting :all-but-example)
-    (.. (Borders/wrap
-          (fx/v-box {}
-                    cb-all-but-example
-                    cb-all
-                    cb-selected
-                    list))
-        (lineBorder)
-        (title "Select background relations")
-        (build)
-        (build)))
+    (gui/border-wrap (fx/v-box {}
+                               cb-all-but-example
+                               cb-all
+                               cb-selected
+                               list)
+                     "Select background relations")))
 
-  )
-
-(deftype DataminingPage [widget data user-input]
+(deftype DataminingPage [widget example-settings background-settings other-settings dependencies user-input]
   gui/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]
     (reset! user-input false)
-    (if modified
-      nil
-      nil)
+    (when modified
+      (let [data (core/get-settings-data project (last key))]
+        (gui/map-of-mut-from-map-of-imut example-settings (:example data))
+        (gui/map-of-mut-from-map-of-imut background-settings (:background data))
+        (gui/map-of-mut-from-map-of-imut other-settings data)))
+    (let [{:keys [all-relations relations-term-values]} dependencies]
+      (gui/sync-list all-relations (core/get-all-relation-names project))
+      (.putAll relations-term-values (core/generate-relation-term-values-map project)))
     (reset! user-input true)
     )
-  (read-data [this]))
+  (read-data [this]
+    (core/file-item {:example    (gui/map-of-mut-to-map-of-imut example-settings)
+                     :background (gui/map-of-mut-to-map-of-imut background-settings)
+                     :program    (gui/map-of-mut-to-map-of-imut other-settings)
+                     })))
 
-(defn make-widget []
+(defn make-widget [example-settings background-settings other-settings dependencies validation]
   (fx/v-box {}
-            (make-select-program-widget)
-            (make-example-data-widget)
-            (make-background-data-widget)))
+            (make-select-program-widget other-settings validation)
+            (make-example-data-widget example-settings dependencies validation)
+            (make-background-data-widget background-settings dependencies validation)))
 
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support)
+        example-settings {:type          (SimpleObjectProperty.)
+                          :relation      (SimpleObjectProperty.)
+                          :term          (SimpleObjectProperty.)
+                          :true-val      (SimpleStringProperty.)
+                          :false-val     (SimpleStringProperty.)
+                          :advanced-list (gui/observable-list)}
+        background-settings {:type          (SimpleObjectProperty.)
+                             :relation-list (gui/observable-list)}
+        other-settings {:program (SimpleStringProperty.)}
+        dependencies {:all-relations         (gui/observable-list)
+                      :relations-term-values (gui/observable-map)}
         user-input (atom nil)
         on-update-fn (fn []
                        (when @user-input
                          (async/put! >ui-requests {:type :modified-page})))
-        widget (make-widget)]
-    (->DataminingPage widget nil user-input)))
+        widget (make-widget example-settings background-settings other-settings dependencies validation)]
+    (gui/map-of-mut-on-any-change example-settings on-update-fn)
+    (gui/map-of-mut-on-any-change background-settings on-update-fn)
+    (gui/map-of-mut-on-any-change other-settings on-update-fn)
+    (->DataminingPage widget example-settings background-settings other-settings dependencies user-input)))
