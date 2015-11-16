@@ -3,7 +3,8 @@
             [clojure.core.async :as async]
             [fx-clj.core :as fx]
             [urdmi.core :as core]
-            [urdmi.plugin.aleph.core :as aleph])
+            [urdmi.plugin.aleph.core :as aleph]
+            [clojure.set :as set])
   (:import (javafx.event EventHandler)
            (javafx.scene.control TableView TableColumn SelectionMode ToggleButton ToggleGroup)
            (javafx.beans.property SimpleStringProperty SimpleObjectProperty)
@@ -12,7 +13,8 @@
            (javafx.collections ObservableList MapChangeListener MapChangeListener$Change ListChangeListener)
            (javafx.geometry Insets HPos Pos)
            (org.controlsfx.control ListSelectionView SegmentedButton)
-           (javafx.scene.control.cell TextFieldListCell)))
+           (javafx.scene.control.cell TextFieldListCell)
+           (java.util Collection)))
 
 (def type-str {:positive "Positive"
                :negative "Negative"})
@@ -222,7 +224,7 @@
                                  ))))))
 
 (defn make-background-data-widget [{include-setting :type selected-relations :relation-list} {:keys [all-relations]} validation-support]
-  (let [available-relations (gui/observable-list all-relations)
+  (let [available-relations (gui/observable-list)
         list (doto (ListSelectionView.)
                (.setSourceHeader (fx/label {:text "Available relations"}))
                (.setTargetHeader (fx/label {:text "Included in background knowledge"}))
@@ -242,8 +244,9 @@
         ]
     (gui/on-any-change all-relations
                        (fn []
-                         (gui/sync-list available-relations all-relations)
-                         (.removeAll available-relations selected-relations)))
+                         (gui/sync-list available-relations (set/difference (set all-relations) (set selected-relations)))
+                         (.removeAll ^ObservableList selected-relations ^Collection (set/difference (set selected-relations) (set all-relations)))
+                         ))
 
     (.. cb-group getToggles (setAll [cb-all-but-example cb-all cb-selected]))
     (bidirectional-bind-toggle-to-property cb-group [:all-but-example :all :selected] include-setting)
@@ -274,10 +277,9 @@
     (reset! user-input true)
     )
   (read-data [this]
-    (core/file-item {:example    (gui/map-of-mut-to-map-of-imut example-settings)
-                     :background (gui/map-of-mut-to-map-of-imut background-settings)
-                     :program    (gui/map-of-mut-to-map-of-imut other-settings)
-                     })))
+    (core/file-item (merge {:example    (gui/map-of-mut-to-map-of-imut example-settings)
+                            :background (gui/map-of-mut-to-map-of-imut background-settings)}
+                           (gui/map-of-mut-to-map-of-imut other-settings)))))
 
 (defn make-widget [example-settings background-settings other-settings dependencies validation]
   (fx/v-box {}
