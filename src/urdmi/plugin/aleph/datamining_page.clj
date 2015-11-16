@@ -248,6 +248,11 @@
                          (.removeAll ^ObservableList selected-relations ^Collection (set/difference (set selected-relations) (set all-relations)))
                          ))
 
+    (gui/on-any-change selected-relations
+                       (fn []
+                         (gui/sync-list available-relations (set/difference (set all-relations) (set selected-relations)))
+                         ))
+
     (.. cb-group getToggles (setAll [cb-all-but-example cb-all cb-selected]))
     (bidirectional-bind-toggle-to-property cb-group [:all-but-example :all :selected] include-setting)
     (gui/on-changed include-setting (fn [obs old new]
@@ -266,14 +271,14 @@
     widget)
   (show-data [this project key modified]
     (reset! user-input false)
+    (let [{:keys [all-relations relations-term-values]} dependencies]
+      (gui/sync-list all-relations (core/get-all-relation-names project))
+      (.putAll relations-term-values (core/generate-relation-term-values-map project)))
     (when modified
       (let [data (core/get-settings-data project (last key))]
         (gui/map-of-mut-from-map-of-imut example-settings (:example data))
         (gui/map-of-mut-from-map-of-imut background-settings (:background data))
         (gui/map-of-mut-from-map-of-imut other-settings data)))
-    (let [{:keys [all-relations relations-term-values]} dependencies]
-      (gui/sync-list all-relations (core/get-all-relation-names project))
-      (.putAll relations-term-values (core/generate-relation-term-values-map project)))
     (reset! user-input true)
     )
   (read-data [this]
