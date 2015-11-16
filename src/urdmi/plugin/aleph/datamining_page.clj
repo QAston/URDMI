@@ -12,10 +12,7 @@
            (javafx.collections ObservableList MapChangeListener MapChangeListener$Change ListChangeListener)
            (javafx.geometry Insets HPos Pos)
            (org.controlsfx.control ListSelectionView SegmentedButton)
-           (javafx.scene.control.cell TextFieldListCell)
-           (javafx.scene.layout GridPane ColumnConstraints)
-           (org.controlsfx.tools Borders)
-           (javafx.application Platform)))
+           (javafx.scene.control.cell TextFieldListCell)))
 
 (def type-str {:positive "Positive"
                :negative "Negative"})
@@ -41,17 +38,10 @@
                                                              [])]
                                          (gui/sync-list current-term-values new-term-vals)))
         ]
-    (gui/on-changed new-relation
-                    (fn [obs old new]
-                      (recalc-available-term-values)))
-    (gui/on-changed new-relation-term
-                    (fn [obs old new]
-                      (recalc-available-term-values)))
-    (.addListener relations-to-term-values
-                  (reify MapChangeListener
-                    (onChanged [this map-change]
-                      (recalc-available-term-values)
-                      )))
+    (gui/on-any-change new-relation recalc-available-term-values)
+    (gui/on-any-change new-relation-term recalc-available-term-values)
+    (gui/on-any-change relations-to-term-values recalc-available-term-values)
+
     (fx/h-box {:spacing   5.0
                :alignment Pos/CENTER_LEFT}
               (fx/label {:text "Relation term"})
@@ -86,17 +76,10 @@
                                                              [])]
                                          (gui/sync-list current-term-values new-term-vals)))
         ]
-    (gui/on-changed new-relation
-                    (fn [obs old new]
-                      (recalc-available-term-values)))
-    (gui/on-changed new-relation-term
-                    (fn [obs old new]
-                      (recalc-available-term-values)))
-    (.addListener relations-to-term-values
-                  (reify MapChangeListener
-                    (onChanged [this map-change]
-                      (recalc-available-term-values)
-                      )))
+    (gui/on-any-change new-relation recalc-available-term-values)
+    (gui/on-any-change new-relation-term recalc-available-term-values)
+    (gui/on-any-change relations-to-term-values recalc-available-term-values)
+
     (doseq [[widget col] (map vector [rel-select-widget rel-term-select-widget
                                       value-type-select-widget value-select-widget]
                               table-cols)]
@@ -257,12 +240,10 @@
         cb-selected (fx/radio-button {:text "Include selected"})
         cb-group (ToggleGroup.)
         ]
-    (.addListener all-relations
-                  (reify ListChangeListener
-                    (onChanged [this c]
-                      (while (.next c))
-                      (gui/sync-list available-relations all-relations)
-                      (.removeAll available-relations selected-relations))))
+    (gui/on-any-change all-relations
+                       (fn []
+                         (gui/sync-list available-relations all-relations)
+                         (.removeAll available-relations selected-relations)))
 
     (.. cb-group getToggles (setAll [cb-all-but-example cb-all cb-selected]))
     (bidirectional-bind-toggle-to-property cb-group [:all-but-example :all :selected] include-setting)

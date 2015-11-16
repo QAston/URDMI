@@ -6,7 +6,7 @@
             [me.raynes.fs :as fs]
             [urdmi.util :as util]
             [clojure.set :as set])
-  (:import (javafx.collections ObservableList FXCollections ListChangeListener)
+  (:import (javafx.collections ObservableList FXCollections ListChangeListener ObservableMap MapChangeListener)
            (java.util Collection List Map)
            (javafx.beans.value ObservableValue ChangeListener WritableValue)
            (org.controlsfx.validation ValidationSupport Validator Severity)
@@ -556,14 +556,47 @@
 
 (extend-type ObservableValue
   PMutableToImut
-  (from-imut [this imut]
+  (to-imut [this]
     (.getValue this)))
 
-(defn map-of-mut-to-map-of-imut[map-of-mut]
+(defn map-of-mut-to-map-of-imut [map-of-mut]
   (into {}
         (for [[k v] map-of-mut]
           [k (to-imut v)])))
 
-(defn map-of-mut-from-map-of-imut[map-of-mut map-of-imut]
+(defn map-of-mut-from-map-of-imut [map-of-mut map-of-imut]
   (doseq [[k v] map-of-mut]
     (from-imut v (k map-of-imut))))
+
+(defprotocol PAnyObservable
+  (on-any-change [this f]))
+
+(extend-type ObservableValue
+  PAnyObservable
+  (on-any-change [this f]
+    (on-changed this (fn [obs old new]
+                  (f)))))
+
+(extend-type ObservableList
+  PAnyObservable
+  (on-any-change [this f]
+    (.addListener this (reify ListChangeListener
+                    (onChanged [this c]
+                      (while (.next c))
+                      (f))))))
+
+(extend-type ObservableMap
+  PAnyObservable
+  (on-any-change [this f]
+    (.addListener this (reify MapChangeListener
+                    (onChanged [this c]
+                      (f))))))
+
+(extend-type Object
+  PAnyObservable
+  (on-any-change [this f]))
+
+(defn map-of-mut-on-any-change [map-of-mut f]
+  (doseq [[k v] map-of-mut]
+    (on-any-change v f)))
+
