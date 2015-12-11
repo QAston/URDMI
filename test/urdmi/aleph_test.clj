@@ -1,8 +1,12 @@
 (ns urdmi.aleph-test
   (:use midje.sweet
-        urdmi.prolog-test)
+        urdmi.prolog-test
+        urdmi.test-util)
   (:require [urdmi.plugin.aleph.core :as aleph]
-            [urdmi.prolog :as prolog]))
+            [urdmi.prolog :as prolog]
+            [urdmi.core :as core]
+            [urdmi.app :as app]
+            [me.raynes.fs :as fs]))
 
 (use 'clojure.pprint)
 (fact 'aleph/split-by-relation-arg
@@ -28,6 +32,61 @@ pracownik(50,prezes,4,2,00,1).")
             ]
         (first result)  => (just (set (first rel-out)))
         (second result)  => (just (set (second rel-out)))))
+
+
+(def adv-ex-data [{:relation ["pracownik" 7]
+                   :relation-term 6
+                   :value-type :positive
+                   :value "1"}
+                  {:relation ["pracownik" 7]
+                   :relation-term 6
+                   :value-type :negative
+                   :value "0"}])
+
+(facts 'aleph/get-advanced-example-data-settings
+       (aleph/get-advanced-example-data-settings ["pracownik" 7] 6 "1" "0") => adv-ex-data)
+
+(facts 'aleph/get-learning-examples-settings
+       (let [project (make-dummy-project [[:settings aleph/datamining-name] (core/file-item {:example {:type :simple, :relation ["pracownik" 7], :term 6, :true-val "1", :false-val "0", :advanced-list []}, :background nil, :program "induce"})])]
+         (aleph/get-learning-examples-settings project) => adv-ex-data)
+       (let [project (make-dummy-project [[:settings aleph/datamining-name] (core/file-item {:example {:type :advanced, :relation nil, :term 6, :true-val "1", :false-val "0", :advanced-list adv-ex-data}, :background nil, :program "induce"})])]
+         (aleph/get-learning-examples-settings project) => adv-ex-data))
+
+(defn load-default-app []
+  (app/load-project (app/init-app) (fs/file "dev-resources/projects/aleph_default/")))
+
+(facts 'aleph/get-background-relations
+       (fact "all but examples"
+         (let [p (modify-dummy-project (:project (load-default-app))
+                                       [[:settings aleph/datamining-name] (core/file-item {:example {:type :simple, :relation ["pracownik" 7], :term 6, :true-val "1", :false-val "0", :advanced-list []}, :background {:type :all-but-example, :relation-list nil}, :program "induce"})])]
+           (aleph/get-background-relations p) => (just ["dzial" 6] ["klient" 9] ["pracownikpersonalia" 8] ["pracownikprodukcja" 6] ["produkcja" 5] ["towar" 6] ["zamowienie" 5] ["zamowienieszczegoly" 4])
+           ))
+       (fact "all"
+         (let [p (modify-dummy-project (:project (load-default-app))
+                                      [[:settings aleph/datamining-name] (core/file-item {:example {:type :simple, :relation ["pracownik" 7], :term 6, :true-val "1", :false-val "0", :advanced-list []}, :background {:type :all, :relation-list nil}, :program "induce"})])]
+          (aleph/get-background-relations p) => (just  ["dzial" 6] ["klient" 9] ["pracownik" 7] ["pracownikpersonalia" 8] ["pracownikprodukcja" 6] ["produkcja" 5] ["towar" 6] ["zamowienie" 5] ["zamowienieszczegoly" 4])
+          ))
+       (fact "selected"
+             (let [p (modify-dummy-project (:project (load-default-app))
+                                           [[:settings aleph/datamining-name] (core/file-item {:example {:type :simple, :relation ["pracownik" 7], :term 6, :true-val "1", :false-val "0", :advanced-list []}, :background {:type :selected, :relation-list [["dzial" 6] ["klient" 9] ["pracownik" 7]]}, :program "induce"})])]
+               (aleph/get-background-relations p) => (just  ["dzial" 6] ["klient" 9] ["pracownik" 7])
+               )))
+
+(facts 'aleph/generate-hypothesis-settings-from-learning-example-settings
+       (let [p (modify-dummy-project (:project (load-default-app))
+                                     [[:settings aleph/datamining-name] (core/file-item {:example {:type :simple, :relation ["pracownik" 7], :term 6, :true-val "1", :false-val "0", :advanced-list []}, :background {:type :all-but-example, :relation-list nil}, :program "induce"})]
+                                     [[:settings aleph/hypothesis-name] (core/file-item {:clause {:clause-list [{:relation ["pracownikpersonalia" 8], :determinacy "1", :terms [{:type "+", :value "idpracownika"} {:type "+", :value "imie"} {:type "+", :value "nazwisko"} {:type "+", :value "nip"} {:type "+", :value "ulica"} {:type "+", :value "nrdomu"} {:type "+", :value "nrlokalu"} {:type "+", :value "miejscowosc"}]} {:relation ["zamowienieszczegoly" 4], :determinacy "1", :terms [{:type "+", :value "idzamowienia"} {:type "+", :value "idtowaru"} {:type "+", :value "ilosc"} {:type "+", :value "upust"}]} {:relation ["produkcja" 5], :determinacy "1", :terms [{:type "+", :value "idtowaru"} {:type "+", :value "idpracownika"} {:type "+", :value "poczatek"} {:type "+", :value "koniec"} {:type "+", :value "budzet"}]} {:relation ["dzial" 6], :determinacy "1", :terms [{:type "+", :value "iddzialu"} {:type "+", :value "nazwa"} {:type "+", :value "ulica"} {:type "+", :value "nrdomudzial"} {:type "+", :value "nrlokaludzial"} {:type "+", :value "miejscowosc"}]} {:relation ["towar" 6], :determinacy "1", :terms [{:type "+", :value "idtowaru"} {:type "+", :value "opis"} {:type "+", :value "poczatek"} {:type "+", :value "koniec"} {:type "+", :value "budzet"} {:type "+", :value "typename"}]} {:relation ["klient" 9], :determinacy "1", :terms [{:type "+", :value "idklienta"} {:type "+", :value "imie"} {:type "+", :value "nazwisko"} {:type "+", :value "nip"} {:type "+", :value "ulica"} {:type "+", :value "nrdomu"} {:type "+", :value "nrlokalu"} {:type "+", :value "kod"} {:type "+", :value "miejscowosc"}]} {:relation ["zamowienie" 5], :determinacy "1", :terms [{:type "+", :value "idzamowienia"} {:type "+", :value "idklienta"} {:type "+", :value "idpracownika"} {:type "+", :value "data"} {:type "+", :value "platnosc"}]} {:relation ["pracownik" 7], :determinacy "1", :terms [{:type "+", :value "idpracownika"} {:type "+", :value "stanowisko"} {:type "+", :value "pensja"} {:type "+", :value "premia"} {:type "+", :value "rokzatrudnienia"} {:type "+", :value "iddzialu"} {:type "+", :value "grupa"}]}]}, :hypothesis {:autogenerate-hypothesis true, :hypothesis-list {["dzial" 6] [["pracownikpersonalia" 8] ["produkcja" 5] ["dzial" 6] ["towar" 6] ["klient" 9] ["zamowienie" 5] ["not" 1] ["zamowienieszczegoly" 4]]}}})])]
+         (aleph/generate-hypothesis-settings-from-learning-example-settings p) => {["pracownik" 7] [["dzial" 6] ["klient" 9] ["pracownikpersonalia" 8] ["produkcja" 5] ["towar" 6] ["zamowienie" 5] ["zamowienieszczegoly" 4]]}
+         ))
+
+(facts 'aleph/get-hypothesis-settings
+       (let [test-hypothesis-list {["dzial" 6] [["pracownikpersonalia" 8] ["produkcja" 5] ["dzial" 6] ["towar" 6] ["klient" 9] ["zamowienie" 5] ["not" 1] ["zamowienieszczegoly" 4]]}
+
+             p (modify-dummy-project (:project (load-default-app))
+                                     [[:settings aleph/datamining-name] (core/file-item {:example {:type :simple, :relation ["pracownik" 7], :term 6, :true-val "1", :false-val "0", :advanced-list []}, :background {:type :all-but-example, :relation-list nil}, :program "induce"})]
+                                     [[:settings aleph/hypothesis-name] (core/file-item {:clause {:clause-list [{:relation ["pracownikpersonalia" 8], :determinacy "1", :terms [{:type "+", :value "idpracownika"} {:type "+", :value "imie"} {:type "+", :value "nazwisko"} {:type "+", :value "nip"} {:type "+", :value "ulica"} {:type "+", :value "nrdomu"} {:type "+", :value "nrlokalu"} {:type "+", :value "miejscowosc"}]} {:relation ["zamowienieszczegoly" 4], :determinacy "1", :terms [{:type "+", :value "idzamowienia"} {:type "+", :value "idtowaru"} {:type "+", :value "ilosc"} {:type "+", :value "upust"}]} {:relation ["produkcja" 5], :determinacy "1", :terms [{:type "+", :value "idtowaru"} {:type "+", :value "idpracownika"} {:type "+", :value "poczatek"} {:type "+", :value "koniec"} {:type "+", :value "budzet"}]} {:relation ["dzial" 6], :determinacy "1", :terms [{:type "+", :value "iddzialu"} {:type "+", :value "nazwa"} {:type "+", :value "ulica"} {:type "+", :value "nrdomudzial"} {:type "+", :value "nrlokaludzial"} {:type "+", :value "miejscowosc"}]} {:relation ["towar" 6], :determinacy "1", :terms [{:type "+", :value "idtowaru"} {:type "+", :value "opis"} {:type "+", :value "poczatek"} {:type "+", :value "koniec"} {:type "+", :value "budzet"} {:type "+", :value "typename"}]} {:relation ["klient" 9], :determinacy "1", :terms [{:type "+", :value "idklienta"} {:type "+", :value "imie"} {:type "+", :value "nazwisko"} {:type "+", :value "nip"} {:type "+", :value "ulica"} {:type "+", :value "nrdomu"} {:type "+", :value "nrlokalu"} {:type "+", :value "kod"} {:type "+", :value "miejscowosc"}]} {:relation ["zamowienie" 5], :determinacy "1", :terms [{:type "+", :value "idzamowienia"} {:type "+", :value "idklienta"} {:type "+", :value "idpracownika"} {:type "+", :value "data"} {:type "+", :value "platnosc"}]} {:relation ["pracownik" 7], :determinacy "1", :terms [{:type "+", :value "idpracownika"} {:type "+", :value "stanowisko"} {:type "+", :value "pensja"} {:type "+", :value "premia"} {:type "+", :value "rokzatrudnienia"} {:type "+", :value "iddzialu"} {:type "+", :value "grupa"}]}]}, :hypothesis {:autogenerate-hypothesis false, :hypothesis-list test-hypothesis-list}})])]
+         (aleph/get-hypothesis-settings p) => test-hypothesis-list
+         ))
 
 #_(fact "build project generates expected working_dir output for aleph"
       (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")

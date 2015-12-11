@@ -273,7 +273,7 @@
         (gui/map-of-mut-from-map-of-imut example-settings (:example data))
         (gui/map-of-mut-from-map-of-imut background-settings (:background data))
         (gui/map-of-mut-from-map-of-imut other-settings data)
-        ;todo:
+        ;todo: sync?
         (gui/sync-list (:available-relations dependencies) (set/difference (set (:all-relations dependencies)) (set (:relation-list (:background data)))))
         )
       )

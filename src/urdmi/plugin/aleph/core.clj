@@ -5,7 +5,8 @@
             [urdmi.core :as api]
             [clojure.zip :as zip]
             [urdmi.core :as core]
-            [me.raynes.fs :as fs])
+            [me.raynes.fs :as fs]
+            [clojure.set :as set])
   (:import (java.io StringReader IOException)
            (urdmi.core Project)))
 
@@ -22,8 +23,8 @@
 (defn check-plcon-path [resolved-loc]
   (try
     (when-let [o (:err (shell/sh (str resolved-loc)
-                                  :in (StringReader. "")
-                                  ))]
+                                 :in (StringReader. "")
+                                 ))]
       (.startsWith o "Welcome to SWI-Prolog"))
     (catch IOException e
       false)))
@@ -34,17 +35,54 @@
                                     [(:value k) v]) (prolog/extract-relation-arg rel-asts rel-arg)))]
     [(sort-by hash (get grouped-rel 1)) (sort-by hash (get grouped-rel 0))]))
 
-(defn get-advanced-example-data-settings[relation term ^String true-val ^String false-val])
+(defn get-advanced-example-data-settings [relation term ^String true-val ^String false-val]
+  [{:value         true-val
+    :value-type    :positive
+    :relation      relation
+    :relation-term term}
+   {:value         false-val
+    :value-type    :negative
+    :relation      relation
+    :relation-term term}])
 
-(defn generate-hypothesis-settings-from-learning-examples [])
+(defn get-learning-examples-settings [^Project p]
+  (let [example-data (:example (api/get-settings-data p datamining-name))]
+    (if (= :simple (:type example-data))
+      (get-advanced-example-data-settings (:relation example-data) (:term example-data) (:true-val example-data) (:false-val example-data))
+      (:advanced-list example-data))))
 
-(defn generate-hypothesis[])
+(defn get-background-relations [^Project p]
+  (let [background-data (:background (api/get-settings-data p datamining-name))
+        learning-example (get-learning-examples-settings p)
+        relation-list (:relation-list background-data)]
+    (sort (vec
+             (condp = (:type background-data)
+                  :all-but-example (set/difference (set (map :rel (api/get-relations p))) (set (map :relation learning-example)))
+                  :all (map :rel (api/get-relations p))
+                  :selected relation-list
+                  )))))
 
-(defn generate-relation-examples-advanced [rel-asts ])
+(defn get-clause-settings [^Project p]
+  (let [clause-settings-data (:clause (api/get-settings-data p hypothesis-name))]
+    clause-settings-data))
 
-(defn get-all-but-example-relations[])
+(defn generate-hypothesis-settings-from-learning-example-settings [^Project p]
+  (let [learning-examples (get-learning-examples-settings p)
+        available-clauses (set (map :relation (:clause-list (get-clause-settings p))))
+        head-clauses (map :relation learning-examples)]
+    (into {} (->>
+               (for [head-clause head-clauses]
+                [head-clause (vec (sort (vec (disj available-clauses head-clause))))])
+               (filter (fn [[f s]]
+                         (not-empty s)))))))
 
-(defn get-background-relations[])
+(defn get-hypothesis-settings [^Project p]
+  (let [hypothesis-settings-data (:hypothesis (api/get-settings-data p hypothesis-name))
+        ]
+    (if (:autogenerate-hypothesis hypothesis-settings-data)
+      (generate-hypothesis-settings-from-learning-example-settings p)
+      (:hypothesis-list hypothesis-settings-data)
+      )))
 
 (defn get-training-examples [^Project project]
   (let [plugin-settings (api/get-settings-data project settings-filename)
@@ -98,11 +136,11 @@
 (defn- validate-settings [project key]
   (let [plugin-settings (api/get-settings-data project settings-filename)]
     (not (and (core/check-relation-term project [(:target-rel plugin-settings) (:target-rel-param plugin-settings)])
-          (:program plugin-settings)
-          (let [aleph-loc (fs/file (core/resolve-relative-loc (:project-dir project) (:aleph-loc plugin-settings)))
-                swi-prol-loc (core/resolve-executable-loc (:project-dir project) (:swi-prolog-loc plugin-settings))]
-            (and (fs/exists? aleph-loc)
-                 (check-plcon-path swi-prol-loc)))))))
+              (:program plugin-settings)
+              (let [aleph-loc (fs/file (core/resolve-relative-loc (:project-dir project) (:aleph-loc plugin-settings)))
+                    swi-prol-loc (core/resolve-executable-loc (:project-dir project) (:swi-prolog-loc plugin-settings))]
+                (and (fs/exists? aleph-loc)
+                     (check-plcon-path swi-prol-loc)))))))
 
 (defrecord AlephPlugin [parser-context]
   api/Plugin
