@@ -50,8 +50,9 @@
                                  [StringConverter] []
                                  (toString [obj]
                                    (m obj)
-                                   )))))
-    text-field
+                                   ))))
+              text-field)
+
     ))
 
 
