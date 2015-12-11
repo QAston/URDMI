@@ -34,6 +34,18 @@
                                     [(:value k) v]) (prolog/extract-relation-arg rel-asts rel-arg)))]
     [(sort-by hash (get grouped-rel 1)) (sort-by hash (get grouped-rel 0))]))
 
+(defn get-advanced-example-data-settings[relation term ^String true-val ^String false-val])
+
+(defn generate-hypothesis-settings-from-learning-examples [])
+
+(defn generate-hypothesis[])
+
+(defn generate-relation-examples-advanced [rel-asts ])
+
+(defn get-all-but-example-relations[])
+
+(defn get-background-relations[])
+
 (defn get-training-examples [^Project project]
   (let [plugin-settings (api/get-settings-data project settings-filename)
         target-relation (:target-rel plugin-settings)
@@ -44,7 +56,7 @@
     ))
 
 (defn get-db-name [^Project p]
-  (first (:target-rel (api/get-settings-data p settings-filename))))
+  "db")
 
 (defn term-spec-to-string [{:keys [type value] :as term-spec}]
   (str type value))

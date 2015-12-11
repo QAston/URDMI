@@ -200,7 +200,7 @@
                                                                                                     (aleph/term-spec-to-string ((:terms row) index))
                                                                                                     "")
                                                                                                   )))))
-                                                                    (.setPrefWidth 50.0))))
+                                                                    (.setPrefWidth 100.0))))
                                     (.add (.getColumns table-view) terms-column))
                                   ))
     (.setContextMenu table-view context-menu)

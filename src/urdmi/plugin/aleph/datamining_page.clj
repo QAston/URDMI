@@ -223,9 +223,8 @@
                                    obj)
                                  ))))))
 
-(defn make-background-data-widget [{include-setting :type selected-relations :relation-list} {:keys [all-relations]} validation-support]
-  (let [available-relations (gui/observable-list)
-        list (doto (ListSelectionView.)
+(defn make-background-data-widget [{include-setting :type selected-relations :relation-list} {:keys [all-relations available-relations]} validation-support]
+  (let [list (doto (ListSelectionView.)
                (.setSourceHeader (fx/label {:text "Available relations"}))
                (.setTargetHeader (fx/label {:text "Included in background knowledge"}))
                (.setSourceItems available-relations)
@@ -246,11 +245,6 @@
                        (fn []
                          (gui/sync-list available-relations (set/difference (set all-relations) (set selected-relations)))
                          (.removeAll ^ObservableList selected-relations ^Collection (set/difference (set selected-relations) (set all-relations)))
-                         ))
-
-    (gui/on-any-change selected-relations
-                       (fn []
-                         (gui/sync-list available-relations (set/difference (set all-relations) (set selected-relations)))
                          ))
 
     (.. cb-group getToggles (setAll [cb-all-but-example cb-all cb-selected]))
@@ -278,7 +272,11 @@
       (let [data (core/get-settings-data project (last key))]
         (gui/map-of-mut-from-map-of-imut example-settings (:example data))
         (gui/map-of-mut-from-map-of-imut background-settings (:background data))
-        (gui/map-of-mut-from-map-of-imut other-settings data)))
+        (gui/map-of-mut-from-map-of-imut other-settings data)
+        ;todo:
+        (gui/sync-list (:available-relations dependencies) (set/difference (set (:all-relations dependencies)) (set (:relation-list (:background data)))))
+        )
+      )
     (reset! user-input true)
     )
   (read-data [this]
@@ -304,7 +302,8 @@
                              :relation-list (gui/observable-list)}
         other-settings {:program (SimpleStringProperty.)}
         dependencies {:all-relations         (gui/observable-list)
-                      :relations-term-values (gui/observable-map)}
+                      :relations-term-values (gui/observable-map)
+                      :available-relations (gui/observable-list)}
         user-input (atom nil)
         on-update-fn (fn []
                        (when @user-input
