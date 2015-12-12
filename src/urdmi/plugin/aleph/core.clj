@@ -17,6 +17,8 @@
 (def hypothesis-name "hypothesis.edn")
 (def datamining-name "datamining.edn")
 
+(def available-modeh-clauses [["'='" 2] ["'\\='" 2] ["'<'" 2] ["'<='" 2] ["'>'" 2] ["'>='" 2] ["not" 1] ["false" 1]])
+
 (def programs #{"induce" "induce_cover" "induce_max" "induce_incremental"
                 "induce_clauses" "induce_theory" "induce_tree" "induce_constraints" "induce_modes" "induce_features"
                 "custom"})
@@ -51,6 +53,12 @@
       (get-advanced-example-data-settings (:relation example-data) (:term example-data) (:true-val example-data) (:false-val example-data))
       (:advanced-list example-data))))
 
+(defn get-example-relations [^Project p]
+  (let [learning-examples (get-learning-examples-settings p)]
+    (map (fn [example]
+                        [(first (:relation example)) (dec (second (:relation example)))]) learning-examples)
+    ))
+
 (defn get-background-relations [^Project p]
   (let [background-data (:background (api/get-settings-data p datamining-name))
         learning-example (get-learning-examples-settings p)
@@ -66,10 +74,41 @@
   (let [clause-settings-data (:clause (api/get-settings-data p hypothesis-name))]
     clause-settings-data))
 
+(defn convert-mode-spec-for-example-modeh [{:keys [relation determinacy terms] :as mode} relation-term]
+  (-> mode
+       (assoc :terms
+              (vec (->> terms
+                    (keep-indexed (fn [idx item]
+                                    (if (= idx relation-term)
+                                      nil
+                                      item)))
+                    (map (fn [{:keys [type value] :as term-spec}]
+                           {:type "+" :value value})))))
+       (assoc :relation [(first relation) (dec (second relation))]))
+  )
+
+(defn get-modeh-settings [^Project p]
+  (let [clause-settings (group-by :relation (:clause-list (get-clause-settings p)))
+        learning-examples (group-by :relation (get-learning-examples-settings p))
+
+        eligible-relations (set (concat available-modeh-clauses (get-background-relations p) (get-example-relations p)))
+
+        relations-to-remove (set/difference (set (keys clause-settings)) eligible-relations)
+
+        generated-modehs (keep identity
+                               (for [[relation examples] learning-examples]
+                                 (let [first-example (first examples) ;use first example, assume their term is the same
+                                       first-modeh (first (clause-settings relation))] ;base new modeh on first
+                                   (when (and first-example first-modeh)
+                                     (convert-mode-spec-for-example-modeh first-modeh (:relation-term first-example))))))
+
+        ; remove relations that arent used in bg knowledge or examples
+        clause-settings (reduce dissoc clause-settings relations-to-remove)]
+     (into (vec (apply concat (vals clause-settings))) generated-modehs)))
+
 (defn generate-hypothesis-settings-from-learning-example-settings [^Project p]
-  (let [learning-examples (get-learning-examples-settings p)
-        available-clauses (set (map :relation (:clause-list (get-clause-settings p))))
-        head-clauses (map :relation learning-examples)]
+  (let [available-clauses (set (map :relation (get-modeh-settings p)))
+        head-clauses (get-example-relations p)]
     (into {} (->>
                (for [head-clause head-clauses]
                  [head-clause (vec (sort (vec (disj available-clauses head-clause))))])
@@ -107,8 +146,8 @@
 (defn term-spec-to-string [{:keys [type value] :as term-spec}]
   (str type value))
 
-(defn- included-rels-in-hypothesis [clause-setts hypo-setts]
-  (let [clause-rels (set (map :relation (:clause-list clause-setts)))
+(defn- included-rels-in-hypothesis [modeh-settings hypo-setts]
+  (let [clause-rels (set (map :relation modeh-settings))
         hypo-rels (set (concat (keys hypo-setts) (apply concat (vals hypo-setts))))
         ]
     (set/intersection clause-rels hypo-rels)))
@@ -120,13 +159,13 @@
   (str ":-determination(" (core/relation-to-string head) "," (core/relation-to-string body) ")." core/nl))
 
 (defn generate-hypothesis [^Project p writer]
-  (let [clause-setts (get-clause-settings p)
+  (let [modeh-settings (get-modeh-settings p)
         hypo-setts (get-hypothesis-list p)
-        included-relations (included-rels-in-hypothesis clause-setts hypo-setts)]
+        included-relations (included-rels-in-hypothesis modeh-settings hypo-setts)]
 
     (when (not-empty included-relations)
       (.append writer (str "%Generated settings:" core/nl))
-      (doseq [mode (:clause-list clause-setts)]
+      (doseq [mode modeh-settings]
         (when (included-relations (:relation mode))
           (.append writer (format-mode mode))))
       (doseq [[head body-rels] hypo-setts]
@@ -147,6 +186,8 @@
         filename (str (get-db-name project) ".b")
         ]
     (with-open [writer (io/writer (io/file working-dir filename))]
+      (api/try-append-prolog-ext-file project (io/file "bg_and_settings.pl") writer)
+      (.append writer ^String core/nl)
       (generate-hypothesis project writer)
       (.append writer "%Background relations:")
       (.append writer ^String core/nl)
@@ -155,7 +196,7 @@
           (.append writer (str core/nl "% relation: " (api/relation-to-string rel) core/nl))
           (prolog/pretty-print-sentences parser-context ast writer)
           ))
-      (api/try-append-prolog-ext-file project (io/file "bg_and_settings.pl") writer))))
+      )))
 
 (defn build-f-file [plugin ^Project project]
   (let [working-dir (api/get-working-dir project)

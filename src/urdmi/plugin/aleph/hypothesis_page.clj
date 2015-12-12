@@ -31,7 +31,7 @@
 
 (def morder ["+" "-" "#" ""])
 
-(def default-relations [["=" 2] ["\\=" 2] ["<" 2] ["<=" 2] [">" 2] [">=" 2] ["not" 1] ["false" 1]])
+(def default-relations aleph/available-modeh-clauses)
 
 (defn make-term-spec-editor-widget [prop]
   (let [type-prop (SimpleStringProperty. (:type (.getValue prop)))

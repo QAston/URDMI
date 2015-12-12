@@ -1,5 +1,33 @@
+﻿%background knowledge and aleph settings
+% file appended to the generated .b file
 
- % relation: dzial/6
+:-set(interactive,true).
+
+%Generated settings:
+:-mode(1,pracownikprodukcja(-idtowaru,+idpracownika,-poczatek,-koniec,-stawka,-liczbagodzin)).
+:-mode(1,pracownikpersonalia(+idpracownika,-imie,-nazwisko,-nip,-ulica,-nrdomu,-nrlokalu,-miejscowosc)).
+:-mode(1,zamowienieszczegoly(+idzamowienia,-idtowaru,-ilosc,-upust)).
+:-mode(1,produkcja(+idtowaru,-opis,-poczatek,-koniec,-budzet)).
+:-mode(1,'='(+stanowisko,#stanowisko)).
+:-mode(1,'='(+miejscowosc,#miejscowosc)).
+:-mode(1,'='(+nazwadzialu,#nazwadzialu)).
+:-mode(1,dzial(+iddzialu,-nazwadzialu,-ulica,-nrdomudzial,-nrlokaludzial,-miejscowosc)).
+:-mode(1,towar(+idtowaru,-nazwatowaru,-model,-rokprodukcji,-ilosc,-cena)).
+:-mode(1,klient(+idklienta,-imie,-nazwisko,-nip,-ulica,-nrdomu,-nrlokalu,-kod,-miejscowosc)).
+:-mode(1,zamowienie(-idzamowienia,-idklienta,+idpracownika,-data,-platnosc)).
+:-mode(1,pracownik(+idpracownika,+stanowisko,+pensja,+premia,+rokzatrudnienia,+iddzialu)).
+:-determination(pracownik/6,'='/2).
+:-determination(pracownik/6,dzial/6).
+:-determination(pracownik/6,klient/9).
+:-determination(pracownik/6,pracownikpersonalia/8).
+:-determination(pracownik/6,pracownikprodukcja/6).
+:-determination(pracownik/6,produkcja/5).
+:-determination(pracownik/6,towar/6).
+:-determination(pracownik/6,zamowienie/5).
+:-determination(pracownik/6,zamowienieszczegoly/4).
+%Background relations:
+
+% relation: dzial/6
 dzial(1,produkcja,produkcyjna,1,null,lapy).
 dzial(2,sprzedaz,lipowa,1,1,bialystok).
 dzial(3,kontrolajakosci,produkcyjna,1,1,lapy).
@@ -9,7 +37,7 @@ dzial(6,informatyka,lipowa,1,4,bialystok).
 dzial(7,reklamacja,lipowa,1,5,bialystok).
 dzial(8,informatyka,produkcyjna,1,1,lapy).
 
- % relation: klient/9
+% relation: klient/9
 klient(1,izabela,pawlik,4.596557617E9,sosnowa,13,69,10150,bialystok).
 klient(2,beata,janik,4.671630859E9,sosnowa,26,68,10232,bialystok).
 klient(3,genowefa,duda,4.767150878E9,sosnowa,33,0,10845,bialystok).
@@ -164,7 +192,7 @@ klient(151,waldemar,cieslik,7.100037676E9,warsztatowa,27,35,98791,wysokiemazowie
 klient(152,stefania,zieba,7.114440317E9,plater,37,15,99291,wysokiemazowieckie).
 klient(153,henryk,wilczynski,7.14371741E9,swietokrzyska,3,72,99716,wysokiemazowieckie).
 
- % relation: pracownikpersonalia/8
+% relation: pracownikpersonalia/8
 pracownikpersonalia(1,tomasz,janicki,1021728515,sobieskiego,27,27,bialystok).
 pracownikpersonalia(2,rafal,czerwinski,1077880859,zeromskiego,19,78,wasilkow).
 pracownikpersonalia(3,robert,marek,1147766113,podlesna,15,39,czarnabialostocka).
@@ -216,7 +244,7 @@ pracownikpersonalia(48,kazimierz,wysocki,4.404907226E9,jasminowa,32,44,bielskpod
 pracownikpersonalia(49,jacek,wrona,4.423217773E9,piasta,12,32,bialystok).
 pracownikpersonalia(50,grazyna,tomczyk,4.442138671E9,wiejska,17,43,bialystok).
 
- % relation: pracownikprodukcja/6
+% relation: pracownikprodukcja/6
 pracownikprodukcja(100,20,100102,100112,20.0,6).
 pracownikprodukcja(100,7,100102,100112,10.0,null).
 pracownikprodukcja(100,9,100105,100110,10.0,null).
@@ -342,7 +370,7 @@ pracownikprodukcja(99,43,100102,100115,15.0,null).
 pracownikprodukcja(99,7,100105,100110,15.0,null).
 pracownikprodukcja(99,38,100102,100115,14.0,null).
 
- % relation: produkcja/5
+% relation: produkcja/5
 produkcja(82,opis1,100102,100120,94134.52).
 produkcja(83,opis2,100210,100220,50296.02).
 produkcja(84,opis3,100210,100225,66424.56).
@@ -374,7 +402,7 @@ produkcja(109,opis28,100421,100512,77087.4).
 produkcja(110,opis29,100420,100122,93862.92).
 produkcja(111,opis30,100421,100222,47158.81).
 
- % relation: towar/6
+% relation: towar/6
 towar(1,nazwa5,model6,5,8.032,65.0).
 towar(2,nazwa6,model3,5,12.216,300.0).
 towar(3,nazwa7,model5,5,18.615,12.5).
@@ -487,7 +515,7 @@ towar(109,nazwa7,model4,10,18.591,15.0).
 towar(110,nazwa7,model5,10,19.229,23.0).
 towar(111,nazwa7,model6,10,19.153,35.0).
 
- % relation: zamowienie/5
+% relation: zamowienie/5
 zamowienie(1,30,1,100102,1).
 zamowienie(2,139,1,100102,1).
 zamowienie(3,70,3,100102,0).
@@ -801,7 +829,7 @@ zamowienie(310,62,5,100929,1).
 zamowienie(311,22,4,100930,1).
 zamowienie(312,38,5,100930,1).
 
- % relation: zamowienieszczegoly/4
+% relation: zamowienieszczegoly/4
 zamowienieszczegoly(1,72,1,0).
 zamowienieszczegoly(2,36,1,0).
 zamowienieszczegoly(3,47,1,0).
@@ -1393,28 +1421,3 @@ zamowienieszczegoly(312,39,1,0).
 zamowienieszczegoly(312,29,1,0).
 zamowienieszczegoly(312,58,1,0).
 zamowienieszczegoly(312,70,15,5).
-
-:-modeh(1,pracownik(+idpracownika,+stanowisko,+pensja,+premia,+rokzatrudnienia,+iddzialu, -grupa)).
-:-modeb(1,pracownikpersonalia(+idpracownika,-imie,-nazwisko,-nip,-ulica,-nrdomu,-nrlokalu,-miejscowosc)).
-:-modeb(1,dzial(+iddzialu,-nazwadzialu,-ulica,-numerdomu,-numerlokalu,-miejscowosc)).
-:-modeb(1,pracownikprodukcja(-idtowaru,+idpracownika,-poczatek,-koniec,-stawka,-liczbagodzin)).
-:-modeb(1,towar(+idtowaru,-nazwatowaru,-model,-ilosc, -unk,-cena)).
-:-modeb(1,produkcja(+idtowaru,-opis,-poczatek,-koniec,-budzet)).
-:-modeb(1,zamowienie(-idzamowienia,-idklienta,+idpracownika,-data,-platnosc)).
-:-modeb(1,zamowienieszczegoly(+idzamowienia,-idtowaru,-ilosc,-upust)).
-:-modeb(1,klient(+idklienta,-imie,-nazwisko,-nip,-ulica,-nrdomu,-nrlokalu,-kodpocztowy,-miejscowosc)).
-
-:-determination(pracownik/6,dzial/6).
-:-determination(pracownik/6,pracownikpersonalia/8).
-:-determination(pracownik/6,pracownikprodukcja/6).
-:-determination(pracownik/6,produkcja/5).
-:-determination(pracownik/6,zamowienie/5).
-:-determination(pracownik/6,klient/9).
-:-determination(pracownik/6,zamowienieszczegoly/4).
-:-determination(pracownik/6,towar/6).
-:-determination(pracownik/6,klient/9).
-
-﻿%background knowledge and aleph settings
-% file appended to the generated .b file
-:-set(interactive,true).
-
