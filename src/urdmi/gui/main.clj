@@ -116,7 +116,12 @@
                         (.appendText text-area ": ")
                         (.appendText text-area text)
                         (.appendText text-area "\n")
-                        (.select (.getSelectionModel pane) page-index))]
+                        (when (= 1 page-index)
+                          (.select (.getSelectionModel pane) page-index)))]
+    (gui/on-changed (.textProperty app-log-text-area) (fn [obs old new]
+                                                        (.setScrollTop app-log-text-area Double/MAX_VALUE)))
+    (gui/on-changed (.textProperty dm-log-text-area) (fn [obs old new]
+                                                       (.setScrollTop dm-log-text-area Double/MAX_VALUE)))
     (doto widget
       (.. getChildren (add (doto pane
                              (.. getTabs (add application-tab))
@@ -236,7 +241,7 @@
                       (let [input-menu (doto (fx/tree-item {:value {:path [] :name "Input"}})
                                          (.setExpanded true))
                             output-menu (doto (fx/tree-item {:value {:path [] :name "Output"}})
-                                         (.setExpanded true))]
+                                          (.setExpanded true))]
                         (doto (.getChildren item)
                           (.add input-menu)
                           (.add output-menu))
