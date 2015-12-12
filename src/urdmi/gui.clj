@@ -460,10 +460,11 @@
   (let [widget (doto (choice-box relations-list selected-relation)
                  (.setConverter relation-string-converter))
         ]
-    (validate-control validation
-                      widget
-                      (fn [val]
-                        (boolean val)) "You must select a relation")
+    (when validation
+      (validate-control validation
+                        widget
+                        (fn [val]
+                          (boolean val)) "You must select a relation"))
     widget
     ))
 
@@ -477,10 +478,11 @@
                       (.setMaxWidth 30.0)
                       (.setMinWidth 30.0)
                       )]
-    (validate-control validation
-                      term-widget
-                      (fn [val]
-                        (boolean val)) "You must select a term")
+    (when validation
+      (validate-control validation
+                        term-widget
+                        (fn [val]
+                          (boolean val)) "You must select a term"))
     (on-changed selected-relation
                 (fn [obs old new]
                   (when (not= old new)

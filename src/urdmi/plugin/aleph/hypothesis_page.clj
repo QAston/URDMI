@@ -17,7 +17,8 @@
            (javafx.collections ListChangeListener ObservableList ObservableMap MapChangeListener MapChangeListener$Change)
            (javafx.application Platform)
            (javafx.event EventHandler)
-           (java.util Map HashMap)))
+           (java.util Map HashMap)
+           (javafx.collections.transformation SortedList)))
 
 (defn new-relation-spec [[name arity :as relation]]
   {:relation    relation
@@ -98,7 +99,7 @@
 (defn make-clause-specs-table-entry [available-relations clause-specs validation-support]
   (let [new-rel-spec (SimpleObjectProperty. nil)]
     (fx/h-box {:spacing 10.0}
-              (doto (gui/make-relation-select-widget available-relations new-rel-spec validation-support)
+              (doto (gui/make-relation-select-widget (SortedList. available-relations compare) new-rel-spec validation-support)
                 (.setMaxWidth Double/MAX_VALUE)
                 (HBox/setHgrow Priority/ALWAYS))
               (doto (fx/button {:text       "Add"
@@ -242,10 +243,10 @@
                                                                                           (recalc-available-body-res)))))
                                           ))))
     (fx/h-box {:spacing 10.0}
-              (doto (gui/make-relation-select-widget unique-relation-spec-names new-hypothesis-head validation-support)
+              (doto (gui/make-relation-select-widget unique-relation-spec-names new-hypothesis-head nil)
                 (.setMaxWidth Double/MAX_VALUE)
                 (HBox/setHgrow Priority/ALWAYS))
-              (doto (gui/make-relation-select-widget available-body-rels new-hypothesis-body validation-support)
+              (doto (gui/make-relation-select-widget available-body-rels new-hypothesis-body nil)
                 (.setMaxWidth Double/MAX_VALUE)
                 (HBox/setHgrow Priority/ALWAYS))
               (doto (fx/button {:text       "Add"

@@ -87,11 +87,14 @@
        (assoc :relation [(first relation) (dec (second relation))]))
   )
 
+(defn get-relations-for-hypothesis [^Project p]
+  (set (concat available-modeh-clauses (get-background-relations p) (get-example-relations p))))
+
 (defn get-modeh-settings [^Project p]
   (let [clause-settings (group-by :relation (:clause-list (get-clause-settings p)))
         learning-examples (group-by :relation (get-learning-examples-settings p))
 
-        eligible-relations (set (concat available-modeh-clauses (get-background-relations p) (get-example-relations p)))
+        eligible-relations (get-relations-for-hypothesis p)
 
         relations-to-remove (set/difference (set (keys clause-settings)) eligible-relations)
 

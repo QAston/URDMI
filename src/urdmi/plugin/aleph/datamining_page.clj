@@ -69,8 +69,8 @@
                                                       (type-str obj)
                                                       ))))
         value-select-widget (gui/choice-box current-term-values new-value)
-        rel-select-widget (gui/make-relation-select-widget relations-list new-relation validation-support)
-        rel-term-select-widget (gui/make-relation-term-select-widget new-relation new-relation-term validation-support)
+        rel-select-widget (gui/make-relation-select-widget relations-list new-relation nil)
+        rel-term-select-widget (gui/make-relation-term-select-widget new-relation new-relation-term nil)
 
         recalc-available-term-values (fn []
                                        (let [new-term-vals (if (and (.getValue new-relation) (.getValue new-relation-term))
