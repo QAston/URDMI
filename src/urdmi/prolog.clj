@@ -389,8 +389,14 @@ root is the root node."
      (.toString writer)
      )))
 
+(defn pretty-print-expression
+  [^ParserContext parser-context, ast]
+  (let [writer (StringWriter.)]
+    (pretty-print ast parser-context writer)
+    (.toString writer)))
+
 (defn remove-term [term-idx sentence]
-  (let [sentence (update-in sentence[:children]
+  (let [sentence (update-in sentence [:children]
                             (fn [children]
                               (->> children
                                    (map-indexed vector)

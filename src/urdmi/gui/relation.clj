@@ -468,9 +468,7 @@
                     (mapv (fn [ast]
                             (if-let [unwrapped (unwrap-urdmi-edit ast)]
                               unwrapped
-                              (let [writer (StringWriter.)]
-                                (prolog/pretty-print ast parser-context writer)
-                                (.toString writer))))))))))
+                              (prolog/pretty-print-expression parser-context ast)))))))))
 
 (defn relations-model-to-viewmodel [parser-context rel]
   (let [rel-asts @(:data rel)

@@ -253,3 +253,5 @@
                                                 ) asts))]
                                  ))]
                  )))))
+
+(def nl ^String (System/getProperty "line.separator"))
