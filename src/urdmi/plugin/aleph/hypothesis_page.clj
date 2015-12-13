@@ -364,14 +364,37 @@
       "Hypothesised clauses")
     ))
 
+(defn get-hypothesis-settings [clause-settings hypothesis-settings]
+  {:clause     (gui/map-of-mut-to-map-of-imut clause-settings)
+   :hypothesis (let [{:keys [hypothesis-list autogenerate-hypothesis]} hypothesis-settings]
+                 {:autogenerate-hypothesis (gui/to-imut autogenerate-hypothesis)
+                  :hypothesis-list         (into {} (for [[k v] hypothesis-list]
+                                                      [k (gui/to-imut v)]))})})
+
+(defn sync-unique-rel-spec-names [clause-settings hypothesis-settings dependencies]
+  (let [{:keys [all-relations datamining-settings unique-relation-spec-names]} dependencies]
+    (when-let [datamining-settings (.getValue datamining-settings)]
+      (gui/sync-list unique-relation-spec-names (set (map :relation (aleph/get-modeh-settings datamining-settings (get-hypothesis-settings clause-settings hypothesis-settings) all-relations)))))))
+
+(defn sync-generated-hypothesis [clause-settings hypothesis-settings dependencies]
+  (let [{:keys [all-relations datamining-settings]} dependencies
+        {:keys [hypothesis-list]} hypothesis-settings]
+    (when-let [datamining-settings (.getValue datamining-settings)]
+      (let [hypo-list (aleph/get-hypothesis-list datamining-settings (get-hypothesis-settings clause-settings hypothesis-settings) all-relations)]
+        (gui/from-imut hypothesis-list (into {} (for [[k v] hypo-list]
+                                                  [k (gui/observable-list v)])))))))
+
 (deftype HypothesisPage [widget clause-settings hypothesis-settings dependencies user-input]
   gui/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]
     (reset! user-input false)
-    (let [{:keys [all-relations]} dependencies]
-      (gui/sync-list all-relations (concat (core/get-all-relation-names project) default-relations)))
+
+    (let [{:keys [all-relations datamining-settings]} dependencies]
+      (gui/sync-list all-relations (concat (core/get-all-relation-names project) default-relations))
+      (.setValue datamining-settings (core/get-settings-data project aleph/datamining-name))
+      )
     (when modified
       (let [data (core/get-settings-data project (last key))]
         (gui/map-of-mut-from-map-of-imut clause-settings (:clause data))
@@ -380,32 +403,38 @@
           (gui/from-imut hypothesis-list (into {} (for [[k v] (:hypothesis-list (:hypothesis data))]
                                                     [k (gui/observable-list v)]))))
         ))
+    ;sync modified
+    (sync-unique-rel-spec-names clause-settings hypothesis-settings dependencies)
+    (sync-generated-hypothesis clause-settings hypothesis-settings dependencies)
     (reset! user-input true)
     )
   (read-data [this]
-    (core/file-item {:clause     (gui/map-of-mut-to-map-of-imut clause-settings)
-                     :hypothesis (let [{:keys [hypothesis-list autogenerate-hypothesis]} hypothesis-settings]
-                                   {:autogenerate-hypothesis (gui/to-imut autogenerate-hypothesis)
-                                    :hypothesis-list         (into {} (for [[k v] hypothesis-list]
-                                                                        [k (gui/to-imut v)]))})})))
+    (core/file-item (get-hypothesis-settings clause-settings hypothesis-settings))
+    ))
 
-(defn make-widget [{specs-list :clause-list} {head-body-clauses :hypothesis-list generate-head-body-clauses :autogenerate-hypothesis} {available-relations :all-relations} validation-support]
-  (let [unique-relation-spec-names (gui/observable-list)
-        ]
-    (gui/on-any-change specs-list (fn []
-                                    (gui/sync-list unique-relation-spec-names
-                                                   (set (map :relation specs-list)))))
-    (fx/v-box {}
-              (make-clause-specs-table available-relations validation-support specs-list)
-              (make-clause-hypothesis-view validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses)
-              )))
+(defn make-widget [{specs-list :clause-list :as clause-settings} {head-body-clauses :hypothesis-list generate-head-body-clauses :autogenerate-hypothesis :as hypothesis-settings} {available-relations :all-relations unique-relation-spec-names :unique-relation-spec-names :as dependencies} validation-support]
+  (gui/on-any-change specs-list
+                     (fn []
+                       (sync-unique-rel-spec-names clause-settings hypothesis-settings dependencies)))
+  (gui/on-any-change unique-relation-spec-names
+                     (fn []
+                       (sync-generated-hypothesis clause-settings hypothesis-settings dependencies)))
+  (gui/on-changed generate-head-body-clauses (fn [obs old new]
+                                               (when (= new true)
+                                                 (sync-generated-hypothesis clause-settings hypothesis-settings dependencies))))
+  (fx/v-box {}
+            (make-clause-specs-table available-relations validation-support specs-list)
+            (make-clause-hypothesis-view validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses)
+            ))
 
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support)
         clause-settings {:clause-list (gui/observable-list)}
         hypothesis-settings {:hypothesis-list         (gui/observable-map)
                              :autogenerate-hypothesis (SimpleBooleanProperty. true)}
-        dependencies {:all-relations (gui/observable-list)}
+        dependencies {:all-relations              (gui/observable-list)
+                      :unique-relation-spec-names (gui/observable-list)
+                      :datamining-settings        (SimpleObjectProperty.)}
         user-input (atom nil)
         on-update-fn (fn []
                        (when @user-input

@@ -114,22 +114,27 @@
          clause-settings (reduce dissoc clause-settings relations-to-remove)]
      (into (vec (apply concat (vals clause-settings))) generated-modehs))))
 
-(defn generate-hypothesis-settings-from-learning-example-settings [^Project p]
-  (let [available-clauses (set (map :relation (get-modeh-settings p)))
-        head-clauses (get-example-relations (api/get-settings-data p datamining-name))]
-    (into {} (->>
-               (for [head-clause head-clauses]
-                 [head-clause (vec (sort (vec (disj available-clauses head-clause))))])
-               (filter (fn [[f s]]
-                         (not-empty s)))))))
+(defn generate-hypothesis-settings-from-learning-example-settings
+  ([^Project p]
+   (generate-hypothesis-settings-from-learning-example-settings (api/get-settings-data p datamining-name) (api/get-settings-data p hypothesis-name) (map :rel (api/get-relations p))))
+  ([datamining-settings hypothesis-settings all-relation-list]
+   (let [available-clauses (set (map :relation (get-modeh-settings datamining-settings hypothesis-settings all-relation-list)))
+         head-clauses (get-example-relations datamining-settings)]
+     (into {} (->>
+                (for [head-clause head-clauses]
+                  [head-clause (vec (sort (vec (disj available-clauses head-clause))))])
+                (filter (fn [[f s]]
+                          (not-empty s))))))))
 
-(defn get-hypothesis-list [^Project p]
-  (let [hypothesis-settings-data (:hypothesis (api/get-settings-data p hypothesis-name))
-        ]
+(defn get-hypothesis-list
+  ([^Project p]
+   (get-hypothesis-list (api/get-settings-data p datamining-name) (api/get-settings-data p hypothesis-name) (map :rel (api/get-relations p))))
+  ([datamining-settings hypothesis-settings all-relation-list]
+   (let [hypothesis-settings-data (:hypothesis hypothesis-settings)]
     (if (:autogenerate-hypothesis hypothesis-settings-data)
-      (generate-hypothesis-settings-from-learning-example-settings p)
+      (generate-hypothesis-settings-from-learning-example-settings datamining-settings hypothesis-settings all-relation-list)
       (:hypothesis-list hypothesis-settings-data)
-      )))
+      ))))
 
 (defn get-training-examples [^Project project positive parser-context]
   (let [filter-val (if positive :positive :negative)
