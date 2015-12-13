@@ -6,10 +6,6 @@
             [clojure.set :as set]
             [urdmi.plugin.aleph.core :as aleph])
   (:import (org.controlsfx.control PropertySheet PropertySheet$Mode)
-           (org.controlsfx.validation.decoration StyleClassValidationDecoration)
-           (java.io File)
-           (javafx.scene.control ChoiceBox)
-           (javafx.collections ListChangeListener)
            (javafx.beans.property SimpleStringProperty)))
 
 
@@ -28,31 +24,18 @@
   (show-data [this project key modified]
     (reset! user-input false)
     (if modified
-      (let [data (core/get-settings-data project (last key))
-            relations (doall (core/get-all-relation-names project))
-            target-rel (:target-rel data)
-            {:keys [relation relation-term relation-list]} (.getValue (:target-term properties-map))]
-
-        (.setAll relation-list relations)
+      (let [data (core/get-settings-data project (last key))]
         (.setValue (:aleph-loc properties-map) (:aleph-loc data))
-        (.setValue (:swi-prolog-loc properties-map) (:swi-prolog-loc data))
-        (.setValue relation target-rel)
-        (.setValue relation-term (:target-rel-param data))
-        (.setValue (:program properties-map) (get data :program "induce")))
-      (let [{:keys [relation-list]} (.getValue (:target-term properties-map))]
-        (gui/sync-list relation-list (core/get-all-relation-names project))))
+        (.setValue (:swi-prolog-loc properties-map) (:swi-prolog-loc data)))
+      )
     (reset! user-input true)
     )
   (read-data [this]
-    (let [{:keys [relation relation-term]} (.getValue (:target-term properties-map))]
       (core/file-item {:aleph-loc        (.getValue (:aleph-loc properties-map))
                        :swi-prolog-loc   (.getValue (:swi-prolog-loc properties-map))
-                       :target-rel       (.getValue relation)
-                       :target-rel-param (.getValue relation-term)
-                       :program          (.getValue (:program properties-map))
-                       }))))
+                       })))
 
-(def fields [:aleph-loc :swi-prolog-loc :target-term :program])
+(def fields [:aleph-loc :swi-prolog-loc])
 
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support)
@@ -60,7 +43,6 @@
         on-update-fn (fn []
                        (when @user-input
                          (async/put! >ui-requests {:type     :modified-page})))
-        program-property (SimpleStringProperty. "induce")
         properties-map {:aleph-loc      (gui/make-file-property-item-editor "Aleph.pl"
                                                                             (:project-dir project)
                                                                             validation
@@ -75,14 +57,7 @@
                                                                          "Could not find plcon executable in specified path"
                                                                          on-update-fn
                                                                          )
-                        :target-term    (gui/make-target-term-item-editor "Target rel. term (values 0/1)"
-                                                                          validation
-                                                                          on-update-fn)
-                        :program        (gui/->PropertyItemEditor (gui/choice-box (gui/observable-list aleph/programs) program-property) "Mining program" program-property)
                         }
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]
-    (gui/on-changed program-property
-                    (fn [obs old new]
-                        (on-update-fn)))
     (->AlephSettingsPage widget properties-map user-input)))

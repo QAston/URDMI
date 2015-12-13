@@ -13,7 +13,7 @@
 
 (use 'clojure.pprint)
 
-(def settings-filename "aleph.edn")
+(def settings-filename "executable.edn")
 (def hypothesis-name "hypothesis.edn")
 (def datamining-name "datamining.edn")
 
@@ -231,9 +231,7 @@
 
 (defn- validate-settings [project key]
   (let [plugin-settings (api/get-settings-data project settings-filename)]
-    (not (and (core/check-relation-term project [(:target-rel plugin-settings) (:target-rel-param plugin-settings)])
-              (:program plugin-settings)
-              (let [aleph-loc (fs/file (core/resolve-relative-loc (:project-dir project) (:aleph-loc plugin-settings)))
+    (not (and (let [aleph-loc (fs/file (core/resolve-relative-loc (:project-dir project) (:aleph-loc plugin-settings)))
                     swi-prol-loc (core/resolve-executable-loc (:project-dir project) (:swi-prolog-loc plugin-settings))]
                 (and (fs/exists? aleph-loc)
                      (check-plcon-path swi-prol-loc)))))))

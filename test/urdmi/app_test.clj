@@ -78,10 +78,10 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
 (fact "load settings"
       (let [app (base-app (fs/file "dev-resources/projects/aleph_default/"))
             settings (get-in (:project app) (core/model-map-keys core/settings-keyname :dir))]
-        (map first settings) => (just #{"project.edn" "aleph.edn" "datamining.edn" "hypothesis.edn"})
+        (map first settings) => (just #{"project.edn" "executable.edn" "datamining.edn" "hypothesis.edn"})
         @(get-in settings ["project.edn" :data]) => {:working-dir (io/file "build_dir") :active-plugin :aleph}
-        @(get-in settings ["aleph.edn" :data]) => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
-        (core/get-settings-data (:project app) "aleph.edn") => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
+        @(get-in settings ["executable.edn" :data]) => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
+        (core/get-settings-data (:project app) "executable.edn") => {:aleph-loc "C:\\portable\\aleph.pl", :swi-prolog-loc "C:\\Program Files\\pl\\bin\\plcon.exe", :target-rel ["pracownik" 7], :target-rel-param 6}
         (extends? core/Plugin (class (get-in app [:project :plugin]))) => truthy))
 
 (fact "load project populates project fields"
