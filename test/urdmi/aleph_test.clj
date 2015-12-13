@@ -46,11 +46,11 @@ pracownik(3,sprzedawca,1,null,09,2,0).")
 (facts 'aleph/get-advanced-example-data-settings
        (aleph/get-advanced-example-data-settings ["pracownik" 7] 6 "1" "0") => adv-ex-data)
 
-(facts 'aleph/get-learning-examples-settings
+(facts 'aleph/get-learning-examples-settings-project
        (let [project (make-dummy-project [[:settings aleph/datamining-name] (core/file-item {:example {:type :simple, :relation ["pracownik" 7], :term 6, :true-val "1", :false-val "0", :advanced-list []}, :background nil, :program "induce"})])]
-         (aleph/get-learning-examples-settings project) => adv-ex-data)
+         (aleph/get-learning-examples-settings-project project) => adv-ex-data)
        (let [project (make-dummy-project [[:settings aleph/datamining-name] (core/file-item {:example {:type :advanced, :relation nil, :term 6, :true-val "1", :false-val "0", :advanced-list adv-ex-data}, :background nil, :program "induce"})])]
-         (aleph/get-learning-examples-settings project) => adv-ex-data))
+         (aleph/get-learning-examples-settings-project project) => adv-ex-data))
 
 (defn load-default-app []
   (app/load-project (app/init-app) (fs/file "dev-resources/projects/aleph_default/")))

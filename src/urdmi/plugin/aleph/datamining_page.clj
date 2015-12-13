@@ -223,7 +223,7 @@
                                    obj)
                                  ))))))
 
-(defn make-background-data-widget [{include-setting :type selected-relations :relation-list} {:keys [all-relations available-relations]} validation-support]
+(defn make-background-data-widget [{include-setting :type selected-relations :relation-list :as background-settings} example-settings {:keys [all-relations available-relations]} validation-support]
   (let [list (doto (ListSelectionView.)
                (.setSourceHeader (fx/label {:text "Available relations"}))
                (.setTargetHeader (fx/label {:text "Included in background knowledge"}))
@@ -241,16 +241,20 @@
         cb-selected (fx/radio-button {:text "Include selected"})
         cb-group (ToggleGroup.)
         ]
-    (gui/on-any-change all-relations
+    (gui/on-any-change include-setting
                        (fn []
-                         (gui/sync-list available-relations (set/difference (set all-relations) (set selected-relations)))
-                         (.removeAll ^ObservableList selected-relations ^Collection (set/difference (set selected-relations) (set all-relations)))
+
                          ))
 
     (.. cb-group getToggles (setAll [cb-all-but-example cb-all cb-selected]))
     (bidirectional-bind-toggle-to-property cb-group [:all-but-example :all :selected] include-setting)
     (gui/on-changed include-setting (fn [obs old new]
-                                      (.setDisable list (not (= new :selected)))))
+                                      (.setDisable list (not (= new :selected)))
+                                      (when (not (= new :selected))
+                                        (if (= new :all)
+                                          (gui/sync-list available-relations [])
+                                          (gui/sync-list available-relations (set (map :relation (aleph/get-learning-examples-settings (gui/map-of-mut-to-map-of-imut example-settings))))))
+                                        (.removeAll ^ObservableList selected-relations ^Collection (set/difference (set selected-relations) (set all-relations))))))
     (.setValue include-setting :all-but-example)
     (gui/border-wrap (fx/v-box {}
                                cb-all-but-example
@@ -259,6 +263,11 @@
                                list)
                      "Select background relations")))
 
+(defn get-datamining-settings [example-settings background-settings other-settings]
+  (merge {:example    (gui/map-of-mut-to-map-of-imut example-settings)
+                          :background (gui/map-of-mut-to-map-of-imut background-settings)}
+                         (gui/map-of-mut-to-map-of-imut other-settings)))
+
 (deftype DataminingPage [widget example-settings background-settings other-settings dependencies user-input]
   gui/ContentPage
   (container-node [this]
@@ -266,29 +275,30 @@
   (show-data [this project key modified]
     (reset! user-input false)
     (let [{:keys [all-relations relations-term-values]} dependencies]
+      ;external mod handle
       (gui/sync-list all-relations (core/get-all-relation-names project))
       (.putAll relations-term-values (core/generate-relation-term-values-map project)))
-    (when modified
-      (let [data (core/get-settings-data project (last key))]
+
+      (when modified
+        (let [data (core/get-settings-data project (last key))]
         (gui/map-of-mut-from-map-of-imut example-settings (:example data))
         (gui/map-of-mut-from-map-of-imut background-settings (:background data))
-        (gui/map-of-mut-from-map-of-imut other-settings data)
-        ;todo: sync?
-        (gui/sync-list (:available-relations dependencies) (set/difference (set (:all-relations dependencies)) (set (:relation-list (:background data)))))
+        (gui/map-of-mut-from-map-of-imut other-settings data))
         )
-      )
+    ;external mod handle
+      (gui/sync-list (:relation-list background-settings) (aleph/get-background-relations (get-datamining-settings example-settings background-settings other-settings) (:all-relations dependencies)))
+      (gui/sync-list (:available-relations dependencies) (set/difference (set (:all-relations dependencies)) (set (:relation-list background-settings))))
     (reset! user-input true)
     )
   (read-data [this]
-    (core/file-item (merge {:example    (gui/map-of-mut-to-map-of-imut example-settings)
-                            :background (gui/map-of-mut-to-map-of-imut background-settings)}
-                           (gui/map-of-mut-to-map-of-imut other-settings)))))
+    (core/file-item (get-datamining-settings example-settings background-settings other-settings) )
+    ))
 
 (defn make-widget [example-settings background-settings other-settings dependencies validation]
   (fx/v-box {}
             (make-select-program-widget other-settings validation)
             (make-example-data-widget example-settings dependencies validation)
-            (make-background-data-widget background-settings dependencies validation)))
+            (make-background-data-widget background-settings example-settings dependencies validation)))
 
 (defn make-page [>ui-requests project]
   (let [validation (gui/validation-support)
@@ -303,7 +313,7 @@
         other-settings {:program (SimpleStringProperty.)}
         dependencies {:all-relations         (gui/observable-list)
                       :relations-term-values (gui/observable-map)
-                      :available-relations (gui/observable-list)}
+                      :available-relations   (gui/observable-list)}
         user-input (atom nil)
         on-update-fn (fn []
                        (when @user-input

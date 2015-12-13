@@ -47,67 +47,72 @@
     :relation      relation
     :relation-term term}])
 
-(defn get-learning-examples-settings [^Project p]
-  (let [example-data (:example (api/get-settings-data p datamining-name))]
-    (if (= :simple (:type example-data))
-      (get-advanced-example-data-settings (:relation example-data) (:term example-data) (:true-val example-data) (:false-val example-data))
-      (:advanced-list example-data))))
+(defn get-learning-examples-settings [example-data]
+  (if (= :simple (:type example-data))
+    (get-advanced-example-data-settings (:relation example-data) (:term example-data) (:true-val example-data) (:false-val example-data))
+    (:advanced-list example-data)))
 
-(defn get-example-relations [^Project p]
-  (let [learning-examples (get-learning-examples-settings p)]
+(defn get-learning-examples-settings-project [^Project p]
+  (get-learning-examples-settings (:example (api/get-settings-data p datamining-name))))
+
+(defn get-example-relations [datamining-settings]
+  (let [learning-examples (get-learning-examples-settings (:example datamining-settings))]
     (map (fn [example]
-                        [(first (:relation example)) (dec (second (:relation example)))]) learning-examples)
+           [(first (:relation example)) (dec (second (:relation example)))]) learning-examples)
     ))
 
-(defn get-background-relations [^Project p]
-  (let [background-data (:background (api/get-settings-data p datamining-name))
-        learning-example (get-learning-examples-settings p)
-        relation-list (:relation-list background-data)]
-    (sort (vec
-            (condp = (:type background-data)
-              :all-but-example (set/difference (set (map :rel (api/get-relations p))) (set (map :relation learning-example)))
-              :all (map :rel (api/get-relations p))
-              :selected relation-list
-              )))))
 
-(defn get-clause-settings [^Project p]
-  (let [clause-settings-data (:clause (api/get-settings-data p hypothesis-name))]
-    clause-settings-data))
+(defn get-background-relations
+  ([datamining-settings all-relation-list]
+   (let [background-data (:background datamining-settings)
+         learning-example (get-learning-examples-settings (:example datamining-settings))
+         relation-list (:relation-list background-data)]
+     (sort (vec
+             (condp = (:type background-data)
+               :all-but-example (set/difference (set all-relation-list) (set (map :relation learning-example)))
+               :all all-relation-list
+               :selected (set/intersection (set relation-list) (set all-relation-list))
+               )))))
+  ([^Project p]
+   (get-background-relations (api/get-settings-data p datamining-name) (map :rel (api/get-relations p)))))
 
 (defn convert-mode-spec-for-example-modeh [{:keys [relation determinacy terms] :as mode} relation-term]
   (-> mode
-       (assoc :terms
-              (vec (->> terms
-                    (keep-indexed (fn [idx item]
-                                    (if (= idx relation-term)
-                                      nil
-                                      item)))
-                    (map (fn [{:keys [type value] :as term-spec}]
-                           {:type "+" :value value})))))
-       (assoc :relation [(first relation) (dec (second relation))]))
+      (assoc :terms
+             (vec (->> terms
+                       (keep-indexed (fn [idx item]
+                                       (if (= idx relation-term)
+                                         nil
+                                         item)))
+                       (map (fn [{:keys [type value] :as term-spec}]
+                              {:type "+" :value value})))))
+      (assoc :relation [(first relation) (dec (second relation))]))
   )
 
-(defn get-relations-for-hypothesis [^Project p]
-  (set (concat available-modeh-clauses (get-background-relations p) (get-example-relations p))))
+(defn get-relations-for-hypothesis [datamining-settings all-relation-list]
+  (set (concat available-modeh-clauses (get-background-relations datamining-settings all-relation-list) (get-example-relations datamining-settings))))
 
-(defn get-modeh-settings [^Project p]
-  (let [clause-settings (group-by :relation (:clause-list (get-clause-settings p)))
-        learning-examples (group-by :relation (get-learning-examples-settings p))
+(defn get-modeh-settings
+  ([^Project p]
+   (get-modeh-settings (api/get-settings-data p datamining-name) (api/get-settings-data p hypothesis-name) (map :rel (api/get-relations p))))
+  ([datamining-settings hypothesis-settings all-relation-list]
+   (let [clause-settings (group-by :relation (:clause-list (:clause hypothesis-settings)))
+         learning-examples (group-by :relation (get-learning-examples-settings (:example datamining-settings)))
 
-        eligible-relations (get-relations-for-hypothesis p)
+         eligible-relations (get-relations-for-hypothesis datamining-settings all-relation-list)
 
-        relations-to-remove (set/difference (set (keys clause-settings)) eligible-relations)
+         relations-to-remove (set/difference (set (keys clause-settings)) eligible-relations)
 
-        generated-modehs (keep identity
-                               (for [[relation examples] learning-examples]
-                                 (let [first-example (first examples) ;use first example, assume their term is the same
-                                       first-modeh (first (clause-settings relation))] ;base new modeh on first
-                                   (when (and first-example first-modeh)
-                                     (convert-mode-spec-for-example-modeh first-modeh (:relation-term first-example))))))
+         generated-modehs (keep identity
+                                (for [[relation examples] learning-examples]
+                                  (let [first-example (first examples) ;use first example, assume their term is the same
+                                        first-modeh (first (clause-settings relation))] ;base new modeh on first
+                                    (when (and first-example first-modeh)
+                                      (convert-mode-spec-for-example-modeh first-modeh (:relation-term first-example))))))
 
-        ; remove relations that arent used in bg knowledge or examples
-        clause-settings (reduce dissoc clause-settings relations-to-remove)]
-     (into (vec (apply concat (vals clause-settings))) generated-modehs)))
+         ; remove relations that arent used in bg knowledge or examples
+         clause-settings (reduce dissoc clause-settings relations-to-remove)]
+     (into (vec (apply concat (vals clause-settings))) generated-modehs))))
 
 (defn generate-hypothesis-settings-from-learning-example-settings [^Project p]
   (let [available-clauses (set (map :relation (get-modeh-settings p)))
@@ -129,7 +134,7 @@
 (defn get-training-examples [^Project project positive parser-context]
   (let [filter-val (if positive :positive :negative)
         learning-examples (->>
-                            (get-learning-examples-settings project)
+                            (get-learning-examples-settings-project project)
                             (filter (fn [{:keys [value-type]}]
                                       (= value-type filter-val)))
                             (group-by (fn [{:keys [relation relation-term]}]
@@ -265,7 +270,9 @@
                                                          :program          "induce"
                                                          })]] []))
   (model-loaded [this project])
-  (model-modified [this project key])
+  (model-modified [this project key]
+    ;todo: here update incorrect values for when relations change and datamining changes
+    )
   (is-model-invalid [this project key]
     (condp = key
       [:settings settings-filename] (validate-settings project key)
