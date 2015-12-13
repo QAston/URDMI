@@ -43,6 +43,15 @@
     (gui/on-any-change new-relation recalc-available-term-values)
     (gui/on-any-change new-relation-term recalc-available-term-values)
     (gui/on-any-change relations-to-term-values recalc-available-term-values)
+    (gui/validate-control validation-support
+                          pos-value-select-widget
+                      (fn [val]
+                        (boolean val)) "You must select a value of term by which positive examples will be selected")
+
+    (gui/validate-control validation-support
+                          neg-value-select-widget
+                          (fn [val]
+                            (boolean val)) "You must select a value of term by which negative examples will be selected")
 
     (fx/h-box {:spacing   5.0
                :alignment Pos/CENTER_LEFT}
@@ -241,10 +250,6 @@
         cb-selected (fx/radio-button {:text "Include selected"})
         cb-group (ToggleGroup.)
         ]
-    (gui/on-any-change include-setting
-                       (fn []
-
-                         ))
 
     (.. cb-group getToggles (setAll [cb-all-but-example cb-all cb-selected]))
     (bidirectional-bind-toggle-to-property cb-group [:all-but-example :all :selected] include-setting)

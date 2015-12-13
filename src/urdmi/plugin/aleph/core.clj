@@ -131,10 +131,10 @@
    (get-hypothesis-list (api/get-settings-data p datamining-name) (api/get-settings-data p hypothesis-name) (map :rel (api/get-relations p))))
   ([datamining-settings hypothesis-settings all-relation-list]
    (let [hypothesis-settings-data (:hypothesis hypothesis-settings)]
-    (if (:autogenerate-hypothesis hypothesis-settings-data)
-      (generate-hypothesis-settings-from-learning-example-settings datamining-settings hypothesis-settings all-relation-list)
-      (:hypothesis-list hypothesis-settings-data)
-      ))))
+     (if (:autogenerate-hypothesis hypothesis-settings-data)
+       (generate-hypothesis-settings-from-learning-example-settings datamining-settings hypothesis-settings all-relation-list)
+       (:hypothesis-list hypothesis-settings-data)
+       ))))
 
 (defn get-training-examples [^Project project positive parser-context]
   (let [filter-val (if positive :positive :negative)
@@ -229,6 +229,16 @@
       (prolog/pretty-print-sentences parser-context asts writer)
       (api/try-append-prolog-ext-file project (io/file "negative_examples.pl") writer))))
 
+(defn- validate-datamining [project key]
+  (let [datamining-settings (api/get-settings-data project datamining-name)
+        example-settings (:example datamining-settings)]
+    (not
+      (and (or (= (:type example-settings) :advanced)
+               (and (core/check-relation-term project [(:relation example-settings) (:term example-settings)])
+                    (:true-val example-settings)
+                    (:false-val example-settings)))
+           (:program datamining-settings)))))
+
 (defn- validate-settings [project key]
   (let [plugin-settings (api/get-settings-data project settings-filename)]
     (not (and (let [aleph-loc (fs/file (core/resolve-relative-loc (:project-dir project) (:aleph-loc plugin-settings)))
@@ -280,6 +290,7 @@
   (is-model-invalid [this project key]
     (condp = key
       [:settings settings-filename] (validate-settings project key)
+      [:settings datamining-name] (validate-datamining project key)
       false)))
 
 (defn create []
