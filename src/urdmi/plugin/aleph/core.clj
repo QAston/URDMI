@@ -116,7 +116,7 @@
 
 (defn generate-hypothesis-settings-from-learning-example-settings [^Project p]
   (let [available-clauses (set (map :relation (get-modeh-settings p)))
-        head-clauses (get-example-relations p)]
+        head-clauses (get-example-relations (api/get-settings-data p datamining-name))]
     (into {} (->>
                (for [head-clause head-clauses]
                  [head-clause (vec (sort (vec (disj available-clauses head-clause))))])
@@ -236,12 +236,13 @@
 (defrecord AlephPlugin [parser-context]
   api/Plugin
   (run [this project]
-    (let [plugin-settings (api/get-settings-data project settings-filename)
+    (let [datamining-settings (api/get-settings-data project datamining-name)
+          plugin-settings (api/get-settings-data project settings-filename)
           swiprolog-location (core/resolve-executable-loc (:project-dir project) (:swi-prolog-loc plugin-settings))
           aleph-location (core/resolve-relative-loc (:project-dir project) (:aleph-loc plugin-settings))
           working-dir (api/get-working-dir project)
           dbname (get-db-name project)
-          learning-program (get plugin-settings :program "induce")
+          learning-program (get datamining-settings :program "induce")
           learning-program (if (= learning-program "custom")
                              (slurp (io/file (core/get-prolog-ext-dir project) "custom_program.pl"))
                              (str learning-program ".\n"))]
