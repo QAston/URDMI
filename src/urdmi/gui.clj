@@ -475,8 +475,8 @@
         relation-term-list (observable-list (for [i (range arity)]
                                               i))
         term-widget (doto (choice-box relation-term-list selected-relation-term)
-                      (.setMaxWidth 30.0)
-                      (.setMinWidth 30.0)
+                      (.setMaxWidth 50.0)
+                      (.setMinWidth 50.0)
                       )]
     (when validation
       (validate-control validation
