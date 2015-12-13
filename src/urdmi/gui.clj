@@ -454,7 +454,7 @@
 (def relation-string-converter (proxy [StringConverter] []
                                  (fromString [s])
                                  (toString [v]
-                                   (str (first v) "_" (second v) ".pl"))))
+                                   (str (first v) "/" (second v)))))
 
 (defn make-relation-select-widget [relations-list selected-relation validation]
   (let [widget (doto (choice-box relations-list selected-relation)
@@ -549,7 +549,9 @@
   PMutableFromImut
   (from-imut [this imut]
     (if imut
-      (.putAll this imut)
+      (do
+        (.clear this)
+        (.putAll this imut))
       (.clear this))
     ))
 
