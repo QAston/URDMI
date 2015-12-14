@@ -99,7 +99,7 @@
 (defn make-clause-specs-table-entry [available-relations clause-specs validation-support]
   (let [new-rel-spec (SimpleObjectProperty. nil)]
     (fx/h-box {:spacing 10.0}
-              (doto (gui/make-relation-select-widget (SortedList. available-relations compare) new-rel-spec validation-support)
+              (doto (gui/make-relation-select-widget (SortedList. available-relations compare) new-rel-spec nil)
                 (.setMaxWidth Double/MAX_VALUE)
                 (HBox/setHgrow Priority/ALWAYS))
               (doto (fx/button {:text       "Add"
@@ -122,7 +122,7 @@
 
 
         table-view (doto (TableView.)
-                     (.setMinHeight 300.0)
+                     (.setMinHeight 500.0)
                      (.. getColumns
                          (setAll [(doto (TableColumn. "RelationName/Arity")
                                     (.setPrefWidth 150.0)
@@ -323,6 +323,12 @@
                                              ])))
         check-box ^CheckBox (fx/check-box {:text "Generate from datamining learning example (default)"})
         ]
+    ;won't work shitty framework
+    #_(gui/validate-control validation-support check-box (fn [val]
+                                                         (when val
+                                                           (not-empty unique-relation-spec-names)
+                                                           ))
+                          "There must be clauses specified for autogeneration to occur")
     (.setContextMenu tree-table-view context-menu)
     (.setRoot tree-table-view tree-items)
     (.setShowRoot tree-table-view false)
