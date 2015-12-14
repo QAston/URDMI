@@ -277,12 +277,15 @@
                        [[:prolog-ext "bg_and_settings.pl"] (core/file-item (str "%background knowledge and aleph settings " core/nl "% file appended to the generated .b file"))]
                        [[:prolog-ext "custom_program.pl"] (core/file-item "%custom program run instead of the default induce_* command. can be enabled in aleph settings.")]
                        [[:settings settings-filename] (core/file-item
-                                                        {:target-rel       nil
-                                                         :target-rel-param nil
-                                                         :aleph-loc        ""
+                                                        {:aleph-loc        ""
                                                          :swi-prolog-loc   "plcon"
-                                                         :program          "induce"
-                                                         })]] []))
+                                                         })]
+                       [[:settings datamining-name] (core/file-item
+                                                      {:example {:type :simple, :relation nil, :term nil, :true-val nil, :false-val nil, :advanced-list []}, :background {:type :all-but-example, :relation-list []}, :program "induce"})]
+                       [[:settings hypothesis-name] (core/file-item
+                                                      {:clause {:clause-list []}, :hypothesis {:autogenerate-hypothesis true, :hypothesis-list {}}})]] []))
+
+
   (model-loaded [this project])
   (model-modified [this project key]
     ;todo: here update incorrect values for when relations change and datamining changes
