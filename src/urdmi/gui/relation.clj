@@ -504,7 +504,7 @@
     (when modified
       (let [rel-view-model (relations-model-to-viewmodel parser-context
                                                          (get-in project (apply core/model-map-keys data-key)))]
-        (fx/run! (gui/set-data! widget rel-view-model data-key)))))
+        (fx/run<!! (gui/set-data! widget rel-view-model data-key)))))
   (read-data [this]
     (core/map->FileItem (relations-viewmodel-to-model parser-context (gui/get-data widget)))
     ))

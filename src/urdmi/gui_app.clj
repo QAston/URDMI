@@ -29,8 +29,8 @@
 
 (defn generate-menu-viewmodel [^Project p]
   (let [vm (->> (app/get-model-item-keys p true)
-                          (remove #{[:working-dir] [:prolog-ext] [:output] [:relations] [:settings]})
-                           (map (fn [key] {:name (last key) :path key})))]
+                (remove #{[:working-dir] [:prolog-ext] [:output] [:relations] [:settings]})
+                (map (fn [key] {:name (last key) :path key})))]
     (into [{:name "Project" :path []}
            {:name "Build dir (Advanced)" :path [:working-dir]}
            {:name "Prolog extensions (Advanced)" :path [:prolog-ext]}
@@ -95,7 +95,7 @@
 
 (defn validate-model-page [app key]
   (let [app (assoc-in app [:invalid-files key] (handle-is-model-invalid app key))]
-    (fx/run! (update-file-menu-for-page! app key))
+    (fx/run<!! (update-file-menu-for-page! app key))
     app))
 
 (defn validate-model [app]
@@ -106,7 +106,7 @@
 
 (defn get-first-invalid [app]
   (first (first (filter (fn [[k v]]
-                    v) (get app :invalid-files)))))
+                          v) (get app :invalid-files)))))
 
 (defn handle-model-modified [app old-app key]
   (let [app (if (app/plugin app)
@@ -122,7 +122,7 @@
         invalid-files {}
         ui-requests (chan)]
 
-    (fx/run! (.setTitle stage "URDMI"))
+    (fx/run<!! (.setTitle stage "URDMI"))
     (-> app
         (assoc :stage stage)
         (assoc :pages pages)
@@ -186,8 +186,8 @@
                 (assoc-in [:pages key] page-data)
                 (assoc :current-page-key key)
                 (sync-page-data key))]
-    (fx/run! (main-gui/set-content-widget! (:main-screen app) (gui/container-node (:page page-data)))
-             (update-main-menu-for-current-page! app))
+    (fx/run<!! (main-gui/set-content-widget! (:main-screen app) (gui/container-node (:page page-data)))
+               (update-main-menu-for-current-page! app))
     app))
 
 (defn stop-current-job [app]
@@ -197,8 +197,8 @@
                 (dissoc :job))]
       (when-not (realized? (:task job))
         (future-cancel (:task job)))
-      (fx/run! (main-gui/stop-job! (:main-screen app))
-               (update-main-menu-for-current-page! app))
+      (fx/run<!! (main-gui/stop-job! (:main-screen app))
+                 (update-main-menu-for-current-page! app))
       app)
     app))
 
@@ -212,8 +212,8 @@
                                                      {:type   :job-finished
                                                       :result result}))
                                              ))})]
-    (fx/run! (main-gui/start-job! (:main-screen app) name (:ui-requests app))
-             (update-main-menu-for-current-page! app))
+    (fx/run<!! (main-gui/start-job! (:main-screen app) name (:ui-requests app))
+               (update-main-menu-for-current-page! app))
     app))
 
 (defn initialize-watching-fs [app]
@@ -232,9 +232,9 @@
                 )
         proj (:project app)
         files-view-model (generate-menu-viewmodel proj)]
-    (fx/run! (main-gui/set-menu-files! (:main-screen app) files-view-model)
-             (update-main-menu-for-current-page! app)
-             (.setTitle (:stage app) (str "URDMI - " (:project-dir proj))))
+    (fx/run<!! (main-gui/set-menu-files! (:main-screen app) files-view-model)
+               (update-main-menu-for-current-page! app)
+               (.setTitle (:stage app) (str "URDMI - " (:project-dir proj))))
     (-> app
         (validate-model)
         (initialize-watching-fs)
@@ -277,8 +277,8 @@
 (defmethod handle-request :modified-page [{:keys [type]} app]
   (let [data-key (:current-page-key app)
         app (assoc-in app [:pages data-key :modified] true)]
-    (fx/run! (update-file-menu-for-page! app data-key)
-             (update-main-menu-for-current-page! app))
+    (fx/run<!! (update-file-menu-for-page! app data-key)
+               (update-main-menu-for-current-page! app))
     app))
 
 (defn revert-model-page [app page-key]
@@ -286,8 +286,8 @@
                 (assoc-in [:pages page-key :modified] false)
                 (mark-page-needs-data-sync page-key)
                 )]
-    (fx/run! (update-file-menu-for-page! app page-key)
-             (update-main-menu-for-current-page! app))
+    (fx/run<!! (update-file-menu-for-page! app page-key)
+               (update-main-menu-for-current-page! app))
     app))
 
 (defn reload-model-page [app key]
@@ -355,7 +355,7 @@
                 (app/save-model-to-file new-page-key)
                 (handle-model-modified old-app new-page-key))
         ]
-    (fx/run!
+    (fx/run<!!
       (main-gui/update-file-viewmodel!
         (:main-screen app) page-key #(-> %
                                          (assoc :path new-page-key)
@@ -394,22 +394,22 @@
     app))
 
 (defmethod handle-request :stop-job [event app]
-  (fx/run!
+  (fx/run<!!
     (main-gui/add-app-log-entry! (:main-screen app) (str "Job: " (:name (:job app)) " stopped.")))
   (stop-current-job app))
 
 (defmethod handle-request :job-finished [{:keys [type]} app]
-  (fx/run!
+  (fx/run<!!
     (main-gui/add-app-log-entry! (:main-screen app) (str "Job: " (:name (:job app)) " finished.")))
   (stop-current-job app))
 
 (defmethod handle-request :log-datamining [{:keys [type message]} app]
-  (fx/run!
+  (fx/run<!!
     (main-gui/add-dm-log-entry! (:main-screen app) message))
   app)
 
 (defmethod handle-request :log-app [{:keys [type message]} app]
-  (fx/run!
+  (fx/run<!!
     (main-gui/add-app-log-entry! (:main-screen app) message))
   app)
 
@@ -494,7 +494,7 @@
               (load-model-page app (fs/parent file))
               app
               )]
-    (fx/run!
+    (fx/run<!!
       (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
     (-> app
         (app/load-file-to-model file)
@@ -515,7 +515,7 @@
 
 (defn mark-page-desynced [app page-key]
   (let [app (app/mark-file-desynced app page-key)]
-    (fx/run!
+    (fx/run<!!
       (update-main-menu-for-current-page! app)
       (update-file-menu-for-page! app page-key))
     app))
@@ -543,7 +543,7 @@
 
 (defn remove-model-page [app file-key]
   (let [app (remove-pages app (app/get-model-item-keys-by-key (:project app) file-key false))]
-    (fx/run!
+    (fx/run<!!
       (main-gui/remove-file! (:main-screen app) file-key))
     (-> app
         (close-page-if-open file-key)
@@ -589,7 +589,7 @@
     (binding [*out* writer]
       (println "An application error occured:")
       (stacktrace/print-cause-trace e))
-    (fx/run!
+    (fx/run<!!
       (main-gui/add-app-log-entry! (:main-screen app) (str writer)))
     app))
 
@@ -654,9 +654,9 @@
     (.show stage)))
 
 (defmethod handle-request :new-window [event app]
-  (fx/run! (show-main-scene (fx/stage)))
+  (fx/run<!! (show-main-scene (fx/stage)))
   app)
 
 (when (core/dev?)
   (watch-fs/stop-all-channel-watchers!)
-  (fx/run! (show-main-scene (fx/stage))))
+  (fx/run<!! (show-main-scene (fx/stage))))

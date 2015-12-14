@@ -32,7 +32,7 @@
   (container-node [this]
     widget)
   (show-data [this project key modified]
-    (fx/run!
+    (fx/run<!!
       (reset! user-input false)
       (if modified
         ; reload whole page
