@@ -3,15 +3,22 @@
             [urdmi.gui :as gui]
             [urdmi.prolog :as prolog]
             [clojure.java.io :as io]
-            [me.raynes.fs :as fs])
+            [me.raynes.fs :as fs]
+            [urdmi.importer :as importer]
+            )
   (:import (java.io File)
-           (javafx.stage DirectoryChooser)
+           (javafx.stage DirectoryChooser FileChooser)
            (javafx.scene.control Alert Alert$AlertType ButtonType TextInputDialog Dialog TextField ChoiceBox)
            (javafx.geometry Pos HPos)
            (org.controlsfx.validation.decoration StyleClassValidationDecoration)
            (javafx.util Callback StringConverter)
            (javafx.scene.layout Priority HBox GridPane ColumnConstraints)
-           (javafx.beans.property SimpleStringProperty)))
+           (javafx.beans.property SimpleStringProperty SimpleObjectProperty)
+           (org.controlsfx.control ListSelectionView)
+           (javafx.beans.binding StringExpression)
+           (javafx.scene.control.cell TextFieldListCell)
+           (javafx.collections ObservableList)
+           (java.util Collection)))
 
 (defn open-project [stage ^File dir]
   (.showDialog
@@ -24,8 +31,8 @@
 (defn error-alert [stage title text]
   (.showAndWait
     (doto (Alert. Alert$AlertType/ERROR)
-     (.setTitle title)
-     (.setContentText text))))
+      (.setTitle title)
+      (.setContentText text))))
 
 (defn yes-no-dialog [stage content-text title-text]
   (= ButtonType/YES (.orElse (.showAndWait (doto (Alert. Alert$AlertType/CONFIRMATION)
@@ -41,13 +48,13 @@
 
 (defn yes-no-cancel-dialog [stage content-text title-text]
   (button-to-kw (.orElse (.showAndWait (doto (Alert. Alert$AlertType/CONFIRMATION)
-                                             (.setTitle title-text)
-                                             (.. getDialogPane
-                                                 (setContentText content-text))
-                                             (.. getButtonTypes
-                                                 (setAll [ButtonType/YES ButtonType/NO ButtonType/CANCEL])
-                                                 ))
-                                           ) ButtonType/CANCEL)))
+                                         (.setTitle title-text)
+                                         (.. getDialogPane
+                                             (setContentText content-text))
+                                         (.. getButtonTypes
+                                             (setAll [ButtonType/YES ButtonType/NO ButtonType/CANCEL])
+                                             ))
+                                       ) ButtonType/CANCEL)))
 
 (defn save-modified-on-exit [stage]
   (yes-no-cancel-dialog stage "Save modified files on exit" "Some files are modified, but not saved. Do you wish to save them?"))
@@ -116,54 +123,134 @@
     (.setValue (first plugins-list))))
 
 (defn new-project [stage plugins-list location-validation-fn]
-    (.orElse
-      (.showAndWait
-        (let [validation (gui/validation-support)
-              plugin-widget (make-plugin-selection-widget plugins-list)
+  (.orElse
+    (.showAndWait
+      (let [validation (gui/validation-support)
+            plugin-widget (make-plugin-selection-widget plugins-list)
 
-              location-property (SimpleStringProperty. "")
+            location-property (SimpleStringProperty. "")
 
-              location-widget (gui/make-absolute-directory-select-widget
-                                (fs/file ".")
-                                location-property
-                                "Select project directory"
-                                validation
-                                location-validation-fn
-                                "Path must be absolute and point to a directory, directory must not have an existing project in it.")
+            location-widget (gui/make-absolute-directory-select-widget
+                              (fs/file ".")
+                              location-property
+                              "Select project directory"
+                              validation
+                              location-validation-fn
+                              "Path must be absolute and point to a directory, directory must not have an existing project in it.")
 
-              grid (doto (GridPane.)
-                     (.setAlignment Pos/CENTER)
-                     (.setHgap 10.0)
-                     (.setVgap 12.0)
-                     (.. getColumnConstraints
-                         (setAll [(doto (ColumnConstraints.)
-                                    (.setHalignment HPos/LEFT))
-                                  (doto (ColumnConstraints.)
-                                    (.setHalignment HPos/RIGHT))
-                                  ]))
-                     (.add (fx/label {:text "Plugin"}) 0 0)
-                     (.add plugin-widget 1 0)
-                     (.add (fx/label {:text "Project Location"}) 0 1)
-                     (.add location-widget 1 1)
-                     )
+            grid (doto (GridPane.)
+                   (.setAlignment Pos/CENTER)
+                   (.setHgap 10.0)
+                   (.setVgap 12.0)
+                   (.. getColumnConstraints
+                       (setAll [(doto (ColumnConstraints.)
+                                  (.setHalignment HPos/LEFT))
+                                (doto (ColumnConstraints.)
+                                  (.setHalignment HPos/RIGHT))
+                                ]))
+                   (.add (fx/label {:text "Plugin"}) 0 0)
+                   (.add plugin-widget 1 0)
+                   (.add (fx/label {:text "Project Location"}) 0 1)
+                   (.add location-widget 1 1)
+                   )
 
-              dialog (doto (Dialog.)
-                       (.setTitle "New project")
-                       (.. getDialogPane (setContent grid))
-                       (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
-                       (.setResultConverter (reify Callback
-                                              (call [this param]
-                                                (if (= param ButtonType/OK)
-                                                  {:plugin (.getValue plugin-widget) :project-dir (io/file (.getValue location-property))}
-                                                  nil
-                                                  )))))
-              ok-button (.. dialog getDialogPane (lookupButton ButtonType/OK))
-              update-button (fn [obs old new]
-                              (.setDisable ok-button (not (location-validation-fn (.getValue location-property)))))
-                              ]
-          (.setDisable ok-button true)
-          (gui/on-changed location-property update-button)
-          (gui/default-stylesheet (.getDialogPane dialog))
-          dialog
-          ))
-      nil))
+            dialog (doto (Dialog.)
+                     (.setTitle "New project")
+                     (.. getDialogPane (setContent grid))
+                     (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
+                     (.setResultConverter (reify Callback
+                                            (call [this param]
+                                              (if (= param ButtonType/OK)
+                                                {:plugin (.getValue plugin-widget) :project-dir (io/file (.getValue location-property))}
+                                                nil
+                                                )))))
+            ok-button (.. dialog getDialogPane (lookupButton ButtonType/OK))
+            update-button (fn [obs old new]
+                            (.setDisable ok-button (not (location-validation-fn (.getValue location-property)))))
+            ]
+        (.setDisable ok-button true)
+        (gui/on-changed location-property update-button)
+        (gui/default-stylesheet (.getDialogPane dialog))
+        dialog
+        ))
+    nil))
+
+(defn import-relation
+  "Returns relation->ast map or nil"
+  [stage parser-context init-dir]
+  (let [
+        available-relations (gui/observable-list)
+        to-import-relations ^ObservableList (gui/observable-list)
+        selected-file (SimpleObjectProperty.)
+        select-file-label-text (doto (SimpleStringProperty.)
+                                 (.setValue "Import from: ")
+                                 (.concat selected-file))
+        list-selection-view
+        (doto (ListSelectionView.)
+          (.setSourceHeader (fx/label {:text "Relations to skip"}))
+          (.setTargetHeader (fx/label {:text "Relations to import"}))
+          (.setSourceItems available-relations)
+          (.setTargetItems to-import-relations)
+          (.setCellFactory (reify Callback
+                             (call [this list-view]
+                               (TextFieldListCell. gui/relation-string-converter)))))
+
+        file-click-action (fn [e]
+                            (.setValue selected-file
+                                       (.showOpenDialog (doto (FileChooser.)
+                                                          (.setTitle "Select file to import")
+                                                          (.setInitialDirectory init-dir))
+                                                        stage))
+                            )
+
+        dir-click-action (fn [e]
+                           (.setValue selected-file
+                                      (.showDialog (doto (DirectoryChooser.)
+                                                     (.setTitle "Select directory to import")
+                                                     (.setInitialDirectory init-dir))
+                                                   stage))
+                           )
+
+        result (SimpleObjectProperty.)
+
+        grid (doto (GridPane.)
+               (.setAlignment Pos/CENTER)
+               (.setHgap 10.0)
+               (.setVgap 12.0)
+               (.. getColumnConstraints
+                   (setAll [(doto (ColumnConstraints.)
+                              (.setHalignment HPos/LEFT))
+                            (doto (ColumnConstraints.)
+                              (.setHalignment HPos/RIGHT))
+                            ]))
+               (.add (fx/label {:text select-file-label-text}) 0 0)
+               (.add (fx/h-box {:spacing 0.0
+                                :max-width 80.0}
+                               (fx/button {:text      "File"
+                                              :on-action file-click-action})
+                               (fx/button {:text      "Dir"
+                                           :on-action dir-click-action})) 1 0)
+               (.add list-selection-view 0 1 2 1)
+               )
+        dialog (doto (Dialog.)
+                 (.setTitle "Import relations from file")
+                 (.. getDialogPane (setContent grid))
+                 (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
+                 (.setResultConverter (reify Callback
+                                        (call [this param]
+                                          (if (= param ButtonType/OK)
+                                            (.getValue result)
+                                            nil
+                                            )))))]
+    (gui/on-changed selected-file (fn [obs old new]
+                                    (.setValue select-file-label-text (str "Import from: " new))
+                                    (.clear available-relations)
+                                    (.setValue result nil)
+                                    (if new
+                                      (when-let [rels (importer/load-from-location new parser-context)]
+                                        (.setAll to-import-relations ^Collection (keys rels))
+                                        (.setValue result (select-keys rels (vec to-import-relations)))
+                                        )
+                                      (.clear to-import-relations)
+                                      )))
+    (.orElse (.showAndWait dialog) nil)))

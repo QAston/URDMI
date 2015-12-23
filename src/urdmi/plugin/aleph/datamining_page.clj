@@ -240,11 +240,7 @@
                (.setTargetItems selected-relations)
                (.setCellFactory (reify Callback
                                   (call [this list-view]
-                                    (TextFieldListCell. (proxy [StringConverter] []
-                                                          (fromString [s])
-                                                          (toString [v]
-                                                            (core/relation-to-string v)
-                                                            )))))))
+                                    (TextFieldListCell. gui/relation-string-converter)))))
         cb-all (fx/radio-button {:text "Include all"})
         cb-all-but-example (fx/radio-button {:text "Include all but examples (default)"})
         cb-selected (fx/radio-button {:text "Include selected"})

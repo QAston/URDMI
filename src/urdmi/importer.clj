@@ -23,6 +23,8 @@
     (catch Exception e
       {})))
 
+(defn- merge-relation-asts [ast1 ast2]
+  (vec (distinct (concat ast1 ast2))))
 
 (defn load-from-location
   "Returns imported relation data (dictionary relation->asts) from given location (data fetched recursively)."
@@ -30,7 +32,7 @@
   (if (fs/file? file)
     (load-from-file file parser-context)
     (apply merge-with
-           #(vec (distinct (concat %1 %2)))
+           merge-relation-asts
            (for [[dir subdir-names file-names] (fs/iterate-dir file)
                  file-name file-names]
              (load-from-file (fs/file dir file-name) parser-context)))
