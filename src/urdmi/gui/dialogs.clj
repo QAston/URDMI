@@ -239,7 +239,7 @@
                  (.setResultConverter (reify Callback
                                         (call [this param]
                                           (if (= param ButtonType/OK)
-                                            (.getValue result)
+                                            (select-keys (.getValue result) (vec to-import-relations))
                                             nil
                                             )))))]
     (gui/on-changed selected-file (fn [obs old new]
@@ -249,7 +249,7 @@
                                     (if new
                                       (when-let [rels (importer/load-from-location new parser-context)]
                                         (.setAll to-import-relations ^Collection (keys rels))
-                                        (.setValue result (select-keys rels (vec to-import-relations)))
+                                        (.setValue result rels)
                                         )
                                       (.clear to-import-relations)
                                       )))

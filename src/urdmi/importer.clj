@@ -1,7 +1,9 @@
 (ns urdmi.importer
   (:require [urdmi.prolog :as prolog]
             [clojure.java.io :as io]
-            [me.raynes.fs :as fs]))
+            [me.raynes.fs :as fs]
+            [urdmi.core :as core])
+  (:import (urdmi.core Project)))
 
 (defn- functor-filter [{:keys [type]}]
   (= type :ast-functor))
@@ -36,13 +38,30 @@
            (for [[dir subdir-names file-names] (fs/iterate-dir file)
                  file-name file-names]
              (load-from-file (fs/file dir file-name) parser-context)))
-    )
+    ))
+
+(defn- load-from-project [^Project project]
+  (let [pull-ast-data (fn [{:keys [data rel]}]
+                        [rel @data]
+                        )]
+    (->> (core/get-relations project)
+         (map pull-ast-data)
+         (into {}))))
+
+(defn- generate-import-data-diff [import-data]
+  (let [replace-with (for [[[name arity :as rel] asts] import-data]
+                       [[core/relations-keyname (core/relation-to-filename rel)]
+                        (core/map->FileItem {:name (str name "_" arity ".pl")
+                                             :rel  rel
+                                             :data (core/instant asts)})])]
+    (core/->ModelDiff replace-with [])))
+
+(defn generate-model-diff-for-project-import
+  "Return a model diff which imports data into the given project"
+  [^Project project import-data]
+  (let [project-data (load-from-project project)
+        merged-data (merge-with merge-relation-asts project-data import-data)]
+    (generate-import-data-diff merged-data))
   )
-
-
-
-(defn save-import
-  "Appends imported data to relation files in given path"
-  [relation-dir import-data])
 
 

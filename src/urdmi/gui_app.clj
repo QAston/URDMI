@@ -17,7 +17,8 @@
             [urdmi.watch-fs :as watch-fs]
 
             [clojure.core.async :as async]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [urdmi.importer :as importer])
   (:import (urdmi.core Project ModelDiff)
            (java.io StringWriter File)
            (javafx.scene Scene)
@@ -484,8 +485,23 @@
       ))
   app)
 
+(defmethod handle-request :import-relation [{:keys [key]} app]
+  (let [dir (fs/parent (core/item-key-to-file (:project app) key))
+        unsaved (unsaved-pages app)
+        proceed (or (empty? unsaved) (fx/run<!! (dialogs/confirm-saving-all (:stage app) "import")))]
+    (if proceed
+      (if-let [import-data (fx/run<!! (dialogs/import-relation (:stage app) (app/plugin-parser-context app) dir))]
+        (let [model-diff (importer/generate-model-diff-for-project-import (:project app) import-data)]
+          (apply-diff-to-pages app model-diff))
+        app)
+      app)))
+
 (defmulti handle-fs-change (fn [[event file time] app]
                              event))
+
+(defn- add-model-page-to-main-menu! [app file-key]
+  (fx/run<!!
+    (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key}))))
 
 (defn load-model-page [app file]
   (let [file-key (core/file-to-item-key (:project app) file)
@@ -494,8 +510,8 @@
               (load-model-page app (fs/parent file))
               app
               )]
-    (fx/run<!!
-      (main-gui/add-menu-files! (:main-screen app) (list {:name (last file-key) :path file-key})))
+
+    (add-model-page-to-main-menu! app file-key)
     (-> app
         (app/load-file-to-model file)
         (handle-model-modified app file-key))))
@@ -560,19 +576,32 @@
       app
       (remove-model-page app file-key))))
 
+(defn create-or-update-model-page [app [key item :as kitem]]
+  (let [add-to-menu-if-needed (fn [app]
+                                ;new page - add to menu
+                                (when-not (core/get-model-item (:project app) key)
+                                  (add-model-page-to-main-menu! app key))
+                                app)
+
+        reload-page-if-needed (fn [app]
+                                (if-not (get-in app [:pages key :modified])
+                                  ;not modified - reload freely
+                                  (reload-model-page app key)
+                                  ;modified - skip or optionally ask (ask not implemented)
+                                  app)
+                                )]
+    (let [app (-> app
+                  (add-to-menu-if-needed)
+                  (assoc :project (core/set-model-item (:project app) kitem))
+                  (app/save-model-to-file key)
+                  (reload-page-if-needed)
+                  )]
+      app
+      )))
 
 (defn apply-diff-to-pages [app ^ModelDiff diff]
   (if (and diff (instance? ModelDiff diff))
-    (let [app (reduce (fn [app [key item :as kitem]]
-                        (let [app (-> app
-                                      (assoc :project (core/set-model-item (:project app) kitem))
-                                      (app/save-model-to-file key)
-                                      (revert-model-page key)
-                                      (handle-model-modified app key))]
-                          (fs/delete-dir (core/item-key-to-file (:project app) key))
-                          app
-                          )
-                        ) app (:set diff))
+    (let [app (reduce create-or-update-model-page app (:set diff))
           app (reduce (fn [app key]
                         (let [app (remove-model-page app key)]
                           (fs/delete-dir (core/item-key-to-file (:project app) key))
