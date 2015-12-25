@@ -426,18 +426,24 @@
 (defn save-model-pages [app keys]
   (reduce save-model-page app keys))
 
-(defn do-with-saved-project [app operation app-fn]
+(defn save-modified-on-confirm
+  "Returns nil when no confirmation, otherwise app with saved modified pages"
+  [app operation]
   (let [unsaved (unsaved-pages app)
         proceed (or (empty? unsaved) (fx/run<!! (dialogs/confirm-saving-all (:stage app) operation)))]
     (if proceed
       (let [app (save-model-pages app unsaved)]
-        (if (is-model-valid app)
-          (do
-            (app-fn app))
-          (do
-            (fx/run<!! (dialogs/error-alert (:stage app) "Input files contain errors" (str "Cannot " operation " because input files contain invalid data. Please check input menu for files marked red and correct them.")))
-            (switch-page app (get-first-invalid app)))))
-      app)))
+        app))))
+
+(defn do-with-saved-project [app operation app-fn]
+  (if-let [app (save-modified-on-confirm app operation)]
+    (if (is-model-valid app)
+      (do
+        (app-fn app))
+      (do
+        (fx/run<!! (dialogs/error-alert (:stage app) "Input files contain errors" (str "Cannot " operation " because input files contain invalid data. Please check input menu for files marked red and correct them.")))
+        (switch-page app (get-first-invalid app))))
+    app))
 
 (defmethod handle-request :build [event app]
   (do-with-saved-project app "build"
@@ -486,15 +492,14 @@
   app)
 
 (defmethod handle-request :import-relation [{:keys [key]} app]
-  (let [dir (fs/parent (core/item-key-to-file (:project app) key))
-        unsaved (unsaved-pages app)
-        proceed (or (empty? unsaved) (fx/run<!! (dialogs/confirm-saving-all (:stage app) "import")))]
-    (if proceed
+  (let [dir (fs/parent (core/item-key-to-file (:project app) key))]
+    (if-let [app (save-modified-on-confirm app "import relation")]
       (if-let [import-data (fx/run<!! (dialogs/import-relation (:stage app) (app/plugin-parser-context app) dir))]
         (let [model-diff (importer/generate-model-diff-for-project-import (:project app) import-data)]
           (apply-diff-to-pages app model-diff))
         app)
-      app)))
+      app)
+    ))
 
 (defmulti handle-fs-change (fn [[event file time] app]
                              event))
