@@ -116,7 +116,7 @@
                          :foreign "Foreign Key"
                          :none "(None)"})
 
-(defn- relations-column-description-widget [prop]
+(defn- relations-column-description-widget [prop validation validate-fn]
   (let [name-prop (SimpleStringProperty. (:name (.getValue prop)))
         key-prop (SimpleObjectProperty. (:key (.getValue prop)))
         text-field (fx/text-field {:text (.getValue name-prop)})]
@@ -128,6 +128,8 @@
                     (fn [obs old new]
                       (.setValue prop {:name (:name (.getValue prop)) :key new})))
     (gui/loose-bind (.textProperty text-field) name-prop)
+    (gui/validate-control validation text-field validate-fn
+                          "Column name must be a valid prolog term name.")
     (fx/h-box {}
               (doto (gui/choice-box (gui/observable-list (keys key-type-to-string)) key-prop)
                 (.setConverter (proxy
@@ -138,11 +140,15 @@
               text-field)
     ))
 
-(defn relations-column-editor [column-definitions]
+(defn relations-column-editor [column-definitions parser-context]
   (let [
+        validation (gui/validation-support)
+        validate-fn (fn [t]
+                      (boolean (prolog/parse-single-atom parser-context t)))
         column-descriptions-widgets (vec (for [[i definition] (map-indexed vector column-definitions)]
                                            (let [prop (SimpleObjectProperty. definition)]
-                                             (gui/->PropertyItemEditor (relations-column-description-widget prop) (str "Term" i) prop))))
+                                             (gui/->PropertyItemEditor
+                                               (relations-column-description-widget prop validation validate-fn) (str "Term" i) prop))))
 
         editor (doto (PropertySheet. (gui/observable-list column-descriptions-widgets))
                  (.setModeSwitcherVisible false)
@@ -152,7 +158,7 @@
                  )
 
         dialog (doto (Dialog.)
-                 (.setTitle "Edit clause spec")
+                 (.setTitle "Edit relation columns")
                  (.. getDialogPane (setContent editor))
                  (.setWidth 400.0)
                  (.setHeight 600.0)
@@ -162,7 +168,22 @@
                                           (if (= param ButtonType/OK)
                                             (mapv (memfn getValue) column-descriptions-widgets)
                                             nil
-                                            )))))]
+                                            )))))
+
+        ok-button (.. dialog getDialogPane (lookupButton ButtonType/OK))
+        update-button (fn [obs old new]
+                        (.setDisable ok-button
+                                     (->>
+                                       (mapv (memfn getValue) column-descriptions-widgets)
+                                       (mapv (fn [desc]
+                                               (validate-fn (:name desc))))
+                                       (every? boolean)
+                                       (not)))
+                        )]
+    (doseq [prop column-descriptions-widgets]
+      (gui/on-changed (.obj-property prop) update-button))
+    (.setDisable ok-button true)
+    (gui/default-stylesheet (.getDialogPane dialog))
     (.orElse (.showAndWait dialog) nil)))
 
 (defn- make-plugin-selection-widget [plugins-list]

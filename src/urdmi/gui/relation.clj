@@ -290,7 +290,7 @@
                                  text-field)
                                (fx/button {:text      "Edit columns."
                                            :on-action (fn [e]
-                                                        (when-let [new-cols (dialogs/relations-column-editor (mapv (memfn getValue) column-descriptions))]
+                                                        (when-let [new-cols (dialogs/relations-column-editor (mapv (memfn getValue) column-descriptions) parser-context)]
                                                           (doseq [[prop desc] (map vector column-descriptions new-cols)]
                                                             (.setValue prop desc)))
                                                         )}))
