@@ -85,10 +85,10 @@
                  (.. getDialogPane (setContent editor))
                  (.setWidth 400.0)
                  (.setHeight 600.0)
-                 (.. getDialogPane getButtonTypes (setAll [ButtonType/CANCEL ButtonType/APPLY]))
+                 (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
                  (.setResultConverter (reify Callback
                                         (call [this param]
-                                          (if (= param ButtonType/APPLY)
+                                          (if (= param ButtonType/OK)
                                             (-> rel-spec
                                                 (assoc :determinacy (.getValue determinacy))
                                                 (assoc :terms (mapv (memfn getValue) terms)))
