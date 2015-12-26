@@ -1,3 +1,4 @@
+urdmi_cols(col(iddzialu,primary),col(nazwa,none),col(ulica,none),col(nrdomu,none),col(nrlokalu,none),col(miejscowosc,none)).
 dzial(1,produkcja,produkcyjna,1,null,lapy).
 dzial(2,sprzedaz,lipowa,1,1,bialystok).
 dzial(3,kontrolajakosci,produkcyjna,1,1,lapy).
