@@ -5,7 +5,8 @@
             [clojure.string :as string]
             [urdmi.util :as util]
             [urdmi.gui :as gui]
-            [urdmi.core :as core])
+            [urdmi.core :as core]
+            [urdmi.gui.dialogs :as dialogs])
   (:import
     (javafx.scene.layout Region VBox Priority HBox)
     (javafx.geometry Pos Insets)
@@ -241,16 +242,18 @@
                            (.bind col-width (.widthProperty col))
                            (.bind (.textProperty col) (.get column-names col-index))
                            col))]
+
     (gui/on-changed arity-property
                     (fn [obs old-size new-size]
                       (gui/resize-observable-list (.. relation-table
                                                       getColumns) new-size column-factory)))
     ))
 
-(defn- build-name-arity-widget [^SimpleStringProperty name-property ^SimpleLongProperty arity-property ^ValidationSupport validation parser-context]
+(defn- build-name-arity-widget [^SimpleStringProperty name-property ^SimpleLongProperty arity-property column-descriptions ^ValidationSupport validation parser-context]
   (let [widget (doto (fx/h-box {:padding   (Insets. 5 5 5 5)
+                                :spacing   5.0
                                 :alignment (Pos/CENTER_LEFT)}
-                               (fx/label {:padding (Insets. 3 3 3 3)} "Name:")
+                               (fx/label "Name:")
                                (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3)} (.getValue name-property))
 
                                      update-name-prop (fn []
@@ -263,7 +266,7 @@
                                  (gui/validate-control validation text-field (fn [s] (prolog/parse-single-atom parser-context s))
                                                        "Name must be a valid prolog atom")
                                  text-field)
-                               (fx/label {:padding (Insets. 3 3 3 13)} "Arity:")
+                               (fx/label "Arity:")
                                (let [text-field (fx/text-field {:padding (Insets. 3 3 3 3) :pref-width 50} (str (.getValue arity-property)))
                                      test-fn (fn [s]
                                                (try
@@ -284,7 +287,13 @@
                                  (gui/loose-bind (StringExpression/stringExpression arity-property)
                                                  (.textProperty text-field))
 
-                                 text-field))
+                                 text-field)
+                               (fx/button {:text      "Edit columns."
+                                           :on-action (fn [e]
+                                                        (when-let [new-cols (dialogs/relations-column-editor (mapv (memfn getValue) column-descriptions))]
+                                                          (doseq [[prop desc] (map vector column-descriptions new-cols)]
+                                                            (.setValue prop desc)))
+                                                        )}))
 
                  (VBox/setVgrow Priority/NEVER))]
     widget))
@@ -365,8 +374,8 @@
                             (gui/resize-observable-list column-widths new-size (fn [i]
                                                                                  (SimpleLongProperty. 0)))
 
-                            (gui/resize-observable-list column-descriptions new-size (fn [i]
-                                                                                       (SimpleObjectProperty. (core/default-column-descriptions i))))
+                            (gui/resize-observable-list column-names new-size (fn [i]
+                                                                                       (SimpleStringProperty. (core/column-description-to-string (core/default-column-descriptions i)))))
                             ))
 
         validation (gui/validation-support)
@@ -375,7 +384,7 @@
                              (prolog/parse-single-term parser-context s)
                              true))
 
-        widget (list (build-name-arity-widget name-property arity-property validation parser-context)
+        widget (list (build-name-arity-widget name-property arity-property column-descriptions validation parser-context)
                      (build-new-row-widget arity-property column-widths validation validate-term-fn items-list)
                      (build-table-widget items-list arity-property column-names column-widths validation validate-term-fn))]
 
@@ -383,14 +392,17 @@
                     (fn [obs old-size new-size]
                       (set-data-cols items-list new-size)))
 
-    (gui/on-any-change column-descriptions
-                       (fn []
-                         (gui/resize-observable-list column-names (.size column-descriptions) (fn [i] (SimpleStringProperty. "")))
-                         (doseq [[string-property object-property] (map vector column-names column-descriptions)]
-                           (let [new-name (core/column-description-to-string (.getValue object-property))]
-                             (when-not (= new-name (.getValue string-property))
-                               (.setValue string-property new-name))))
-                         ))
+    (.addListener column-descriptions
+                  (reify ListChangeListener
+                    (onChanged [this change]
+                      (while (.next change)
+                        (when (.wasAdded change)
+                          (doseq [idx (range (.getFrom change) (.getTo change))]
+                            (let [desc-prop (.get (.getList change) idx)]
+                              (gui/on-changed desc-prop (fn [obs old new]
+                                                          (.setValue (.get column-names idx) (core/column-description-to-string new)))
+                                              ))))
+                        ))))
 
     (doto (fx/v-box {:focus-traversable true
                      :max-height        Double/MAX_VALUE

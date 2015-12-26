@@ -172,7 +172,7 @@
                          "")))
 
 (defn default-column-descriptions [i]
-  {:name (str "term_" i) :key nil})
+  {:name (str "term_" i) :key :none})
 
 (defn get-relation [^Project p [relname relarity :as rel]]
   (get-in p (model-map-keys relations-keyname (relation-to-filename rel))))

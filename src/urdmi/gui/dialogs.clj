@@ -5,7 +5,7 @@
             [clojure.java.io :as io]
             [me.raynes.fs :as fs]
             [urdmi.importer :as importer]
-            )
+            [urdmi.core :as core])
   (:import (java.io File)
            (javafx.stage DirectoryChooser FileChooser)
            (javafx.scene.control Alert Alert$AlertType ButtonType TextInputDialog Dialog TextField ChoiceBox)
@@ -14,7 +14,7 @@
            (javafx.util Callback StringConverter)
            (javafx.scene.layout Priority HBox GridPane ColumnConstraints)
            (javafx.beans.property SimpleStringProperty SimpleObjectProperty)
-           (org.controlsfx.control ListSelectionView)
+           (org.controlsfx.control ListSelectionView PropertySheet PropertySheet$Mode)
            (javafx.beans.binding StringExpression)
            (javafx.scene.control.cell TextFieldListCell)
            (javafx.collections ObservableList)
@@ -111,6 +111,59 @@
         dialog
         ))
     nil))
+
+(def key-type-to-string {:primary "Primary Key"
+                         :foreign "Foreign Key"
+                         :none "(None)"})
+
+(defn- relations-column-description-widget [prop]
+  (let [name-prop (SimpleStringProperty. (:name (.getValue prop)))
+        key-prop (SimpleObjectProperty. (:key (.getValue prop)))
+        text-field (fx/text-field {:text (.getValue name-prop)})]
+
+    (gui/on-changed name-prop
+                    (fn [obs old new]
+                      (.setValue prop {:name new :key (:key (.getValue prop))})))
+    (gui/on-changed key-prop
+                    (fn [obs old new]
+                      (.setValue prop {:name (:name (.getValue prop)) :key new})))
+    (gui/loose-bind (.textProperty text-field) name-prop)
+    (fx/h-box {}
+              (doto (gui/choice-box (gui/observable-list (keys key-type-to-string)) key-prop)
+                (.setConverter (proxy
+                                 [StringConverter] []
+                                 (toString [obj]
+                                   (key-type-to-string obj)
+                                   ))))
+              text-field)
+    ))
+
+(defn relations-column-editor [column-definitions]
+  (let [
+        column-descriptions-widgets (vec (for [[i definition] (map-indexed vector column-definitions)]
+                                           (let [prop (SimpleObjectProperty. definition)]
+                                             (gui/->PropertyItemEditor (relations-column-description-widget prop) (str "Term" i) prop))))
+
+        editor (doto (PropertySheet. (gui/observable-list column-descriptions-widgets))
+                 (.setModeSwitcherVisible false)
+                 (.setSearchBoxVisible false)
+                 (.setMode PropertySheet$Mode/NAME)
+                 (.setPropertyEditorFactory gui/property-editor-factory)
+                 )
+
+        dialog (doto (Dialog.)
+                 (.setTitle "Edit clause spec")
+                 (.. getDialogPane (setContent editor))
+                 (.setWidth 400.0)
+                 (.setHeight 600.0)
+                 (.. getDialogPane getButtonTypes (setAll [ButtonType/OK, ButtonType/CANCEL]))
+                 (.setResultConverter (reify Callback
+                                        (call [this param]
+                                          (if (= param ButtonType/OK)
+                                            (mapv (memfn getValue) column-descriptions-widgets)
+                                            nil
+                                            )))))]
+    (.orElse (.showAndWait dialog) nil)))
 
 (defn- make-plugin-selection-widget [plugins-list]
   (doto (ChoiceBox.)
@@ -224,10 +277,10 @@
                               (.setHalignment HPos/RIGHT))
                             ]))
                (.add (fx/label {:text select-file-label-text}) 0 0)
-               (.add (fx/h-box {:spacing 0.0
+               (.add (fx/h-box {:spacing   0.0
                                 :max-width 80.0}
                                (fx/button {:text      "File"
-                                              :on-action file-click-action})
+                                           :on-action file-click-action})
                                (fx/button {:text      "Dir"
                                            :on-action dir-click-action})) 1 0)
                (.add list-selection-view 0 1 2 1)
