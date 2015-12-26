@@ -174,6 +174,10 @@
 (defn default-column-descriptions [i]
   {:name (str "term_" i) :key :none})
 
+(defn cols-clause? [clause-ast]
+  (and (= (:type clause-ast) :ast-functor)
+       (= (first (:children clause-ast)) {:type :ast-atom, :name "urdmi_cols"})))
+
 (defn get-relation [^Project p [relname relarity :as rel]]
   (get-in p (model-map-keys relations-keyname (relation-to-filename rel))))
 
@@ -259,4 +263,4 @@
                                  ))]
                  )))))
 
-(def nl ^String (System/getProperty "line.separator"))
+(def ^String nl (System/getProperty "line.separator"))

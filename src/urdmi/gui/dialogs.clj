@@ -129,7 +129,7 @@
                       (.setValue prop {:name (:name (.getValue prop)) :key new})))
     (gui/loose-bind (.textProperty text-field) name-prop)
     (gui/validate-control validation text-field validate-fn
-                          "Column name must be a valid prolog term name.")
+                          "Column name must be a valid prolog atom.")
     (fx/h-box {}
               (doto (gui/choice-box (gui/observable-list (keys key-type-to-string)) key-prop)
                 (.setConverter (proxy

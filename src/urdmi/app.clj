@@ -57,23 +57,39 @@
         (edn/read (java.io.PushbackReader. reader)))))
   )
 
+(defn read-columns-definitions [file parser-context arity-int]
+  (let [first-def (with-open [reader (io/reader file)]
+                    (first (prolog/prolog-sentence-seq parser-context reader)))]
+    (if (core/cols-clause? first-def)
+      (vec (for [coldef (rest (:children first-def))]
+             (let [name (:name (nth (:children coldef) 1))
+                   key (:name (nth (:children coldef) 2))]
+               {:name name :key (keyword key)})))
+      (vec (map core/default-column-descriptions (range arity-int)))
+      )))
+
 (defmethod file-to-model [core/relations-keyname] [cascade-key orig-key ^App app]
   (let [parser-context (plugin-parser-context app)
         [_ name arity] (re-find #"(.*)_(.*)\.pl" (last orig-key))
         arity-int (Integer/valueOf ^String arity)
+        file (item-key-to-file (:project app) orig-key)
         ]
     (map->FileItem
-      {:rel  [name arity-int]
-       :columns (vec (map core/default-column-descriptions (range arity-int)))
-       :data (delay
-               (with-open [reader (io/reader (item-key-to-file (:project app) orig-key))]
-                 (doall (prolog/prolog-sentence-seq parser-context reader))))})
+      {:rel     [name arity-int]
+       :columns (read-columns-definitions file parser-context arity-int)
+       :data    (delay
+                  (with-open [reader (io/reader file)]
+                    (let [prolog-data (doall (prolog/prolog-sentence-seq parser-context reader))]
+                      (if (core/cols-clause? (first prolog-data))
+                        (rest prolog-data)
+                        prolog-data)
+                      )))})
     ))
 
 (defn text-file-to-model [^App app item-key]
   (->
     (->FileItem (delay
-                 (slurp (item-key-to-file (:project app) item-key))))
+                  (slurp (item-key-to-file (:project app) item-key))))
     (assoc :text true)))
 
 (defmethod file-to-model [core/prolog-ext-keyname] [cascade-key orig-key ^App app]
@@ -169,9 +185,18 @@
     (binding [*out* writer]
       (pr data))))
 
+(defn ^String columns-to-prolog-string [columns]
+  (str "urdmi_cols("
+       (string/join ","
+                    (for [column-def columns]
+                      (str "col(" (:name column-def) "," (name (:key column-def)) ")"))) ")."))
+
 (defmethod model-to-file [core/relations-keyname] [cascade-key orig-key ^App app ^Writer writer]
   (let [parser-context (plugin-parser-context app)
-        ast @(:data (get-in (:project app) (apply model-map-keys orig-key)))]
+        file-item (get-in (:project app) (apply model-map-keys orig-key))
+        ast @(:data file-item)]
+    (.append writer (columns-to-prolog-string (:columns file-item)))
+    (.append writer core/nl)
     (prolog/pretty-print-sentences parser-context ast writer)))
 
 (defn text-model-to-file [^App app item-key ^Writer writer]
@@ -228,8 +253,8 @@
                          (count key)
                          (inc (count key)))]
     (->>
-     (get-model-item-keys p true)
-     (filter #(and (<= min-key-length (count %)) (= key (subvec % 0 (count key))))))))
+      (get-model-item-keys p true)
+      (filter #(and (<= min-key-length (count %)) (= key (subvec % 0 (count key))))))))
 
 (defn get-model-dirs [^Project p]
   (vec (for [k [prolog-ext-keyname settings-keyname output-keyname workdir-keyname relations-keyname]]

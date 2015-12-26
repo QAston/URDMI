@@ -288,7 +288,7 @@
                                                  (.textProperty text-field))
 
                                  text-field)
-                               (fx/button {:text      "Edit columns."
+                               (fx/button {:text      "Edit columns"
                                            :on-action (fn [e]
                                                         (when-let [new-cols (dialogs/relations-column-editor (mapv (memfn getValue) column-descriptions) parser-context)]
                                                           (doseq [[prop desc] (map vector column-descriptions new-cols)]
@@ -399,6 +399,7 @@
                         (when (.wasAdded change)
                           (doseq [idx (range (.getFrom change) (.getTo change))]
                             (let [desc-prop (.get (.getList change) idx)]
+                              (.setValue (.get column-names idx) (core/column-description-to-string (.getValue desc-prop)))
                               (gui/on-changed desc-prop (fn [obs old new]
                                                           (.setValue (.get column-names idx) (core/column-description-to-string new)))
                                               ))))

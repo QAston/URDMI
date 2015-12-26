@@ -165,3 +165,7 @@ dzial(8,informatyka,produkcyjna,1,1,lapy).
       (let [proj-dir (fs/file "dev-resources/projects/ace_tilde/")
             app (app/load-project (init-app) proj-dir)]
         (get-in (core/generate-relation-term-values-map (:project app)) [["pracownik" 7] 6]) =>  #{"0" "1"}))
+
+(fact app/columns-to-prolog-string
+      (columns-to-prolog-string [{:name "col1" :key :primary} {:name "col2" :key :primary}])
+      => "urdmi_cols(col(col1,primary),col(col2,primary)).")
