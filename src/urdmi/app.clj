@@ -59,9 +59,12 @@
 
 (defmethod file-to-model [core/relations-keyname] [cascade-key orig-key ^App app]
   (let [parser-context (plugin-parser-context app)
-        [_ name arity] (re-find #"(.*)_(.*)\.pl" (last orig-key))]
+        [_ name arity] (re-find #"(.*)_(.*)\.pl" (last orig-key))
+        arity-int (Integer/valueOf ^String arity)
+        ]
     (map->FileItem
-      {:rel  [name (Integer/valueOf ^String arity)]
+      {:rel  [name arity-int]
+       :columns (vec (map core/default-column-descriptions (range arity-int)))
        :data (delay
                (with-open [reader (io/reader (item-key-to-file (:project app) orig-key))]
                  (doall (prolog/prolog-sentence-seq parser-context reader))))})

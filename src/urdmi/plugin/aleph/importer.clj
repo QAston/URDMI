@@ -1,7 +1,8 @@
 (ns urdmi.plugin.aleph.importer
   (:require [urdmi.prolog :as prolog]
             [clojure.java.io :as io]
-            [me.raynes.fs :as fs]))
+            [me.raynes.fs :as fs]
+            [urdmi.core :as core]))
 
 (defn- functor-filter [{:keys [type]}]
   (= type :ast-functor))
@@ -34,8 +35,8 @@
       (binding [*out* writer]
         (doseq [line bg-file-contents]
           (println line))))
-    (doseq [[[name arity] asts] (group-by relation-sig relation-rows)]
-      (with-open [writer (io/writer (io/file dest-dir "relations" (str name "_" arity ".pl")))]
+    (doseq [[[name arity :as rel] asts] (group-by relation-sig relation-rows)]
+      (with-open [writer (io/writer (io/file dest-dir "relations" (core/relation-to-filename rel)))]
         (prolog/pretty-print-sentences parser-context asts writer)))))
 
 (defn- import-examples [file dest-dir, val-to-add]
@@ -47,8 +48,8 @@
                               (group-by relation-sig))
         ]
     (fs/mkdirs (io/file dest-dir "relations"))
-    (doseq [[[name arity] asts] relations-by-sig]
-      (with-open [writer (io/writer (io/file dest-dir "relations" (str name "_" arity ".pl")) :append true)]
+    (doseq [[[name arity :as rel] asts] relations-by-sig]
+      (with-open [writer (io/writer (io/file dest-dir "relations" (core/relation-to-filename rel)) :append true)]
         (prolog/pretty-print-sentences parser-context asts writer)))))
 
 (defn import-project [src-dir dest-dir]

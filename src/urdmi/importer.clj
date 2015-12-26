@@ -51,7 +51,7 @@
 (defn- generate-import-data-diff [import-data]
   (let [replace-with (for [[[name arity :as rel] asts] import-data]
                        [[core/relations-keyname (core/relation-to-filename rel)]
-                        (core/map->FileItem {:name (str name "_" arity ".pl")
+                        (core/map->FileItem {:name (core/relation-to-filename rel)
                                              :rel  rel
                                              :data (core/instant asts)})])]
     (core/->ModelDiff replace-with [])))

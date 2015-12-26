@@ -163,11 +163,16 @@
 (defn relation-to-filename [[relname relarity]]
   (str relname "_" relarity ".pl"))
 
-(defn relation-to-stringname [[relname relarity]]
-  (str relname "/" relarity))
-
 (defn relation-to-string [[relname relarity]]
   (str relname "/" relarity))
+
+(defn column-description-to-string [{:keys [name key]}]
+  (str name (condp = key :primary " (PK)"
+                         :foreign " (FK)"
+                         "")))
+
+(defn default-column-descriptions [i]
+  {:name (str "term_" i) :key nil})
 
 (defn get-relation [^Project p [relname relarity :as rel]]
   (get-in p (model-map-keys relations-keyname (relation-to-filename rel))))

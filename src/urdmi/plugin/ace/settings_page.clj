@@ -81,7 +81,7 @@
                                                       (TextFieldListCell. (proxy [StringConverter] []
                                                                             (fromString [s])
                                                                             (toString [[v t]]
-                                                                              (str (first v) "_" (second v) ".pl" " " t)))))))
+                                                                              (str (core/relation-to-filename v) " " t)))))))
                                )
         unselected-relations (doto (gui/observable-list)
                                (.addAll joinable-relations)

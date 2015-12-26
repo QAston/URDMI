@@ -15,7 +15,7 @@
     (javafx.util Callback)
     (javafx.scene.control.cell TextFieldTableCell)
     (java.io StringWriter)
-    (javafx.beans.property StringProperty SimpleStringProperty SimpleLongProperty)
+    (javafx.beans.property StringProperty SimpleStringProperty SimpleLongProperty SimpleObjectProperty)
     (javafx.scene.input KeyCodeCombination KeyCode Clipboard ClipboardContent KeyEvent)
     (javafx.event EventHandler)
     (javafx.util.converter DefaultStringConverter)
@@ -45,7 +45,7 @@
             cells)))
 
 (defn default-cell-value [col-index]
-  (str "term" col-index))
+  (str "null"))
 
 (defn- new-relation-row [arity]
   (gui/observable-list (for [i (range arity)]
@@ -221,11 +221,11 @@
         cell
         ))))
 
-(defn- build-table-columns [^TableView relation-table arity-property column-widths validation validate-term-fn]
+(defn- build-table-columns [^TableView relation-table arity-property column-names column-widths validation validate-term-fn]
   (let [context-menu (build-context-menu relation-table arity-property)
         column-factory (fn [col-index]
                          (let [col-width (.get column-widths col-index)
-                               col (doto (TableColumn. (str "term_" col-index))
+                               col (doto (TableColumn.)
                                      (.setEditable true)
                                      (.setCellFactory (column-cell-factory ^TableView relation-table context-menu col-index validation validate-term-fn))
                                      (.setOnEditCommit (reify EventHandler
@@ -239,6 +239,7 @@
                                                                (.get (.getValue cell-data-features) col-index))
                                                              )))]
                            (.bind col-width (.widthProperty col))
+                           (.bind (.textProperty col) (.get column-names col-index))
                            col))]
     (gui/on-changed arity-property
                     (fn [obs old-size new-size]
@@ -345,24 +346,29 @@
                         )))
     widget))
 
-(defn- build-table-widget [table-data arity-property column-widths validation validate-term-fn]
+(defn- build-table-widget [table-data arity-property column-names column-widths validation validate-term-fn]
   (doto (fx/table-view {:editable true})
     (VBox/setVgrow Priority/ALWAYS)
     (.. getSelectionModel
         (setSelectionMode SelectionMode/MULTIPLE))
     (.. getSelectionModel
         (setCellSelectionEnabled true))
-    (build-table-columns arity-property column-widths validation validate-term-fn)
+    (build-table-columns arity-property column-names column-widths validation validate-term-fn)
     (.setItems table-data)))
 
 ;usability improvements:
 ; edit table when typing
-(defn build-relation-edit-widget [name-property arity-property items-list parser-context]
+(defn build-relation-edit-widget [name-property arity-property items-list column-names column-descriptions parser-context]
   (let [column-widths (gui/observable-list)
         _ (gui/on-changed arity-property
                           (fn [obs old-size new-size]
                             (gui/resize-observable-list column-widths new-size (fn [i]
-                                                                                 (SimpleLongProperty. 0)))))
+                                                                                 (SimpleLongProperty. 0)))
+
+                            (gui/resize-observable-list column-descriptions new-size (fn [i]
+                                                                                       (SimpleObjectProperty. (core/default-column-descriptions i))))
+                            ))
+
         validation (gui/validation-support)
         validate-term-fn (fn [s]
                            (if s
@@ -371,11 +377,20 @@
 
         widget (list (build-name-arity-widget name-property arity-property validation parser-context)
                      (build-new-row-widget arity-property column-widths validation validate-term-fn items-list)
-                     (build-table-widget items-list arity-property column-widths validation validate-term-fn))]
+                     (build-table-widget items-list arity-property column-names column-widths validation validate-term-fn))]
 
     (gui/on-changed arity-property
                     (fn [obs old-size new-size]
                       (set-data-cols items-list new-size)))
+
+    (gui/on-any-change column-descriptions
+                       (fn []
+                         (gui/resize-observable-list column-names (.size column-descriptions) (fn [i] (SimpleStringProperty. "")))
+                         (doseq [[string-property object-property] (map vector column-names column-descriptions)]
+                           (let [new-name (core/column-description-to-string (.getValue object-property))]
+                             (when-not (= new-name (.getValue string-property))
+                               (.setValue string-property new-name))))
+                         ))
 
     (doto (fx/v-box {:focus-traversable true
                      :max-height        Double/MAX_VALUE
@@ -383,7 +398,7 @@
       (.. getChildren (setAll (gui/observable-list widget))))
     ))
 
-(deftype RelationWidget [name-property arity-property items-list widget user-input]
+(deftype RelationWidget [name-property arity-property items-list widget user-input column-descriptions]
   gui/DataWidget
   (get-node [this]
     widget)
@@ -396,20 +411,27 @@
                                                           (->> row
                                                                (map (fn [el]
                                                                       (SimpleStringProperty. el)))))))))
+    (.setAll column-descriptions (->> (:columns data)
+                                      (map (fn [column-description]
+                                             (SimpleObjectProperty. column-description)))
+                                      (gui/observable-list)))
     (reset! user-input true))
 
   (get-data [this]
-    {:arity (.getValue arity-property)
-     :name  (.getValue name-property)
-     :items (->> items-list
-                 (mapv (fn [row]
-                         (mapv
-                           (fn [^SimpleStringProperty item]
-                             (.getValue item))
-                           row))))}
+    {:arity   (.getValue arity-property)
+     :name    (.getValue name-property)
+     :items   (->> items-list
+                   (mapv (fn [row]
+                           (mapv
+                             (fn [^SimpleStringProperty item]
+                               (.getValue item))
+                             row))))
+     :columns (mapv (fn [description-property]
+                      (.getValue description-property)
+                      ) column-descriptions)}
     ))
 
-(defn- register-data-change-listeners [>ui-requests name-property arity-property items-list data-modified-fn]
+(defn- register-data-change-listeners [>ui-requests name-property arity-property items-list column-descriptions data-modified-fn]
   (let [change-listener (reify ChangeListener
                           (changed [this obs old new]
                             (data-modified-fn)
@@ -429,31 +451,47 @@
                                                                       (doseq [^SimpleStringProperty cell (.getAddedSubList change)]
                                                                         (.addListener cell change-listener))))
                                               )))
-                            ))
+                            )
+                          (data-modified-fn))
                         (when (.wasRemoved change)
                           (data-modified-fn)))
                       )))
     (.addListener name-property change-listener)
     (.addListener arity-property change-listener)
+    (.addListener column-descriptions
+                  (reify ListChangeListener
+                    (onChanged [this change]
+                      (while (.next change)
+                        (when (.wasAdded change)
+                          (doseq [^SimpleObjectProperty column-description (.getAddedSubList change)]
+                            (.addListener column-description change-listener)
+                            )
+                          (data-modified-fn))
+                        (when (.wasRemoved change)
+                          (data-modified-fn)))
+                      )))
     ))
 
 (defn make-widget [parser-context >ui-requests]
   (let [name-property (SimpleStringProperty. "")
         arity-property (SimpleLongProperty. 0)
         items-list (gui/observable-list)
+        column-names (gui/observable-list)
+        column-descriptions (gui/observable-list)
         user-input (atom nil)
-        relation-edit-widget (build-relation-edit-widget name-property arity-property items-list parser-context)
+        relation-edit-widget (build-relation-edit-widget name-property arity-property items-list column-names column-descriptions parser-context)
         data-modified-fn (fn []
                            (if @user-input
                              (put! >ui-requests {:type :modified-page})))
         ]
-    (register-data-change-listeners >ui-requests name-property arity-property items-list data-modified-fn)
+    (register-data-change-listeners >ui-requests name-property arity-property items-list column-descriptions data-modified-fn)
     (->RelationWidget
       name-property
       arity-property
       items-list
       relation-edit-widget
-      user-input)))
+      user-input
+      column-descriptions)))
 
 (defn- unwrap-urdmi-edit [ast]
   (when (and (= (:type ast) :ast-functor) (= "urdmi_edit" (:name (first (:children ast)))))
@@ -473,9 +511,10 @@
 (defn relations-model-to-viewmodel [parser-context rel]
   (let [rel-asts @(:data rel)
         [rel-name rel-arity] (:rel rel)]
-    {:name  rel-name
-     :arity rel-arity
-     :items (rel-ast-to-table parser-context rel-asts)}
+    {:name    rel-name
+     :arity   rel-arity
+     :items   (rel-ast-to-table parser-context rel-asts)
+     :columns (:columns rel)}
     ))
 
 (defn relations-viewmodel-to-model [parser-context viewmodel]
@@ -492,9 +531,10 @@
                                                {:type     :ast-functor
                                                 :children (list {:type :ast-atom :name "urdmi_edit"} {:type :ast-atom :name item})}))))})))]
 
-    {:name (str (:name viewmodel) "_" (:arity viewmodel) ".pl")
-     :rel  [(:name viewmodel) (:arity viewmodel)]
-     :data (core/instant data)}))
+    {:name    (str (:name viewmodel) "_" (:arity viewmodel) ".pl")
+     :rel     [(:name viewmodel) (:arity viewmodel)]
+     :data    (core/instant data)
+     :columns (:columns viewmodel)}))
 
 (deftype RelationPage [widget parser-context]
   gui/ContentPage
