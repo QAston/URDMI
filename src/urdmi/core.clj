@@ -280,8 +280,8 @@
 
 (defn generate-relation-columnname-map [^Project p]
   (into {}
-        (map (fn [[rel col]]
-               [rel (column-description-to-string col)])
+        (map (fn [[rel cols]]
+               [rel (mapv (fn [col] (column-description-to-string col)) cols)])
              (generate-relation-column-map p))))
 
 (def ^String nl (System/getProperty "line.separator"))

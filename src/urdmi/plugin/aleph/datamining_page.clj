@@ -29,6 +29,7 @@
                                        new-negative-value
                                        all-relations
                                        relations-to-term-values
+                                       relations-colnames
                                        validation-support]
   (let [current-term-values (gui/observable-list)
         pos-value-select-widget (gui/choice-box current-term-values new-positive-value)
@@ -45,8 +46,8 @@
     (gui/on-any-change relations-to-term-values recalc-available-term-values)
     (gui/validate-control validation-support
                           pos-value-select-widget
-                      (fn [val]
-                        (boolean val)) "You must select a value of term by which positive examples will be selected")
+                          (fn [val]
+                            (boolean val)) "You must select a value of term by which positive examples will be selected")
 
     (gui/validate-control validation-support
                           neg-value-select-widget
@@ -57,7 +58,7 @@
                :alignment Pos/CENTER_LEFT}
               (fx/label {:text "Relation term"})
               (gui/make-relation-select-widget all-relations new-relation validation-support)
-              (gui/make-relation-term-select-widget new-relation new-relation-term validation-support)
+              (gui/make-relation-term-select-widget new-relation new-relation-term relations-colnames validation-support)
               (fx/label {:text "Positive value"})
               pos-value-select-widget
               (fx/label {:text "Negative value"})
@@ -65,7 +66,7 @@
               )
     ))
 
-(defn make-new-advanced-example-data-widget [advanced-examples-list table-cols relations-list relations-to-term-values validation-support]
+(defn make-new-advanced-example-data-widget [advanced-examples-list table-cols relations-list relations-to-term-values relations-colnames validation-support]
   (let [new-relation (SimpleObjectProperty. nil)
         new-relation-term (SimpleObjectProperty. nil)
         current-term-values (gui/observable-list)
@@ -79,7 +80,7 @@
                                                       ))))
         value-select-widget (gui/choice-box current-term-values new-value)
         rel-select-widget (gui/make-relation-select-widget relations-list new-relation nil)
-        rel-term-select-widget (gui/make-relation-term-select-widget new-relation new-relation-term nil)
+        rel-term-select-widget (gui/make-relation-term-select-widget new-relation new-relation-term relations-colnames nil)
 
         recalc-available-term-values (fn []
                                        (let [new-term-vals (if (and (.getValue new-relation) (.getValue new-relation-term))
@@ -128,9 +129,11 @@
                                  term-selection            :term
                                  true-val-selection        :true-val
                                  false-val-selection       :false-val :keys [advanced-list]}
-                                {:keys [all-relations relations-term-values]}
+                                {:keys [all-relations relations-term-values relations-colnames]}
                                 validation-support]
-  (let [table-view (doto (TableView.)
+  (let [term-column (doto (TableColumn. "Term")
+                      (.setPrefWidth 100.0))
+        table-view (doto (TableView.)
                      (.setMinHeight 140.0)
                      (.setItems advanced-list)
                      (.. getColumns
@@ -143,14 +146,7 @@
                                                                   (core/relation-to-string (:relation row)))
                                                                 ))))
                                     )
-                                  (doto (TableColumn. "Term")
-                                    (.setPrefWidth 50.0)
-                                    (.setCellValueFactory (reify Callback
-                                                            (call [this data]
-                                                              (let [row (.getValue data)]
-                                                                (SimpleStringProperty.
-                                                                  (str (:relation-term row)))
-                                                                )))))
+                                  term-column
                                   (doto (TableColumn. "Pos/Neg")
                                     (.setPrefWidth 100.0)
                                     (.setCellValueFactory (reify Callback
@@ -171,7 +167,7 @@
                          )
                      (.. getSelectionModel (setSelectionMode SelectionMode/MULTIPLE)))
 
-        new-advanced-entry-widget (make-new-advanced-example-data-widget advanced-list (.getColumns table-view) all-relations relations-term-values validation-support)
+        new-advanced-entry-widget (make-new-advanced-example-data-widget advanced-list (.getColumns table-view) all-relations relations-term-values relations-colnames validation-support)
 
         context-menu (doto (fx/context-menu)
                        (.. getItems (setAll [(fx/menu-item {:text        "Remove"
@@ -188,6 +184,7 @@
                                                        false-val-selection
                                                        all-relations
                                                        relations-term-values
+                                                       relations-colnames
                                                        validation-support)
 
         advanced-widget (fx/v-box {}
@@ -214,6 +211,16 @@
                                                           advanced-widget)))))
     (.setValue simple-advanced-selection :simple)
     (.setContextMenu table-view context-menu)
+    (gui/on-any-change relations-colnames
+                       (fn []
+                         (.setCellValueFactory
+                           term-column
+                           (reify Callback
+                             (call [this data]
+                               (let [row (.getValue data)]
+                                 (SimpleStringProperty.
+                                   (str (:relation-term row) ": "(get (get (gui/to-imut relations-colnames) (:relation row)) (:relation-term row)))
+                                   )))))))
 
     grid
     ))
@@ -266,8 +273,8 @@
 
 (defn get-datamining-settings [example-settings background-settings other-settings]
   (merge {:example    (gui/map-of-mut-to-map-of-imut example-settings)
-                          :background (gui/map-of-mut-to-map-of-imut background-settings)}
-                         (gui/map-of-mut-to-map-of-imut other-settings)))
+          :background (gui/map-of-mut-to-map-of-imut background-settings)}
+         (gui/map-of-mut-to-map-of-imut other-settings)))
 
 (deftype DataminingPage [widget example-settings background-settings other-settings dependencies user-input]
   gui/ContentPage
@@ -275,24 +282,25 @@
     widget)
   (show-data [this project key modified]
     (reset! user-input false)
-    (let [{:keys [all-relations relations-term-values]} dependencies]
+    (let [{:keys [all-relations relations-term-values relations-colnames]} dependencies]
       ;external mod handle
       (gui/sync-list all-relations (core/get-all-relation-names project))
+      (gui/from-imut relations-colnames (core/generate-relation-columnname-map project))
       (.putAll relations-term-values (core/generate-relation-term-values-map project)))
 
-      (when modified
-        (let [data (core/get-settings-data project (last key))]
+    (when modified
+      (let [data (core/get-settings-data project (last key))]
         (gui/map-of-mut-from-map-of-imut example-settings (:example data))
         (gui/map-of-mut-from-map-of-imut background-settings (:background data))
         (gui/map-of-mut-from-map-of-imut other-settings data))
-        )
+      )
     ;external mod handle
-      (gui/sync-list (:relation-list background-settings) (aleph/get-background-relations (get-datamining-settings example-settings background-settings other-settings) (:all-relations dependencies)))
-      (gui/sync-list (:available-relations dependencies) (set/difference (set (:all-relations dependencies)) (set (:relation-list background-settings))))
+    (gui/sync-list (:relation-list background-settings) (aleph/get-background-relations (get-datamining-settings example-settings background-settings other-settings) (:all-relations dependencies)))
+    (gui/sync-list (:available-relations dependencies) (set/difference (set (:all-relations dependencies)) (set (:relation-list background-settings))))
     (reset! user-input true)
     )
   (read-data [this]
-    (core/file-item (get-datamining-settings example-settings background-settings other-settings) )
+    (core/file-item (get-datamining-settings example-settings background-settings other-settings))
     ))
 
 (defn make-widget [example-settings background-settings other-settings dependencies validation]
@@ -314,7 +322,8 @@
         other-settings {:program (SimpleStringProperty.)}
         dependencies {:all-relations         (gui/observable-list)
                       :relations-term-values (gui/observable-map)
-                      :available-relations   (gui/observable-list)}
+                      :available-relations   (gui/observable-list)
+                      :relations-colnames    (gui/observable-map)}
         user-input (atom nil)
         on-update-fn (fn []
                        (when @user-input

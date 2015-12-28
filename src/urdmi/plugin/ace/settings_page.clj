@@ -34,6 +34,8 @@
   (show-data [this project key modified]
     (fx/run<!!
       (reset! user-input false)
+      (let [{:keys [relation relation-list relations-colnames]} (.getValue (:target-term properties-map))]
+        (gui/from-imut relations-colnames (core/generate-relation-columnname-map project)))
       (if modified
         ; reload whole page
         (let [data (core/get-settings-data project (last key))
@@ -50,13 +52,15 @@
           (.setValue target-relation-index (:target-relation-index (:models-format data)))
           (.setAll joinable-relations joinable-rels)
           (.setAll joined-relations (:joined-relations (:models-format data)))
-          )
+
+          ))
         ; just modify relation list
-        (let [{:keys [relation relation-list]} (.getValue (:target-term properties-map))
+        (let [{:keys [relation relation-list relations-colnames]} (.getValue (:target-term properties-map))
               {:keys [joinable-relations]} (.getValue (:models-format properties-map))
               model-relations (map :rel (core/get-relations project))]
           (gui/sync-list relation-list model-relations)
-          (gui/sync-list joinable-relations model-relations))
+          (gui/sync-list joinable-relations model-relations)
+          (gui/from-imut relations-colnames (core/generate-relation-columnname-map project))
         )
       (reset! user-input true)))
   (read-data [this]
@@ -71,17 +75,12 @@
                                             (update :target-relation-index (memfn getValue))))
                        }))))
 
-(defn make-rel-term-list [^ObservableList joinable-relations ^ObservableList joined-relations validation]
+(defn make-rel-term-list [^ObservableList joinable-relations ^ObservableList joined-relations relations-colnames validation]
   (let [
         selected-rels-widget (doto (fx/list-view {:max-height 200.0
                                                   :min-width 300.0})
                                (.setItems joined-relations)
-                               (.setCellFactory (reify Callback
-                                                    (call [this list-view]
-                                                      (TextFieldListCell. (proxy [StringConverter] []
-                                                                            (fromString [s])
-                                                                            (toString [[v t]]
-                                                                              (str (core/relation-to-filename v) " " t)))))))
+
                                )
         unselected-relations (doto (gui/observable-list)
                                (.addAll joinable-relations)
@@ -95,7 +94,7 @@
                      )
         rel-to-add (SimpleObjectProperty.)
         term-to-add (SimpleObjectProperty.)
-        select-rel-widget (gui/make-relation-and-term-select-widget unselected-relations rel-to-add term-to-add validation)
+        select-rel-widget (gui/make-relation-and-term-select-widget unselected-relations rel-to-add term-to-add relations-colnames validation)
         add-widget (fx/h-box {}
                              (doto select-rel-widget
                                (HBox/setHgrow Priority/ALWAYS))
@@ -116,7 +115,18 @@
                          add-widget
                          selected-rels-widget
                          )
+        redraw-column-fn (fn []
+                         (.setCellFactory selected-rels-widget
+                                          (reify Callback
+                                                    (call [this list-view]
+                                                      (TextFieldListCell. (proxy [StringConverter] []
+                                                                            (fromString [s])
+                                                                            (toString [[v t]]
+                                                                              (str (core/relation-to-filename v) " - "
+                                                                              t ": " (get (get (gui/to-imut relations-colnames) v) t)))))))))
         ]
+    (gui/on-any-change relations-colnames
+                       redraw-column-fn)
     (doseq [idx (range 0 (count joined-relations))]
       (added-fn idx))
     (.addListener joined-relations
@@ -150,8 +160,8 @@
                         ))))
     widget))
 
-(defn models-format-settings-widget [target-relation target-relation-index joinable-relations joined-relations validation]
-  (let [term-widget (gui/make-relation-term-select-widget target-relation target-relation-index validation)
+(defn models-format-settings-widget [target-relation target-relation-index joinable-relations joined-relations relations-colnames validation]
+  (let [term-widget (gui/make-relation-term-select-widget target-relation target-relation-index relations-colnames validation)
         grid (doto (GridPane.)
                (.setAlignment Pos/CENTER)
                (.setPrefWidth 500.0)
@@ -171,7 +181,7 @@
                (.add (fx/label {:text "Target rel index term"}) 0 0)
                (.add term-widget 1 0)
                (.add (fx/label {:text "Join rels by index"}) 0 1)
-               (.add (make-rel-term-list joinable-relations joined-relations validation) 1 1)
+               (.add (make-rel-term-list joinable-relations joined-relations relations-colnames validation) 1 1)
                )]
     grid))
 
@@ -193,12 +203,13 @@
         joined-relations (gui/observable-list)
         relation-list (gui/observable-list)
         joinable-relations (gui/observable-list)
+        relations-colnames (gui/observable-map)
         target-relation (SimpleObjectProperty.)
         command-property (SimpleStringProperty.)
         command-widget (gui/text-combo-box (gui/observable-list (sort ace/example-commands)) command-property)
 
         target-relation-index (SimpleObjectProperty. 0)
-        models-format-widget (models-format-settings-widget target-relation target-relation-index joinable-relations joined-relations validation)
+        models-format-widget (models-format-settings-widget target-relation target-relation-index joinable-relations joined-relations relations-colnames validation)
 
 
         properties-map {:ace-loc       (gui/make-executable-item-editor "Ace executable"
@@ -212,14 +223,15 @@
                         :target-term   (gui/->PropertyItemEditor
                                          (gui/make-relation-select-widget relation-list target-relation validation)
                                          "Target relation"
-                                         (SimpleObjectProperty. {:relation target-relation :relation-list relation-list}))
+                                         (SimpleObjectProperty. {:relation target-relation :relation-list relation-list :relations-colnames relations-colnames}))
 
                         :command       (gui/->PropertyItemEditor command-widget "Mining command" command-property)
                         :kb-format     (gui/->PropertyItemEditor kb-format-widget "Knowledgebase format" kb-selected-format)
                         :models-format (gui/->PropertyItemEditor models-format-widget "Models format settings" (SimpleObjectProperty.
                                                                                                                  {:joinable-relations    joinable-relations
                                                                                                                   :joined-relations      joined-relations
-                                                                                                                  :target-relation-index target-relation-index}))}
+                                                                                                                  :target-relation-index target-relation-index
+                                                                                                                  }))}
         properties-list (gui/observable-list (map properties-map fields))
         widget (make-widget properties-list)]
     (.bind (.disableProperty models-format-widget) (.isNotEqualTo (ObjectExpression/objectExpression kb-selected-format) ace/knowledgebase-models))

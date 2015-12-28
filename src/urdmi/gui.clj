@@ -468,57 +468,11 @@
     widget
     ))
 
-(defn make-relation-term-select-widget [selected-relation selected-relation-term validation]
-  (let [arity (if-let [arity (second (.getValue selected-relation))]
-                arity
-                0)
-        relation-term-list (observable-list (for [i (range arity)]
-                                              i))
-        term-widget (doto (choice-box relation-term-list selected-relation-term)
-                      (.setMaxWidth 50.0)
-                      (.setMinWidth 50.0)
-                      )]
-    (when validation
-      (validate-control validation
-                        term-widget
-                        (fn [val]
-                          (boolean val)) "You must select a term"))
-    (on-changed selected-relation
-                (fn [obs old new]
-                  (when (not= old new)
-                    (resize-observable-list relation-term-list (if new (second new) 0) identity)
-                    (.setValue selected-relation-term (let [old-val (.getValue selected-relation-term)
-                                                            new-val (second new)]
-                                                        (when (and old-val new-val)
-                                                          (min old-val (dec new-val)))))
-                    )))
-    term-widget))
-
-(defn make-relation-and-term-select-widget
-  [relation-list selected-relation selected-relation-term validation]
-  (let [relation-widget (make-relation-select-widget relation-list selected-relation validation)
-        relation-term-widget (make-relation-term-select-widget selected-relation selected-relation-term validation)
-        widget (fx/h-box {}
-                         (doto relation-widget
-                           (HBox/setHgrow Priority/ALWAYS)
-                           (.setMaxWidth Double/MAX_VALUE))
-                         relation-term-widget)
-        ]
-    widget))
-
-(defn make-target-term-item-editor [name validation on-update-fn]
-  (let [selected-relation (SimpleObjectProperty. nil)
-        relation-list (observable-list [])
-        selected-relation-term (SimpleObjectProperty. nil)
-        widget (make-relation-and-term-select-widget relation-list selected-relation selected-relation-term validation)]
-    (on-changed selected-relation
-                (fn [obs old new]
-                  (on-update-fn)))
-    (on-changed selected-relation-term
-                (fn [obs old new]
-                  (on-update-fn)))
-    (->PropertyItemEditor widget name (SimpleObjectProperty. {:relation selected-relation :relation-list relation-list :relation-term selected-relation-term}))
-    ))
+(defn relation-term-string-converter [relations-colnames]
+  (proxy [StringConverter] []
+    (fromString [s])
+    (toString [v]
+        (str v ": " (get relations-colnames v)))))
 
 (defn border-wrap [node name]
   (.. (Borders/wrap
@@ -581,22 +535,22 @@
   PAnyObservable
   (on-any-change [this f]
     (on-changed this (fn [obs old new]
-                  (f)))))
+                       (f)))))
 
 (extend-type ObservableList
   PAnyObservable
   (on-any-change [this f]
     (.addListener this (reify ListChangeListener
-                    (onChanged [this c]
-                      (while (.next c))
-                      (f))))))
+                         (onChanged [this c]
+                           (while (.next c))
+                           (f))))))
 
 (extend-type ObservableMap
   PAnyObservable
   (on-any-change [this f]
     (.addListener this (reify MapChangeListener
-                    (onChanged [this c]
-                      (f))))))
+                         (onChanged [this c]
+                           (f))))))
 
 (extend-type Object
   PAnyObservable
@@ -606,3 +560,48 @@
   (doseq [[k v] map-of-mut]
     (on-any-change v f)))
 
+(defn make-relation-term-select-widget [selected-relation selected-relation-term relations-colnames validation]
+  (let [arity (if-let [arity (second (.getValue selected-relation))]
+                arity
+                0)
+        relation-term-list (observable-list (for [i (range arity)]
+                                              i))
+        term-widget (doto (choice-box relation-term-list selected-relation-term)
+                      (.setMaxWidth 150.0)
+                      (.setMinWidth 100.0)
+                      )
+        update-converter (fn [] (when (and (.getValue selected-relation) (get relations-colnames (.getValue selected-relation)))
+                                  (.setConverter term-widget
+                                                 (relation-term-string-converter (get relations-colnames (.getValue selected-relation))))))]
+
+
+    (on-any-change relations-colnames update-converter)
+    (when validation
+      (validate-control validation
+                        term-widget
+                        (fn [val]
+                          (boolean val)) "You must select a term"))
+
+    (on-changed selected-relation
+                (fn [obs old new]
+                  (update-converter)
+                  (when (not= old new)
+                    (resize-observable-list relation-term-list (if new (second new) 0) identity)
+                    (.setValue selected-relation-term (let [old-val (.getValue selected-relation-term)
+                                                            new-val (second new)]
+                                                        (when (and old-val new-val)
+                                                          (min old-val (dec new-val)))))
+                    )))
+    term-widget))
+
+(defn make-relation-and-term-select-widget
+  [relation-list selected-relation selected-relation-term relations-colnames validation]
+  (let [relation-widget (make-relation-select-widget relation-list selected-relation validation)
+        relation-term-widget (make-relation-term-select-widget selected-relation selected-relation-term relations-colnames validation)
+        widget (fx/h-box {}
+                         (doto relation-widget
+                           (HBox/setHgrow Priority/ALWAYS)
+                           (.setMaxWidth Double/MAX_VALUE))
+                         relation-term-widget)
+        ]
+    widget))
