@@ -20,10 +20,28 @@
            (java.util Map HashMap)
            (javafx.collections.transformation SortedList)))
 
-(defn new-relation-spec [[name arity :as relation]]
-  {:relation    relation
-   :determinacy "1"
-   :terms       (vec (repeat arity {:type "+" :value "typename"}))})
+;clauses are generated with single input variable for all possible input variable fields
+;so that tables can be joined based on each kind of key
+(defn new-relation-spec [[name arity :as relation] relation-columns]
+  (let [this-rel-columns (get relation-columns relation (core/default-relation-column-description arity))
+        default-spec (vec (map (fn [{:keys [name key]}] {:type "-" :value name})  this-rel-columns))
+        term-specs (keep-indexed (fn [index {:keys [name key]}]
+                                  (when (not= key :none)
+                                    (assoc default-spec index {:type "+" :value name})))
+                                 this-rel-columns)
+        term-specs (if (empty? term-specs)
+                     [default-spec]
+                     term-specs)]
+
+    (for [term-spec term-specs]
+      {:relation    relation
+       :determinacy "1"
+       :terms       term-spec})))
+
+(defn generate-relation-specs [relation-columns]
+  (apply concat
+    (for [relation (keys relation-columns)]
+     (new-relation-spec relation relation-columns))))
 
 (def m {"+" "+(input)"
         "-" "-(output)"
@@ -96,7 +114,7 @@
                                             )))))]
     (.orElse (.showAndWait dialog) nil)))
 
-(defn make-clause-specs-table-entry [available-relations clause-specs validation-support]
+(defn make-clause-specs-table-entry [available-relations relation-columns clause-specs validation-support]
   (let [new-rel-spec (SimpleObjectProperty. nil)]
     (fx/h-box {:spacing 10.0}
               (doto (gui/make-relation-select-widget (SortedList. available-relations compare) new-rel-spec nil)
@@ -106,7 +124,12 @@
                                 :pref-width 100.0
                                 :disable    (.isNull (ObjectExpression/objectExpression new-rel-spec))
                                 :on-action  (fn [e]
-                                              (.add clause-specs (new-relation-spec (.getValue new-rel-spec))))})
+                                              (.addAll clause-specs (new-relation-spec (.getValue new-rel-spec) relation-columns)))})
+                (HBox/setHgrow Priority/NEVER))
+              (doto (fx/button {:text       "Add all"
+                                :pref-width 120.0
+                                :on-action  (fn [e]
+                                              (.addAll clause-specs (generate-relation-specs relation-columns)))})
                 (HBox/setHgrow Priority/NEVER))
               )))
 
@@ -115,10 +138,10 @@
     (.. getColumns
         (setAll []))))
 
-(defn make-clause-specs-table [available-relations validation-support specs-list]
+(defn make-clause-specs-table [available-relations relation-columns validation-support specs-list]
   (let [terms-count (SimpleIntegerProperty. 0)
 
-        new-clause (make-clause-specs-table-entry available-relations specs-list validation-support)
+        new-clause (make-clause-specs-table-entry available-relations relation-columns specs-list validation-support)
 
 
         table-view (doto (TableView.)
@@ -325,10 +348,10 @@
         ]
     ;won't work shitty framework
     #_(gui/validate-control validation-support check-box (fn [val]
-                                                         (when val
-                                                           (not-empty unique-relation-spec-names)
-                                                           ))
-                          "There must be clauses specified for autogeneration to occur")
+                                                           (when val
+                                                             (not-empty unique-relation-spec-names)
+                                                             ))
+                            "There must be clauses specified for autogeneration to occur")
     (.setContextMenu tree-table-view context-menu)
     (.setRoot tree-table-view tree-items)
     (.setShowRoot tree-table-view false)
@@ -397,9 +420,10 @@
   (show-data [this project key modified]
     (reset! user-input false)
 
-    (let [{:keys [all-relations datamining-settings]} dependencies]
+    (let [{:keys [all-relations datamining-settings relation-columns]} dependencies]
       (gui/sync-list all-relations (concat (core/get-all-relation-names project) default-relations))
       (.setValue datamining-settings (core/get-settings-data project aleph/datamining-name))
+      (gui/from-imut relation-columns (core/generate-relation-column-map project))
       )
     (when modified
       (let [data (core/get-settings-data project (last key))]
@@ -418,7 +442,9 @@
     (core/file-item (get-hypothesis-settings clause-settings hypothesis-settings))
     ))
 
-(defn make-widget [{specs-list :clause-list :as clause-settings} {head-body-clauses :hypothesis-list generate-head-body-clauses :autogenerate-hypothesis :as hypothesis-settings} {available-relations :all-relations unique-relation-spec-names :unique-relation-spec-names :as dependencies} validation-support]
+(defn make-widget [{specs-list :clause-list :as clause-settings}
+                   {head-body-clauses :hypothesis-list generate-head-body-clauses :autogenerate-hypothesis :as hypothesis-settings}
+                   {available-relations :all-relations unique-relation-spec-names :unique-relation-spec-names relation-columns :relation-columns :as dependencies} validation-support]
   (gui/on-any-change specs-list
                      (fn []
                        (sync-unique-rel-spec-names clause-settings hypothesis-settings dependencies)))
@@ -429,7 +455,7 @@
                                                (when (= new true)
                                                  (sync-generated-hypothesis clause-settings hypothesis-settings dependencies))))
   (fx/v-box {}
-            (make-clause-specs-table available-relations validation-support specs-list)
+            (make-clause-specs-table available-relations relation-columns validation-support specs-list)
             (make-clause-hypothesis-view validation-support head-body-clauses unique-relation-spec-names generate-head-body-clauses)
             ))
 
@@ -440,7 +466,8 @@
                              :autogenerate-hypothesis (SimpleBooleanProperty. true)}
         dependencies {:all-relations              (gui/observable-list)
                       :unique-relation-spec-names (gui/observable-list)
-                      :datamining-settings        (SimpleObjectProperty.)}
+                      :datamining-settings        (SimpleObjectProperty.)
+                      :relation-columns           (gui/observable-map)}
         user-input (atom nil)
         on-update-fn (fn []
                        (when @user-input

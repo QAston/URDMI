@@ -272,4 +272,16 @@
                                  ))]
                  )))))
 
+(defn generate-relation-column-map [^Project p]
+  (let [parser-context (get-parser-context (:plugin p))]
+    (into {} (for [{:keys [columns rel]} (get-relations p)]
+               [rel columns]
+               ))))
+
+(defn generate-relation-columnname-map [^Project p]
+  (into {}
+        (map (fn [[rel col]]
+               [rel (column-description-to-string col)])
+             (generate-relation-column-map p))))
+
 (def ^String nl (System/getProperty "line.separator"))
