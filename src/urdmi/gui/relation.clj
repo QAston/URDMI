@@ -375,7 +375,7 @@
                                                                                  (SimpleLongProperty. 0)))
 
                             (gui/resize-observable-list column-names new-size (fn [i]
-                                                                                       (SimpleStringProperty. (core/column-description-to-string (core/default-column-descriptions i)))))
+                                                                                       (SimpleStringProperty. (core/column-description-to-string (core/default-column-description i)))))
                             ))
 
         validation (gui/validation-support)

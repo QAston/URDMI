@@ -60,12 +60,9 @@
 (defn read-columns-definitions [file parser-context arity-int]
   (let [first-def (with-open [reader (io/reader file)]
                     (first (prolog/prolog-sentence-seq parser-context reader)))]
-    (if (core/cols-clause? first-def)
-      (vec (for [coldef (rest (:children first-def))]
-             (let [name (:name (nth (:children coldef) 1))
-                   key (:name (nth (:children coldef) 2))]
-               {:name name :key (keyword key)})))
-      (vec (map core/default-column-descriptions (range arity-int)))
+    (if (cols-clause? first-def)
+      (parse-cols-clause first-def)
+      (core/default-relation-column-description arity-int)
       )))
 
 (defmethod file-to-model [core/relations-keyname] [cascade-key orig-key ^App app]

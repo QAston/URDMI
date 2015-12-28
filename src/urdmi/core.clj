@@ -171,12 +171,21 @@
                          :foreign " (FK)"
                          "")))
 
-(defn default-column-descriptions [i]
+(defn default-column-description [i]
   {:name (str "term_" i) :key :none})
+
+(defn default-relation-column-description [arity]
+  (with-meta (vec (map default-column-description (range arity))) {:default true}))
 
 (defn cols-clause? [clause-ast]
   (and (= (:type clause-ast) :ast-functor)
        (= (first (:children clause-ast)) {:type :ast-atom, :name "urdmi_cols"})))
+
+(defn parse-cols-clause [clause-ast]
+  (vec (for [coldef (rest (:children clause-ast))]
+         (let [name (:name (nth (:children coldef) 1))
+               key (:name (nth (:children coldef) 2))]
+           {:name name :key (keyword key)}))))
 
 (defn get-relation [^Project p [relname relarity :as rel]]
   (get-in p (model-map-keys relations-keyname (relation-to-filename rel))))
