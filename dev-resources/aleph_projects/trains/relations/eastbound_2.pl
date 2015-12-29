@@ -1,3 +1,4 @@
+urdmi_cols(col(train,foreign),col(group,none)).
 eastbound(west6,0).
 eastbound(west7,0).
 eastbound(west8,0).

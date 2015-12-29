@@ -1,3 +1,4 @@
+urdmi_cols(col(car,foreign)).
 open_car(car_11).
 open_car(car_13).
 open_car(car_14).

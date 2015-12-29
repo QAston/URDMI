@@ -1,0 +1,1 @@
+{:example {:type :simple, :relation ["p" 4], :term 3, :true-val "1", :false-val "0", :advanced-list []}, :background {:type :all-but-example, :relation-list [["p" 4]]}, :program "custom"}

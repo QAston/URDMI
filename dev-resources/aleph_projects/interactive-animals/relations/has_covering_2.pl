@@ -1,3 +1,4 @@
+urdmi_cols(col(animal,foreign),col(covering,foreign)).
 has_covering(dog,hair).
 has_covering(dolphin,none).
 has_covering(platypus,hair).

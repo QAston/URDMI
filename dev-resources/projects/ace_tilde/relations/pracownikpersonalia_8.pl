@@ -1,3 +1,4 @@
+urdmi_cols(col(idpracownika,foreign),col(imie,none),col(nazwisko,none),col(nip,none),col(ulica,none),col(nrdomu,none),col(nrlokalu,none),col(miejscowosc,none)).
 pracownikpersonalia(1,tomasz,janicki,1021728515,sobieskiego,27,27,bialystok).
 pracownikpersonalia(2,rafal,czerwinski,1077880859,zeromskiego,19,78,wasilkow).
 pracownikpersonalia(3,robert,marek,1147766113,podlesna,15,39,czarnabialostocka).

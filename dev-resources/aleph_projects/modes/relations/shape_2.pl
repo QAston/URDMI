@@ -1,3 +1,4 @@
+urdmi_cols(col(car,foreign),col(shape,none)).
 shape(car_11,rectangle).
 shape(car_12,rectangle).
 shape(car_13,rectangle).

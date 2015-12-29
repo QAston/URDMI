@@ -15,29 +15,6 @@
 :- set(explore,true).
 :- set(max_features,10).
 
-:- modeh(1,eastbound(+train)).
-:- modeb(1,short(+car)).
-:- modeb(1,closed(+car)).
-:- modeb(1,long(+car)).
-:- modeb(1,open_car(+car)).
-:- modeb(1,double(+car)).
-:- modeb(1,jagged(+car)).
-:- modeb(1,shape(+car,#shape)).
-:- modeb(1,load(+car,#shape,#int)).
-:- modeb(1,wheels(+car,#int)).
-:- modeb(*,has_car(+train,-car)).
-
-:- determination(eastbound/1,short/1).
-:- determination(eastbound/1,closed/1).
-:- determination(eastbound/1,long/1).
-:- determination(eastbound/1,open_car/1).
-:- determination(eastbound/1,double/1).
-:- determination(eastbound/1,jagged/1).
-:- determination(eastbound/1,shape/2).
-:- determination(eastbound/1,wheels/2).
-:- determination(eastbound/1,has_car/2).
-:- determination(eastbound/1,load/3).
-
 % show examples as boolean vectors
 
 :- set(portray_examples,true).
@@ -63,29 +40,3 @@ write_features(Example,_):-
         fail.
 write_features(_,Class):-
 	writeq(Class), nl.
-
-
-% type definitions
-
-
-
-
-% eastbound train 1
-
-% eastbound train 2
-
-% eastbound train 3
-
-% eastbound train 4
-
-% eastbound train 5
-
-% westbound train 6
-
-% westbound train 7
-
-% westbound train 8
-
-% westbound train 9
-
-% westbound train 10

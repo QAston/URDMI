@@ -1,3 +1,4 @@
+urdmi_cols(col(car,foreign)).
 short(car_12).
 short(car_14).
 short(car_21).

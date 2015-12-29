@@ -9,20 +9,6 @@
 % by DeRaedt et al in Claudien. Constraints that are ``nearly true''
 % can be obtained by changing the noise parameter.
 
-:- modeh(1,false).
-
-:- modeb(*,human(-person)).
-
-:- modeb(1,male(+person)).
-:- modeb(1,female(+person)).
-:- modeb(1,not(male(+person))).
-:- modeb(1,not(female(+person))).
-
-:- determination(false/0,human/1).
-:- determination(false/0,male/1).
-:- determination(false/0,female/1).
-:- determination(false/0,(not)/1).
-
 :- set(noise,0).
 
 

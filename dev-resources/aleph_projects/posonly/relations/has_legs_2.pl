@@ -1,3 +1,4 @@
+urdmi_cols(col(animal,foreign),col(legs,none)).
 has_legs(dog,4).
 has_legs(dolphin,0).
 has_legs(platypus,2).

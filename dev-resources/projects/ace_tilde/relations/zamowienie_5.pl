@@ -1,3 +1,4 @@
+urdmi_cols(col(idzamowienia,primary),col(idklienta,foreign),col(idpracownika,foreign),col(data,none),col(platnosc,none)).
 zamowienie(1,30,1,100102,1).
 zamowienie(2,139,1,100102,1).
 zamowienie(3,70,3,100102,0).

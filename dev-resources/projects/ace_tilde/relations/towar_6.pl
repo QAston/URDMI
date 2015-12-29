@@ -1,3 +1,4 @@
+urdmi_cols(col(idtowaru,primary),col(nazwa,none),col(model,none),col(rokprodukcji,none),col(ilosc,none),col(cena,none)).
 towar(1,nazwa5,model6,5,8.032,65.0).
 towar(2,nazwa6,model3,5,12.216,300.0).
 towar(3,nazwa7,model5,5,18.615,12.5).

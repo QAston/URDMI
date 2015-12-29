@@ -1,3 +1,4 @@
+urdmi_cols(col(car,primary)).
 car(car_11).
 car(car_12).
 car(car_13).

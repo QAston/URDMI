@@ -1,3 +1,4 @@
+urdmi_cols(col(animal,foreign)).
 has_eggs(platypus).
 has_eggs(trout).
 has_eggs(herring).

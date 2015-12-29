@@ -1,3 +1,4 @@
+urdmi_cols(col(idzamowienia,foreign),col(idtowaru,foreign),col(ilosc,none),col(upust,none)).
 zamowienieszczegoly(1,72,1,0).
 zamowienieszczegoly(2,36,1,0).
 zamowienieszczegoly(3,47,1,0).

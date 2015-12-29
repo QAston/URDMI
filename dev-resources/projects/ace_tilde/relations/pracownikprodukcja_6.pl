@@ -1,3 +1,4 @@
+urdmi_cols(col(idtowaru,foreign),col(idpracownika,foreign),col(poczatek,none),col(koniec,none),col(stawka,none),col(liczbagodzin,none)).
 pracownikprodukcja(100,20,100102,100112,20.0,6).
 pracownikprodukcja(100,7,100102,100112,10.0,null).
 pracownikprodukcja(100,9,100105,100110,10.0,null).

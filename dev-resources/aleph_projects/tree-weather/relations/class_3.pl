@@ -1,3 +1,4 @@
+urdmi_cols(col(day,none),col(class,none),col(term_2,none)).
 class(d1,play,1).
 class(d2,dont_play,1).
 class(d3,dont_play,1).

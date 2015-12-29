@@ -1,3 +1,4 @@
+urdmi_cols(col(car,foreign)).
 closed(car_12).
 closed(car_23).
 closed(car_32).

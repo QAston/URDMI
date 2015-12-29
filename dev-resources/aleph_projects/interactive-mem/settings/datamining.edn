@@ -1,0 +1,1 @@
+{:example {:type :advanced, :relation nil, :term nil, :true-val nil, :false-val nil, :advanced-list []}, :background {:type :all-but-example, :relation-list [["male" 1] ["human" 1] ["female" 1]]}, :program "induce_constraints"}

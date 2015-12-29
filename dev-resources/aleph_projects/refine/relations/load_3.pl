@@ -1,3 +1,4 @@
+urdmi_cols(col(car,foreign),col(shape,foreign),col(load,none)).
 load(car_11,rectangle,3).
 load(car_12,triangle,1).
 load(car_13,hexagon,1).

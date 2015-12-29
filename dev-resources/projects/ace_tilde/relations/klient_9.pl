@@ -1,3 +1,4 @@
+urdmi_cols(col(idklienta,primary),col(imie,none),col(nazwisko,none),col(nip,none),col(ulica,none),col(nrdomu,none),col(nrlokalu,none),col(kod,none),col(miejscowosc,none)).
 klient(1,izabela,pawlik,4.596557617E9,sosnowa,13,69,10150,bialystok).
 klient(2,beata,janik,4.671630859E9,sosnowa,26,68,10232,bialystok).
 klient(3,genowefa,duda,4.767150878E9,sosnowa,33,0,10845,bialystok).

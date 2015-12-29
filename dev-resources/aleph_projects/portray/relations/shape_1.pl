@@ -1,3 +1,4 @@
+urdmi_cols(col(shape,primary)).
 shape(elipse).
 shape(hexagon).
 shape(rectangle).

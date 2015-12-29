@@ -1,3 +1,4 @@
+urdmi_cols(col(animal,primary)).
 animal(dog).
 animal(dolphin).
 animal(platypus).

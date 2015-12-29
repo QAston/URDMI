@@ -26,11 +26,6 @@
 
 
 % type predicates
-
-
-
-
-
 lteq(X,Y):-
 	var(Y), !,
 	X = Y.

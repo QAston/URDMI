@@ -1,3 +1,4 @@
+urdmi_cols(col(train,primary)).
 train(east1).
 train(east2).
 train(east3).

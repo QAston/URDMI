@@ -39,58 +39,6 @@
 % type definitions
 
 
-
-% eastbound train 1
-% infront(east1,car_11).
-% infront(car_11,car_12).
-% infront(car_12,car_13).
-% infront(car_13,car_14).
-
-% eastbound train 2
-% infront(east2,car_21).
-% infront(car_21,car_22).
-% infront(car_22,car_23).
-
-% eastbound train 3
-% infront(east3,car_31).
-% infront(car_31,car_32).
-% infront(car_32,car_33).
-
-% eastbound train 4
-% infront(east4,car_41).
-% infront(car_41,car_42).
-% infront(car_42,car_43).
-% infront(car_43,car_44).
-
-% eastbound train 5
-% infront(east5,car_51).
-% infront(car_51,car_52).
-% infront(car_52,car_53).
-
-% westbound train 6
-% infront(west6,car_61).
-% infront(car_61,car_62).
-
-% westbound train 7
-% infront(west7,car_71).
-% infront(car_71,car_72).
-% infront(car_72,car_73).
-
-% westbound train 8
-% infront(west8,car_81).
-% infront(car_81,car_82).
-
-% westbound train 9
-% infront(west9,car_91).
-% infront(car_91,car_92).
-% infront(car_92,car_93).
-% infront(car_93,car_94).
-
-% westbound train 10
-% infront(west10,car_101).
-% infront(car_101,car_102).
-
-
 % cost(_,[P,N|_],Cost):-
 	% Cost is 1-(P+1)/(P+N+2).
 % 

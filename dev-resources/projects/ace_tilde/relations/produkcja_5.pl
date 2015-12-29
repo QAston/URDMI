@@ -1,3 +1,4 @@
+urdmi_cols(col(idtowaru,foreign),col(opis,none),col(poczatek,none),col(koniec,none),col(budzet,none)).
 produkcja(82,opis1,100102,100120,94134.52).
 produkcja(83,opis2,100210,100220,50296.02).
 produkcja(84,opis3,100210,100225,66424.56).

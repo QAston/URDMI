@@ -1,3 +1,4 @@
+urdmi_cols(col(train,foreign),col(car,foreign)).
 has_car(east1,car_11).
 has_car(east1,car_12).
 has_car(east1,car_13).

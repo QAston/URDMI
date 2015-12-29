@@ -1,3 +1,4 @@
+urdmi_cols(col(animal,foreign),col(habitat,foreign)).
 habitat(dog,land).
 habitat(dolphin,water).
 habitat(platypus,water).

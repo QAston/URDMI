@@ -1,0 +1,1 @@
+{:example {:type :advanced, :relation nil, :term nil, :true-val nil, :false-val nil, :advanced-list [{:value "1", :value-type :positive, :relation ["class" 3], :relation-term 2}]}, :background {:type :all-but-example, :relation-list [["temp" 1] ["windy" 1] ["humidity" 1] ["outlook" 1] ["table" 5] ["class" 3]]}, :program "induce_tree"}

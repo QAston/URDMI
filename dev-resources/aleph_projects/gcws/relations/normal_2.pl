@@ -1,3 +1,4 @@
+urdmi_cols(col(year,foreign),col(group,none)).
 normal(4,0).
 normal(8,0).
 normal(12,0).

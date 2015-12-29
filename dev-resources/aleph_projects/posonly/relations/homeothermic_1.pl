@@ -1,3 +1,4 @@
+urdmi_cols(col(animal,foreign)).
 homeothermic(dog).
 homeothermic(cat).
 homeothermic(dolphin).

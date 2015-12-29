@@ -1,3 +1,4 @@
+urdmi_cols(col(idpracownika,primary),col(stanowisko,none),col(pensja,none),col(premia,none),col(rokzatrudnienia,none),col(iddzialu,foreign),col(grupa,none)).
 pracownik(4,sprzedawca,1,null,2,2,1).
 pracownik(6,sprzedawca,1,1,0,2,1).
 pracownik(8,robotnik,1,1,0,1,1).

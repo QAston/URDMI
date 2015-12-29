@@ -1,3 +1,4 @@
+urdmi_cols(col(animal,foreign),col(class,foreign),col(group,none)).
 class(bat,mammal,1).
 class(dog,mammal,1).
 class(bat,mammal,1).

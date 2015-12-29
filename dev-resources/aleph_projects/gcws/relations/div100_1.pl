@@ -1,3 +1,4 @@
+urdmi_cols(col(year,foreign)).
 div100(100).
 div100(200).
 div100(300).

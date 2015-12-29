@@ -1,3 +1,4 @@
+urdmi_cols(col(humidity,primary)).
 humidity(65).
 humidity(70).
 humidity(75).

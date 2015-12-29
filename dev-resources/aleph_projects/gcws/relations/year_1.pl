@@ -1,3 +1,4 @@
+urdmi_cols(col(year,primary)).
 year(1).
 year(2).
 year(3).

@@ -1,0 +1,1 @@
+{:example {:type :simple, :relation ["eastbound" 2], :term 1, :true-val "1", :false-val "0", :advanced-list []}, :background {:type :all-but-example, :relation-list [["short" 1] ["train" 1] ["wheels" 2] ["jagged" 1] ["double" 1] ["shape" 2] ["car" 1] ["long" 1] ["has_car" 2] ["closed" 1] ["load" 3] ["shape" 1] ["open_car" 1]]}, :program "induce_features"}

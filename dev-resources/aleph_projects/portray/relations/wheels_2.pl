@@ -1,3 +1,4 @@
+urdmi_cols(col(car,foreign),col(wheels,none)).
 wheels(car_11,2).
 wheels(car_12,2).
 wheels(car_13,3).

@@ -1,3 +1,4 @@
+urdmi_cols(col(temp,primary)).
 temp(64).
 temp(65).
 temp(68).
