@@ -28,7 +28,7 @@
     (when-let [o (:err (shell/sh (str resolved-loc)
                                  :in (StringReader. "")
                                  ))]
-      (.startsWith o "Welcome to SWI-Prolog"))
+      (.contains o "SWI-Prolog"))
     (catch IOException e
       false)))
 
