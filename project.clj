@@ -28,6 +28,7 @@
             :plugins []
             :java-source-paths ["deps/jiprolog/src" "javasrc"]
             :javac-options ["-target" "1.8" "-source" "1.8"]
+            :uberjar-name "urdmi-standalone.jar"
             ;:jvm-opts ["-Xmx2g"]
             :resource-paths ["deps/jiprolog/src" "resources"] ; for jiprolog engine
             )

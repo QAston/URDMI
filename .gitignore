@@ -9,3 +9,5 @@ pom.xml.asc
 /.nrepl-*
 /.idea
 /*.iml
+/release
+/release.7zip
