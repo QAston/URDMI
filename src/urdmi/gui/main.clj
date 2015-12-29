@@ -218,7 +218,7 @@
 
 (defn get-parent-menu-item-for-path [path]
   (condp = path
-    [:settings] nil
+    [:settings] :input
     [:relations] :input
     [:prolog-ext] :input
     [:working-dir] :output
@@ -229,7 +229,6 @@
     (let [ppath (vec (butlast path))]
       (condp = ppath
         [:output] :output
-        [:settings] :input
         ppath)
       )))
 
