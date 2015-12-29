@@ -61,13 +61,19 @@
                       (if @user-input
                         (put! >ui-requests {:type :modified-page})))))
 
-(deftype CodeEditorWidget [^CodeArea widget user-input]
+(deftype CodeEditorWidget [^CodeArea widget user-input first]
   gui/DataWidget
   (get-node [this]
     widget)
   (set-data! [this data data-key]
     (reset! user-input false)
+
     (.replaceText widget data)
+    (when @first
+      (reset! first false)
+      (doto (.getUndoManager widget)
+        (.forgetHistory))
+      )
     (reset! user-input true))
   (get-data [this]
     (.getValue (.textProperty widget))))
@@ -77,7 +83,7 @@
         text-property (.textProperty widget)
         user-input (atom false)]
     (register-data-change-listeners >ui-requests text-property user-input)
-    (->CodeEditorWidget widget user-input)))
+    (->CodeEditorWidget widget user-input (atom true))))
 
 (deftype CodeEditorPage [widget]
   gui/ContentPage
