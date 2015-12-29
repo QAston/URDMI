@@ -75,10 +75,11 @@
                                                             item-change-listener (reify ChangeListener
                                                                                    (changed [this obs old new]
                                                                                      (when old
+                                                                                       (.remove (.getStyleClass cell) "error")
                                                                                        (.removeListener (.valueProperty old) item-value-change-listener))
                                                                                      (when new
                                                                                        (.addListener (.valueProperty new) item-value-change-listener)
-                                                                                       (when (.getValue new)
+                                                                                       (if (.getValue new)
                                                                                          (cell-change (.getValue new))
                                                                                          ))))
 
