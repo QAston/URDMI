@@ -33,6 +33,14 @@
   (is-model-invalid [this project key] "A hook on model validation. Returns true if data for given key is not valid.")
   )
 
+(defprotocol ContentPage
+  (container-node [this] "returns JavaFX node which will be attached to the application window")
+  (show-data [this data data-key modified] "Called every time a page is shown. Data - project model, data-key - key in the model, modified - if model was modified from last call and redraw is needed")
+  (read-data [this] "should return model data for the key for which data is displayed"))
+
+(defprotocol PluginGui
+  (new-page [this project key >ui-requests] "Returns a view for editing/display of a menu entry"))
+
 (defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])
 
 (defrecord App [^Project project ^clojure.lang.IPersistentMap plugins])

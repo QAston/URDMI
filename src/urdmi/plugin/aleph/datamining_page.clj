@@ -1,5 +1,5 @@
 (ns urdmi.plugin.aleph.datamining-page
-  (:require [urdmi.gui :as gui]
+  (:require [urdmi.gui-util :as gui]
             [clojure.core.async :as async]
             [fx-clj.core :as fx]
             [urdmi.core :as core]
@@ -277,7 +277,7 @@
          (gui/map-of-mut-to-map-of-imut other-settings)))
 
 (deftype DataminingPage [widget example-settings background-settings other-settings dependencies user-input]
-  gui/ContentPage
+  core/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]

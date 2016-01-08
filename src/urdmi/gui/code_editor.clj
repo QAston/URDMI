@@ -3,7 +3,7 @@
             [fx-clj.core :as fx]
             [clojure.string :as string]
             [urdmi.util :as util]
-            [urdmi.gui :as gui]
+            [urdmi.gui-util :as gui]
             [urdmi.core :as core])
   (:import [org.fxmisc.richtext CodeArea LineNumberFactory]
            (javafx.scene.control ContextMenu)
@@ -86,7 +86,7 @@
     (->CodeEditorWidget widget user-input (atom true))))
 
 (deftype CodeEditorPage [widget]
-  gui/ContentPage
+  core/ContentPage
   (container-node [this]
     (gui/get-node widget))
   (show-data [this project data-key modified]

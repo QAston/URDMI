@@ -1,4 +1,4 @@
-(ns urdmi.gui
+(ns urdmi.gui-util
   (:require [clojure.core.async :refer [chan go <! >!]]
             [clojure.java.io :as io]
             [fx-clj.core :as fx]
@@ -28,20 +28,6 @@
            (org.controlsfx.property.editor PropertyEditor DefaultPropertyEditorFactory)
            (javafx.scene Node)))
 
-(defn load-fxml [filename]
-  (let [loader (new javafx.fxml.FXMLLoader (io/resource filename))]
-    (.load loader)))
-
-;(defonce _ (do
-;application level abstraction, implements presenting data from app model
-(defprotocol ContentPage
-  (container-node [this] "returns JavaFX node which will be attached to the application window")
-  (show-data [this data data-key modified] "Called every time a page is shown. Data - project model, data-key - key in the model, modified - if model was modified from last call and redraw is needed")
-  (read-data [this] "should return model data for the key for which data is displayed"))
-
-(defprotocol PluginGui
-  (new-page [this project key >ui-requests] "Returns a view for editing/display of a menu entry"))
-
 ;implementation level abstraction, gui taking viewmodel
 (defprotocol DataWidget
   (get-node [this])
@@ -57,7 +43,6 @@
                                                 (call [this control]
                                                   (let [^Labeled control control]
                                                     (.textProperty control))))))
-;))
 
 (when (core/dev?)
   (defonce t (init-toolkit)))
@@ -95,12 +80,6 @@
                                                      (boolean (pred val))))
                                                  message
                                                  Severity/ERROR)))
-
-; property as clojure ref
-(comment @(fx/property-ref node :text))
-; lookup by id
-(comment (fx/lookup node :#id))
-(comment (load-fxml "main.fxml"))
 
 (defn resize-observable-list
   "resizes given list to new-size, if needed constructs new elements

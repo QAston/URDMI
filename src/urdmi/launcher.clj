@@ -11,7 +11,7 @@
 (defn -start
   "Implements javafx.application.Application.start(javafx.stage.Stage)."
   [app ^javafx.stage.Stage stage]
-  (require 'urdmi.gui)
+  (require 'urdmi.gui-util)
   ((var-get (resolve (symbol "urdmi.gui" "init-toolkit"))))
   (require 'urdmi.gui-app)
 

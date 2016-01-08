@@ -1,6 +1,6 @@
 (ns urdmi.gui.dialogs
   (:require [fx-clj.core :as fx]
-            [urdmi.gui :as gui]
+            [urdmi.gui-util :as gui]
             [urdmi.prolog :as prolog]
             [clojure.java.io :as io]
             [me.raynes.fs :as fs]
@@ -299,7 +299,8 @@
                             ]))
                (.add (fx/label {:text select-file-label-text}) 0 0)
                (.add (fx/h-box {:spacing   0.0
-                                :max-width 80.0}
+                                :max-width 80.0
+                                :min-width 80.0}
                                (fx/button {:text      "File"
                                            :on-action file-click-action})
                                (fx/button {:text      "Dir"

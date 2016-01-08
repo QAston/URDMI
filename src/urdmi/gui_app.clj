@@ -9,7 +9,7 @@
             [urdmi.app :as app]
             [fx-clj.core :as fx]
             [me.raynes.fs :as fs]
-            [urdmi.gui :as gui]
+            [urdmi.gui-util :as gui-util]
             [urdmi.gui.project-settings :as project-settings-gui]
             [urdmi.gui.dialogs :as dialogs]
             [urdmi.gui.relation-list :as relation-list-gui]
@@ -156,7 +156,7 @@
 
 (defn sync-page-data [app key]
   (fx/run<!!
-    (gui/show-data
+    (core/show-data
       (get-in app [:pages key :page])
       (:project app)
       key
@@ -177,7 +177,7 @@
                     (do
                       {:page            (doto
                                           (if-let [plugin-page (when (app/plugin app)
-                                                                 (gui/new-page (app/plugin app) (:project app) key (:ui-requests app)))]
+                                                                 (core/new-page (app/plugin app) (:project app) key (:ui-requests app)))]
                                             plugin-page
                                             (generate-page key key app))
                                           )
@@ -187,7 +187,7 @@
                 (assoc-in [:pages key] page-data)
                 (assoc :current-page-key key)
                 (sync-page-data key))]
-    (fx/run<!! (main-gui/set-content-widget! (:main-screen app) (gui/container-node (:page page-data)))
+    (fx/run<!! (main-gui/set-content-widget! (:main-screen app) (core/container-node (:page page-data)))
                (update-main-menu-for-current-page! app))
     app))
 
@@ -328,7 +328,7 @@
         page (:page app-page)
         old-page-data (get-in (:project app) (apply core/model-map-keys page-key))
         page-data (merge old-page-data
-                         (fx/run<!! (gui/read-data page)))
+                         (fx/run<!! (core/read-data page)))
         new-page-key (conj (vec (butlast page-key)) (:name page-data))
         update-current-page-if-needed (fn [app]
                                         (if (= (:current-page-key app) page-key)

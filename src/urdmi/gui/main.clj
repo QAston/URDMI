@@ -2,7 +2,7 @@
   (:require [clojure.core.async :refer [chan go <! >! put!]]
             [fx-clj.core :as fx]
             [urdmi.core :as core]
-            [urdmi.gui :as gui]
+            [urdmi.gui-util :as gui]
             [clojure.zip :as zip]
             [clojure.java.io :as io])
   (:import

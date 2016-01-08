@@ -1,6 +1,6 @@
 (ns urdmi.plugin.aleph.hypothesis-page
   (:require [fx-clj.core :as fx]
-            [urdmi.gui :as gui]
+            [urdmi.gui-util :as gui]
             [clojure.core.async :as async]
             [urdmi.core :as core]
             [clojure.set :as set]
@@ -414,7 +414,7 @@
                                                   [k (gui/observable-list v)])))))))
 
 (deftype HypothesisPage [widget clause-settings hypothesis-settings dependencies user-input]
-  gui/ContentPage
+  core/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]

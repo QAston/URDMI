@@ -1,6 +1,6 @@
 (ns urdmi.plugin.ace.settings-page
   (:require [fx-clj.core :as fx]
-            [urdmi.gui :as gui]
+            [urdmi.gui-util :as gui]
             [clojure.core.async :as async]
             [urdmi.core :as core]
             [clojure.set :as set]
@@ -28,7 +28,7 @@
     ))
 
 (deftype AceSettingsPage [widget properties-map user-input]
-  gui/ContentPage
+  core/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]

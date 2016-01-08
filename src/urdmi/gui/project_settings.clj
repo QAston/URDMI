@@ -1,6 +1,6 @@
 (ns urdmi.gui.project-settings
   (:require [fx-clj.core :as fx]
-            [urdmi.gui :as gui]
+            [urdmi.gui-util :as gui]
             [clojure.core.async :as async]
             [urdmi.core :as core]
             [me.raynes.fs :as fs]
@@ -21,7 +21,7 @@
 (def fields [:active-plugin :working-dir])
 
 (deftype ProjectSettingsPage [widget properties-map user-input]
-  gui/ContentPage
+  core/ContentPage
   (container-node [this]
     widget)
   (show-data [this project key modified]

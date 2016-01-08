@@ -4,7 +4,7 @@
             [urdmi.prolog :as prolog]
             [clojure.string :as string]
             [urdmi.util :as util]
-            [urdmi.gui :as gui]
+            [urdmi.gui-util :as gui]
             [urdmi.core :as core]
             [urdmi.gui.dialogs :as dialogs])
   (:import
@@ -550,7 +550,7 @@
      :columns (:columns viewmodel)}))
 
 (deftype RelationPage [widget parser-context]
-  gui/ContentPage
+  core/ContentPage
   (container-node [this]
     (gui/get-node widget))
   (show-data [this project data-key modified]

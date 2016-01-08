@@ -1,9 +1,10 @@
 (ns urdmi.gui.empty
-  (:require [urdmi.gui :as gui])
+  (:require [urdmi.gui-util :as gui]
+            [urdmi.core :as core])
   (:import (javafx.scene.layout Pane)))
 
 (extend-type Pane
-  gui/ContentPage
+  core/ContentPage
   (container-node [this]
     this)
   (show-data [this project key modified]

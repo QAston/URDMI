@@ -390,12 +390,13 @@ root is the root node."
      )))
 
 (defn pretty-print-expression
+  "Pretty-prints expression given as the ast"
   [^ParserContext parser-context, ast]
   (let [writer (StringWriter.)]
     (pretty-print ast parser-context writer)
     (.toString writer)))
 
-(defn remove-term [term-idx sentence]
+(defn- remove-term [term-idx sentence]
   (let [sentence (update-in sentence [:children]
                             (fn [children]
                               (->> children
