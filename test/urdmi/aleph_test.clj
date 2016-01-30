@@ -3,6 +3,7 @@
         urdmi.prolog-test
         urdmi.test-util)
   (:require [urdmi.plugin.aleph.core :as aleph]
+            [urdmi.plugin.aleph.output-parser :as output-parser]
             [urdmi.prolog :as prolog]
             [urdmi.core :as core]
             [urdmi.app :as app]
@@ -106,6 +107,24 @@ pracownik(3,sprzedawca,1,null,09,2,0).")
 
 (facts 'aleph/convert-mode-spec-for-example-modeh
        (aleph/convert-mode-spec-for-example-modeh {:relation ["pracownikpersonalia" 8], :determinacy "1", :terms [{:type "+", :value "idpracownika"} {:type "-", :value "imie"} {:type "-", :value "nazwisko"} {:type "-", :value "nip"} {:type "-", :value "ulica"} {:type "-", :value "nrdomu"} {:type "-", :value "nrlokalu"} {:type "-", :value "miejscowosc"}]} 6) => {:determinacy "1", :relation ["pracownikpersonalia" 7], :terms [{:type "+", :value "idpracownika"} {:type "+", :value "imie"} {:type "+", :value "nazwisko"} {:type "+", :value "nip"} {:type "+", :value "ulica"} {:type "+", :value "nrdomu"} {:type "+", :value "miejscowosc"}]})
+
+(facts 'output-parser/lex
+       (let [output-data (slurp (fs/file "dev-resources/aleph_default/output.txt"))]
+         (output-parser/lex output-data, [["sat" first]
+                                          ["theory" output-parser/separate-theory-section]
+                                          ["Training set summary" first]
+                                          ["dupa" first]])) => {"Training set summary" "[Training set summary] [[12, 0, 5, 17]]"
+                                                                       "sat"           "[sat] [1]"
+                                                                       "dupa"          nil
+                                                                       "theory"        (conj (vec (string/split-lines "\n[Rule 3] [Pos cover = 1 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=augustow.\n\n[Rule 5] [Pos cover = 2 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=ksiegowy.\n\n[Rule 6] [Pos cover = 2 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   dzial(F, G, H, I, J, K), K=bialystok, G=informatyka.\n\n[Rule 7] [Pos cover = 1 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=kierownik, dzial(F, G, H, I, J, K), G=marketing.\n\n[Rule 8] [Pos cover = 1 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.\n\n[Rule 9] [Pos cover = 1 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.\n\n[Rule 10] [Pos cover = 1 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=ekspert, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.\n\n[Rule 13] [Pos cover = 1 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.\n\n[Rule 14] [Pos cover = 1 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=wiceprezes.\n\n[Rule 15] [Pos cover = 1 Neg cover = 0]\npracownik(A, B, C, D, E, F) :-\n   B=prezes.\n\n"))
+                                                                                             "")
+                                                                       })
+
+(facts 'output-parser/read-theory-page-info
+       (let [output-data (slurp (fs/file "dev-resources/aleph_default/output.txt"))]
+         (output-parser/read-theory-page-info output-data) => {:theory           (list {:neg-covered 0, :pos-covered 1, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=augustow."} {:neg-covered 0, :pos-covered 2, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=ksiegowy."} {:neg-covered 0, :pos-covered 2, :text "pracownik(A, B, C, D, E, F) :-\r\n   dzial(F, G, H, I, J, K), K=bialystok, G=informatyka."} {:neg-covered 0, :pos-covered 1, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=kierownik, dzial(F, G, H, I, J, K), G=marketing."} {:neg-covered 0, :pos-covered 1, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl."} {:neg-covered 0, :pos-covered 1, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow."} {:neg-covered 0, :pos-covered 1, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=ekspert, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok."} {:neg-covered 0, :pos-covered 1, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow."} {:neg-covered 0, :pos-covered 1, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=wiceprezes."} {:neg-covered 0, :pos-covered 1, :text "pracownik(A, B, C, D, E, F) :-\r\n   B=prezes."})
+                                                               :training-results {:pos-egz-true 12, :neg-egz-true 0, :pos-egz-false 5, :neg-egz-false 17}
+                                                               }))
 
 #_(fact "build project generates expected working_dir output for aleph"
         (let [workdir-dir (fs/file "dev-resources/projects/aleph_default/working_dir")

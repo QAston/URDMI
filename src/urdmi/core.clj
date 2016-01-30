@@ -22,24 +22,44 @@
 
 (defprotocol Plugin
   "All urdmi plugins must implement this protocol"
-  (run [this project] "Run datamining engine associated to this plugin. Runs on a background thread, which can be interrupted to stop the job.")
-  (generate-output [this project run-result] "Update output project directory with analysis of run-result. Runs on a background thread, which can be interrupted to stop the job.")
-  (rebuild-working-dir [this project] "Rebuilds working directory of a datamining app. Runs on a background thread, which can be interrupted to stop the job.")
-  (get-parser-context [this] "Returns parser-context object initialized for prolog engine used by the plugin.")
+  (run [this project] "Run datamining engine associated to this plugin.
+    Runs on a background thread, which can be interrupted to stop the job.")
+  (generate-output [this project run-result]
+    "Update output project directory with analysis of run-result.
+    Runs on a background thread, which can be interrupted to stop the job.")
+  (rebuild-working-dir [this project]
+    "Rebuilds working directory of a datamining app.
+    Runs on a background thread, which can be interrupted to stop the job.")
+  (get-parser-context [this]
+    "Returns parser-context object initialized for prolog engine used by the plugin.")
 
-  (model-created [this project] "A hook on project creation. Should initialize model with default plugin settings. Returns ModelDiff object which is applied afterwards to the model.")
-  (model-loaded [this project] "A hook on model loading. Returns ModelDiff object which is afterwards applied to the model.")
-  (model-modified [this project key] "A hook on model modification. Returns ModelDiff object which is afterwards applied to the model.")
-  (is-model-invalid [this project key] "A hook on model validation. Returns true if data for given key is not valid.")
+  (model-created [this project]
+    "A hook on project creation.
+    Should initialize model with default plugin settings.
+    Returns ModelDiff object which is applied afterwards to the model.")
+  (model-loaded [this project]
+    "A hook on model loading.
+    Returns ModelDiff object which is afterwards applied to the model.")
+  (model-modified [this project key]
+    "A hook on model modification.
+    Returns ModelDiff object which is afterwards applied to the model.")
+  (is-model-invalid [this project key]
+    "A hook on model validation.
+    Returns true if data for given key is not valid.")
   )
 
 (defprotocol ContentPage
-  (container-node [this] "returns JavaFX node which will be attached to the application window")
-  (show-data [this data data-key modified] "Called every time a page is shown. Data - project model, data-key - key in the model, modified - if model was modified from last call and redraw is needed")
-  (read-data [this] "should return model data for the key for which data is displayed"))
+  (container-node [this]
+    "Returns JavaFX node which will be attached to the application window")
+  (show-data [this data data-key modified] "Called every time a page is shown.
+  Data - project model, data-key - key in the model,
+  modified - if model was modified from last call and redraw is needed")
+  (read-data [this]
+    "Returns model data for the key for which data is displayed"))
 
 (defprotocol PluginGui
-  (new-page [this project key >ui-requests] "Returns a view for editing/display of a menu entry"))
+  (new-page [this project key >ui-requests]
+    "Returns a view for editing/display of a menu entry"))
 
 (defrecord Project [dir, project-dir, ^urdmi.core.Plugin plugin])
 
