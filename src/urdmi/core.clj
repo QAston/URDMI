@@ -265,11 +265,37 @@
   (dissoc-in p (apply model-map-keys key)))
 
 (defn apply-diff [^Project p ^ModelDiff diff]
-  (if diff
+  (if (and diff (instance? ModelDiff diff))
     (let [p (reduce set-model-item p (:set diff))
           p (reduce remove-model-item p (:remove diff))]
       p)
     p))
+
+(defn merge-diff [^ModelDiff first-diff ^ModelDiff second-diff]
+  (if (and first-diff second-diff (instance? ModelDiff first-diff) (instance? ModelDiff second-diff))
+
+    (let [remove-from-set (set (concat (map first (:set second-diff))
+                                       (:remove second-diff)))
+          to-set (vec
+                   ; set everything in second, and first, which were not removed/added in second
+                   (concat
+                     (->> (:set first-diff)
+                          (remove (fn [[k v]]
+                                     (remove-from-set k))))
+                     (:set second-diff)
+                     ))
+          to-remove (vec
+                      ; remove everything in second, and first, which were not added in second
+                      (concat
+                       (->> (:remove first-diff)
+                            (remove (set (map first (:set second-diff)))))
+                       (:remove second-diff)
+
+                       ))]
+      (->ModelDiff to-set to-remove))
+    (if (and first-diff (instance? ModelDiff first-diff))
+      first-diff
+      second-diff)))
 
 (defn resolve-executable-loc ^File [base-loc loc-string]
   (let [file (io/file loc-string)]

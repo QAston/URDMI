@@ -211,7 +211,7 @@
                                                      {:type :stop-job})
                                                (put! (:ui-requests app)
                                                      {:type   :job-finished
-                                                      :result result}))
+                                                      :model-diff result}))
                                              ))})]
     (fx/run<!! (main-gui/start-job! (:main-screen app) name (:ui-requests app))
                (update-main-menu-for-current-page! app))
@@ -301,20 +301,14 @@
           (handle-model-modified old-app key))
       app)))
 
-(defn build-working-dir [app]
-  (let [p (:project app)]
-    (core/rebuild-working-dir (:plugin p) p))
-  )
-
 ;todo: pass channel/writer/outputstream to the plugin, so it can provide async log updates
 ; in addition to sync return value
-(defn run-learning [app]
-  (let [p (:project app)
-        result (core/run (:plugin p) p)]
-    ; todo: reload working dir here
-    (apply-diff-to-pages app (core/generate-output (:plugin p) p result))
-    (put! (:ui-requests app) {:type :log-datamining :message (:out result)})
-    result))
+(defn run-learning [project plugin ui-reqs]
+  (let [p project
+        result (core/run plugin p)
+        model-diff (core/generate-output plugin p result)]
+    (put! ui-reqs {:type :log-datamining :message (:out result)})
+    model-diff))
 
 (defmethod handle-request :revert-file [{:keys [type]} app]
   (revert-model-page app (:current-page-key app)))
@@ -399,10 +393,12 @@
     (main-gui/add-app-log-entry! (:main-screen app) (str "Job: " (:name (:job app)) " stopped.")))
   (stop-current-job app))
 
-(defmethod handle-request :job-finished [{:keys [type]} app]
+(defmethod handle-request :job-finished [{:keys [type model-diff]} app]
   (fx/run<!!
     (main-gui/add-app-log-entry! (:main-screen app) (str "Job: " (:name (:job app)) " finished.")))
-  (stop-current-job app))
+  (-> app
+       (apply-diff-to-pages model-diff)
+       (stop-current-job)))
 
 (defmethod handle-request :log-datamining [{:keys [type message]} app]
   (fx/run<!!
@@ -448,21 +444,24 @@
 (defmethod handle-request :build [event app]
   (do-with-saved-project app "build"
                          (fn [app]
-                           (start-job app "Build" #(build-working-dir app)))))
+                           (start-job app "Build"
+                                        #(core/rebuild-working-dir (:plugin (:project app)) (:project app))))))
 
 (defmethod handle-request :run [event app]
   (do-with-saved-project app "run"
                          (fn [app]
-                           (start-job app "Run" #(run-learning app))
+                           (start-job app "Run" #(run-learning (:project app) (:plugin (:project app)) (:ui-requests app)))
                            )))
 
 (defmethod handle-request :build-run [event app]
   (do-with-saved-project app "build and run"
                          (fn [app]
                            (start-job app "Build & Run"
-                                      #(do
-                                        (build-working-dir app)
-                                        (run-learning app))))))
+                                      #(let [p (:project app)
+                                             plugin (:plugin app)
+                                             model-diff (core/rebuild-working-dir plugin p)
+                                             p (core/apply-diff p model-diff)]
+                                        (core/merge-diff model-diff (run-learning p plugin (:ui-requests app))))))))
 
 (defmethod handle-request :delete-file [{:keys [key]} app]
   (if-let [file (core/item-key-to-file (:project app) key)]

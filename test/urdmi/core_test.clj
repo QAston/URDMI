@@ -11,3 +11,16 @@
 
 (fact "relation-to-filename"
       (core/relation-to-filename ["rel" 5]) => "rel_5.pl")
+
+(facts 'core/merge-diff
+       (core/merge-diff (core/->ModelDiff nil nil) nil) => (core/->ModelDiff nil nil)
+       (core/merge-diff nil (core/->ModelDiff nil nil)) => (core/->ModelDiff nil nil)
+       (core/merge-diff nil nil)
+       (core/merge-diff (core/->ModelDiff [[[:prolog-ext "a"] "a"]
+                                           [[:prolog-ext "c"] "c"]
+                                           [[:prolog-ext "e"] "e"]] [[:prolog-ext "b"]
+                                                                     [:prolog-ext "d"]])
+                        (core/->ModelDiff [[[:prolog-ext "a"] "anew"]
+                                           [[:prolog-ext "d"] "d"]] [[:prolog-ext "c"]])) => (core/->ModelDiff [[[:prolog-ext "e"] "e"]
+                                                                                                                [[:prolog-ext "a"] "anew"]
+                                                                                                                [[:prolog-ext "d"] "d"]] [[:prolog-ext "b"] [:prolog-ext "c"]]))
