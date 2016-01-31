@@ -115,11 +115,12 @@
         plugin-settings (api/get-settings-data project settings-filename)
         ace-location (get-ace-loc project plugin-settings)
         command (:command plugin-settings)
-        working-dir (api/get-working-dir project)]
-    (shell/sh (str ace-location)
-              :in (StringReader. command)
-              :dir working-dir
-              )))
+        working-dir (api/get-working-dir project)
+        sh-result (shell/sh (str ace-location)
+                            :in (StringReader. command)
+                            :dir working-dir
+                            )]
+    (core/->RunResult (:out sh-result) (not= (:exit sh-result) 0))))
 
 (defn- validate-settings [project key]
   (let [plugin-settings (api/get-settings-data project settings-filename)

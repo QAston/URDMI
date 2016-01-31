@@ -7,7 +7,8 @@
             [urdmi.core :as core]
             [me.raynes.fs :as fs]
             [clojure.set :as set]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [urdmi.plugin.aleph.output-parser :as output-parser])
   (:import (java.io StringReader IOException)
            (urdmi.core Project)))
 
@@ -229,6 +230,9 @@
       (prolog/pretty-print-sentences parser-context asts writer)
       (api/try-append-prolog-ext-file project (io/file "negative_examples.pl") writer))))
 
+(defn generate-output-file[run-result]
+  (string/split-lines run-result))
+
 (defn- validate-datamining [project key]
   (let [datamining-settings (api/get-settings-data project datamining-name)
         example-settings (:example datamining-settings)]
@@ -258,11 +262,13 @@
           learning-program (get datamining-settings :program "induce")
           learning-program (if (= learning-program "custom")
                              (slurp (io/file (core/get-prolog-ext-dir project) "custom_program.pl"))
-                             (str learning-program ".\n"))]
-      (shell/sh (str swiprolog-location) "-g" "true"
-                :in (StringReader. (str "consult('" (prolog/quote-atom (str aleph-location)) "').\nread_all(" (prolog/quote-atom dbname) ").\n.\n" learning-program "\nhalt.\n"))
-                :dir working-dir
-                )))
+                             (str learning-program ".\n"))
+          sh-result (shell/sh (str swiprolog-location) "-g" "true"
+                              :in (StringReader. (str "consult('" (prolog/quote-atom (str aleph-location)) "').\nread_all(" (prolog/quote-atom dbname) ").\n.\n" learning-program "\nhalt.\n"))
+                              :dir working-dir
+                              )]
+      (core/->RunResult (:out sh-result) (not= (:exit sh-result) 0))
+      ))
   (rebuild-working-dir [this project]
     (build-b-file this project)
     (build-f-file this project)
@@ -270,7 +276,8 @@
   (get-parser-context [this]
     parser-context
     )
-  (generate-output [this project run-result])
+  (generate-output [this project run-result]
+    (core/->ModelDiff [] []))
   (model-created [this project]
     (core/->ModelDiff [[[:prolog-ext "negative_examples.pl"] (core/file-item (str "%negative examples " core/nl "% file appended to the generated .n file"))]
                        [[:prolog-ext "positive_examples.pl"] (core/file-item (str "%positive examples " core/nl "% file appended to the generated .f file"))]

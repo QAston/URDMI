@@ -20,11 +20,13 @@
 
 (defrecord DirItem [dir])
 
+(defrecord RunResult [^String text ^boolean error?])
+
 (defprotocol Plugin
   "All urdmi plugins must implement this protocol"
-  (run [this project] "Run datamining engine associated to this plugin.
+  (run ^urdmi.core.RunResult [this project] "Run datamining engine associated to this plugin.
     Runs on a background thread, which can be interrupted to stop the job.")
-  (generate-output [this project run-result]
+  (generate-output [this project ^urdmi.core.RunResult run-result]
     "Update output project directory with analysis of run-result.
     Runs on a background thread, which can be interrupted to stop the job.")
   (rebuild-working-dir [this project]

@@ -19,7 +19,7 @@
             [clojure.core.async :as async]
             [clojure.java.io :as io]
             [urdmi.importer :as importer])
-  (:import (urdmi.core Project ModelDiff)
+  (:import (urdmi.core Project ModelDiff RunResult)
            (java.io StringWriter File)
            (javafx.scene Scene)
            (javafx.stage Stage WindowEvent)
@@ -305,9 +305,9 @@
 ; in addition to sync return value
 (defn run-learning [project plugin ui-reqs]
   (let [p project
-        result (core/run plugin p)
+        ^RunResult result (core/run plugin p)
         model-diff (core/generate-output plugin p result)]
-    (put! ui-reqs {:type :log-datamining :message (:out result)})
+    (put! ui-reqs {:type :log-datamining :message (:text result)})
     model-diff))
 
 (defmethod handle-request :revert-file [{:keys [type]} app]
