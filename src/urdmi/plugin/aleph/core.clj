@@ -10,7 +10,7 @@
             [clojure.string :as string]
             [urdmi.plugin.aleph.output-parser :as output-parser])
   (:import (java.io StringReader IOException)
-           (urdmi.core Project)))
+           (urdmi.core Project RunResult)))
 
 (use 'clojure.pprint)
 
@@ -230,8 +230,9 @@
       (prolog/pretty-print-sentences parser-context asts writer)
       (api/try-append-prolog-ext-file project (io/file "negative_examples.pl") writer))))
 
-(defn generate-output-file[run-result]
-  (string/split-lines run-result))
+(defn generate-theory-file[project ^RunResult run-result]
+  (when-not (:error? run-result)
+    (output-parser/read-theory-page-info (:text run-result))))
 
 (defn- validate-datamining [project key]
   (let [datamining-settings (api/get-settings-data project datamining-name)
@@ -277,7 +278,10 @@
     parser-context
     )
   (generate-output [this project run-result]
-    (core/->ModelDiff [] []))
+    (if-let [data  (generate-theory-file project run-result)]
+      (core/->ModelDiff [[[:output "theory.edn"] (core/file-item data)]] [])
+      (core/->ModelDiff [] [[:output "theory.edn"]])
+      ))
   (model-created [this project]
     (core/->ModelDiff [[[:prolog-ext "negative_examples.pl"] (core/file-item (str "%negative examples " core/nl "% file appended to the generated .n file"))]
                        [[:prolog-ext "positive_examples.pl"] (core/file-item (str "%positive examples " core/nl "% file appended to the generated .f file"))]

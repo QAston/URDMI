@@ -31,6 +31,18 @@
 (defn plugin [^App app]
   (:plugin (:project app)))
 
+(defn text-file-to-model [^App app item-key]
+  (->
+    (->FileItem (delay
+                  (slurp (item-key-to-file (:project app) item-key))))
+    (assoc :text true)))
+
+(defn edn-file-to-model [^App app item-key]
+  (->FileItem
+    (delay
+      (with-open [reader (io/reader (item-key-to-file (:project app) item-key))]
+        (edn/read (java.io.PushbackReader. reader))))))
+
 (defmulti file-to-model (fn [cascade-key orig-key ^App app]
                           cascade-key))
 
@@ -38,7 +50,9 @@
   (file-to-model (vec (butlast cascade-key)) orig-key app))
 
 (defmethod file-to-model [] [cascade-key orig-key ^App app]
-  {})
+  (if (.endsWith ^String (last orig-key) ".edn")
+    (edn-file-to-model app orig-key)
+    (text-file-to-model app orig-key)))
 
 (defmethod file-to-model [core/settings-keyname "project.edn"] [cascade-key orig-key ^App app]
   (->FileItem
@@ -48,13 +62,6 @@
           (edn/read (java.io.PushbackReader. reader))
           (update :working-dir (fn [workdir]
                                  (io/file workdir)))))))
-  )
-
-(defmethod file-to-model [core/settings-keyname] [cascade-key orig-key ^App app]
-  (->FileItem
-    (delay
-      (with-open [reader (io/reader (item-key-to-file (:project app) orig-key))]
-        (edn/read (java.io.PushbackReader. reader)))))
   )
 
 (defn read-columns-definitions [file parser-context arity-int]
@@ -83,19 +90,10 @@
                       )))})
     ))
 
-(defn text-file-to-model [^App app item-key]
-  (->
-    (->FileItem (delay
-                  (slurp (item-key-to-file (:project app) item-key))))
-    (assoc :text true)))
-
 (defmethod file-to-model [core/prolog-ext-keyname] [cascade-key orig-key ^App app]
   (text-file-to-model app orig-key))
 
 (defmethod file-to-model [core/workdir-keyname] [cascade-key orig-key ^App app]
-  (text-file-to-model app orig-key))
-
-(defmethod file-to-model [core/output-keyname] [cascade-key orig-key ^App app]
   (text-file-to-model app orig-key))
 
 (defn mark-file-desynced [^App app item-key]
@@ -159,13 +157,26 @@
       (dissoc-in [:fs-sync item-key])
       (dissoc-in (cons :project (seq (apply model-map-keys item-key))))))
 
+(defn text-model-to-file [^App app item-key ^Writer writer]
+  (let [text @(:data (get-in (:project app) (apply model-map-keys item-key)))]
+    (binding [*out* writer]
+      (print text))))
+
+(defn edn-model-to-file [^App app item-key ^Writer writer]
+  (let [data @(:data (get-in (:project app) (apply model-map-keys item-key)))]
+    (binding [*out* writer]
+      (pr data))))
+
 (defmulti model-to-file (fn [cascade-key orig-key ^App app ^Writer writer]
                           cascade-key))
 
 (defmethod model-to-file :default [cascade-key orig-key ^App app ^Writer writer]
   (model-to-file (vec (butlast cascade-key)) orig-key app writer))
 
-(defmethod model-to-file [] [cascade-key orig-key ^App app ^Writer writer])
+(defmethod model-to-file [] [cascade-key orig-key ^App app ^Writer writer]
+  (if (.endsWith ^String (last orig-key) ".edn")
+    (edn-model-to-file app orig-key writer)
+    (text-model-to-file app orig-key writer)))
 
 (defmethod model-to-file [core/settings-keyname "project.edn"] [cascade-key orig-key ^App app ^Writer writer]
   (let [data (-> app
@@ -176,11 +187,6 @@
                  (update :working-dir #(.toString %)))]
     (binding [*out* writer]
       (prn data))))
-
-(defmethod model-to-file [core/settings-keyname] [cascade-key orig-key ^App app ^Writer writer]
-  (let [data @(:data (get-in (:project app) (apply model-map-keys orig-key)))]
-    (binding [*out* writer]
-      (pr data))))
 
 (defn ^String columns-to-prolog-string [columns]
   (str "urdmi_cols("
@@ -196,18 +202,10 @@
     (.append writer core/nl)
     (prolog/pretty-print-sentences parser-context ast writer)))
 
-(defn text-model-to-file [^App app item-key ^Writer writer]
-  (let [text @(:data (get-in (:project app) (apply model-map-keys item-key)))]
-    (binding [*out* writer]
-      (print text))))
-
 (defmethod model-to-file [core/prolog-ext-keyname] [cascade-key orig-key ^App app ^Writer writer]
   (text-model-to-file app orig-key writer))
 
 (defmethod model-to-file [core/workdir-keyname] [cascade-key orig-key ^App app ^Writer writer]
-  (text-model-to-file app orig-key writer))
-
-(defmethod model-to-file [core/output-keyname] [cascade-key orig-key ^App app ^Writer writer]
   (text-model-to-file app orig-key writer))
 
 (defn save-model-to-file [^App app item-key]
