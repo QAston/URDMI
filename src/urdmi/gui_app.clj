@@ -26,6 +26,9 @@
            (java.awt Desktop)
            (javafx.event EventHandler)))
 
+(when (core/dev?)
+  (load "plugin/aleph/core" "plugin/aleph/gui" "plugin/aleph/datamining_page" "plugin/aleph/hypothesis_page" "plugin/aleph/theory_page"))
+
 (def instances (atom 0))
 
 (defn generate-menu-viewmodel [^Project p]

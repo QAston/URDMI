@@ -223,6 +223,9 @@
 (defn get-settings-data [^Project p settings-filename]
   @(:data (get-in p (model-map-keys settings-keyname settings-filename))))
 
+(defn get-output-data [^Project p settings-filename]
+  @(:data (get-in p (model-map-keys output-keyname settings-filename))))
+
 (defn get-relations [^Project p]
   (map second (get-in p (model-map-keys relations-keyname :dir))))
 

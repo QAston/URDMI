@@ -4,6 +4,7 @@
             [urdmi.plugin.aleph.settings-page :as settings-page]
             [urdmi.plugin.aleph.hypothesis-page :as hypothesis-page]
             [urdmi.plugin.aleph.datamining-page :as datamining-page]
+            [urdmi.plugin.aleph.theory-page :as theory-page]
             [urdmi.core :as core])
   (:import (urdmi.plugin.aleph.core AlephPlugin)
            (urdmi.core ContentPage)))
@@ -15,5 +16,6 @@
       [:settings aleph/settings-filename] (settings-page/make-page >ui-requests project)
       [:settings aleph/hypothesis-name] (hypothesis-page/make-page >ui-requests project)
       [:settings aleph/datamining-name] (datamining-page/make-page >ui-requests project)
+      [:output "theory.edn"] (theory-page/make-page)
       nil)
     ))
