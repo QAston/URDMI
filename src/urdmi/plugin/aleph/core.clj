@@ -279,8 +279,9 @@
     )
   (generate-output [this project run-result]
     (if-let [data  (generate-theory-file project run-result)]
-      (core/->ModelDiff [[[:output "theory.edn"] (core/file-item data)]] [])
-      (core/->ModelDiff [] [[:output "theory.edn"]])
+      (core/->ModelDiff [[[:output "output.log"] (core/file-item (:text run-result))]
+                         [[:output "theory.edn"] (core/file-item data)]] [])
+      (core/->ModelDiff [[[:output "output.log"] (core/file-item (:text run-result))]] [[:output "theory.edn"]])
       ))
   (model-created [this project]
     (core/->ModelDiff [[[:prolog-ext "negative_examples.pl"] (core/file-item (str "%negative examples " core/nl "% file appended to the generated .n file"))]

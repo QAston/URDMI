@@ -1,0 +1,2021 @@
+
+
+A L E P H
+Version 5
+Last modified: Sun Mar 11 03:25:37 UTC 2007
+
+Manual: http://www.comlab.ox.ac.uk/oucl/groups/machlearn/Aleph/index.html
+
+[consulting pos examples] [db.f]
+[consulting neg examples] [db.n]
+[select example] [1]
+[sat] [1]
+[pracownik(4, sprzedawca, 1, null, 2, 2)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U), 
+   K=bialystok, G=sprzedaz, klient(S, V, W, X, Y, Z, A1, B1, C1), zamowienieszczegoly(R, D1, E1, F1).
+[literals] [9]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[17/17]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca.
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[17/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[17/17]
+pracownik(A, B, C, D, E, F) :-
+   zamowienie(G, H, A, I, J).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, zamowienie(G, H, A, I, J).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok.
+[10/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz.
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[4/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz.
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[4/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[8/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   zamowienie(G, H, A, I, J), klient(H, K, L, M, N, O, P, Q, R).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   zamowienie(G, H, A, I, J), zamowienieszczegoly(G, K, L, M).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok.
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz.
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, zamowienie(G, H, A, I, J), klient(H, K, L, M, N, O, P, Q, R).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, zamowienie(G, H, A, I, J), zamowienieszczegoly(G, K, L, M).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, zamowienie(L, M, A, N, O).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz.
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   zamowienie(L, M, A, N, O).
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), K=bialystok.
+[4/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q), klient(O, R, S, T, U, V, W, X, Y).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q), zamowienieszczegoly(N, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), K=bialystok.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q), 
+   klient(O, R, S, T, U, V, W, X, Y).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q), 
+   zamowienieszczegoly(N, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), K=bialystok.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), 
+   zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, K), 
+   zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), 
+   K=bialystok.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), 
+   zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q), klient(O, R, S, T, U, V, W, X, Y).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q), zamowienieszczegoly(N, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   zamowienie(G, H, A, I, J), klient(H, K, L, M, N, O, P, Q, R), zamowienieszczegoly(G, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q), klient(O, R, S, T, U, V, W, X, Y).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q), zamowienieszczegoly(N, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, zamowienie(G, H, A, I, J), klient(H, K, L, M, N, O, P, Q, R), zamowienieszczegoly(G, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, zamowienie(L, M, A, N, O), 
+   klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, zamowienie(L, M, A, N, O), 
+   zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O), 
+   klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O), 
+   zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O), 
+   klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O), 
+   zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+[clauses constructed] [78]
+[search time] [0.015625]
+[best clause]
+pracownik(4, sprzedawca, 1, null, 2, 2).
+[pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
+[atoms left] [16]
+[positive examples left] [16]
+[estimated time to finish (secs)] [0.25]
+[select example] [2]
+[sat] [2]
+[pracownik(6, sprzedawca, 1, 1, 0, 2)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U), 
+   K=bialystok, G=sprzedaz, klient(S, V, W, X, Y, Z, A1, B1, C1), zamowienieszczegoly(R, D1, E1, F1).
+[literals] [9]
+[saturation time] [0.015625]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[16/17]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca.
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[16/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[16/17]
+pracownik(A, B, C, D, E, F) :-
+   zamowienie(G, H, A, I, J).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, zamowienie(G, H, A, I, J).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok.
+[9/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz.
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[3/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz.
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[3/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[7/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   zamowienie(G, H, A, I, J), klient(H, K, L, M, N, O, P, Q, R).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   zamowienie(G, H, A, I, J), zamowienieszczegoly(G, K, L, M).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok.
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz.
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, zamowienie(G, H, A, I, J), klient(H, K, L, M, N, O, P, Q, R).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, zamowienie(G, H, A, I, J), zamowienieszczegoly(G, K, L, M).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, zamowienie(L, M, A, N, O).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz.
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, K).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   zamowienie(L, M, A, N, O).
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), K=bialystok.
+[3/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q), klient(O, R, S, T, U, V, W, X, Y).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q), zamowienieszczegoly(N, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), K=bialystok.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q), 
+   klient(O, R, S, T, U, V, W, X, Y).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, zamowienie(N, O, A, P, Q), 
+   zamowienieszczegoly(N, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), K=bialystok.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), 
+   zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, K), 
+   zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), 
+   K=bialystok.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, K), 
+   zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q), klient(O, R, S, T, U, V, W, X, Y).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q), zamowienieszczegoly(N, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   zamowienie(G, H, A, I, J), klient(H, K, L, M, N, O, P, Q, R), zamowienieszczegoly(G, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q), klient(O, R, S, T, U, V, W, X, Y).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, pracownikpersonalia(A, G, H, I, J, K, L, M), zamowienie(N, O, A, P, Q), zamowienieszczegoly(N, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, zamowienie(G, H, A, I, J), klient(H, K, L, M, N, O, P, Q, R), zamowienieszczegoly(G, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, zamowienie(L, M, A, N, O), 
+   klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, zamowienie(L, M, A, N, O), 
+   zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O), 
+   klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, zamowienie(L, M, A, N, O), 
+   zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O), 
+   klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), G=sprzedaz, zamowienie(L, M, A, N, O), 
+   zamowienieszczegoly(L, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   zamowienie(L, M, A, N, O), klient(M, P, Q, R, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
+[clauses constructed] [78]
+[search time] [0.03125]
+[best clause]
+pracownik(6, sprzedawca, 1, 1, 0, 2).
+[pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
+[atoms left] [15]
+[positive examples left] [15]
+[estimated time to finish (secs)] [0.351563]
+[select example] [3]
+[sat] [3]
+[pracownik(8, robotnik, 1, 1, 0, 1)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=augustow, 
+   K=lapy, G=produkcja.
+[literals] [7]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[15/17]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik.
+[5/7]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[15/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[15/17]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K).
+[5/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[5/7]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy.
+[7/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja.
+[6/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[15/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[6/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[6/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[7/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[6/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=augustow.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy.
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja.
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[5/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=augustow.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=augustow.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 2, 1]]
+[clauses constructed] [22]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=augustow.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=augustow.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=augustow.
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=augustow.
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=augustow.
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R), R=augustow.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=augustow.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=augustow.
+[clauses constructed] [30]
+[search time] [0.015625]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=augustow.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [14]
+[positive examples left] [14]
+[estimated time to finish (secs)] [0.291667]
+[select example] [4]
+[sat] [4]
+[pracownik(9, robotnik, 1, null, 1, 1)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W), 
+   R=bialystok, K=lapy, G=produkcja, produkcja(S, X, Y, Z, A1), 
+   towar(S, B1, C1, D1, E1, F1).
+[literals] [10]
+[saturation time] [0.015625]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[14/17]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik.
+[4/7]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[14/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[14/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K).
+[4/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[4/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, M, N, O).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K), towar(G, L, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, M, N, O).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K), towar(G, L, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy.
+[6/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja.
+[5/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[14/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[5/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[5/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[6/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[5/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikprodukcja(L, A, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[6/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, pracownikprodukcja(N, A, O, P, Q, R).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy.
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja.
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[4/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikprodukcja(L, A, M, N, O, P).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, pracownikprodukcja(N, A, O, P, Q, R).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[3/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=bialystok.
+[3/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, pracownikprodukcja(N, A, O, P, Q, R), produkcja(N, S, T, U, V).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, pracownikprodukcja(N, A, O, P, Q, R), towar(N, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, pracownikprodukcja(N, A, O, P, Q, R), 
+   produkcja(N, S, T, U, V).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok, pracownikprodukcja(N, A, O, P, Q, R), 
+   towar(N, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, M, N, O), towar(G, P, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, M, N, O), towar(G, P, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[4/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikprodukcja(L, A, M, N, O, P), 
+   produkcja(L, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikprodukcja(L, A, M, N, O, P), 
+   towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R), produkcja(N, S, T, U, V).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R), towar(N, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=bialystok.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P), 
+   produkcja(L, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P), 
+   towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=bialystok.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P), 
+   produkcja(L, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P), 
+   towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, R, S, T).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R), produkcja(N, S, T, U, V).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R), towar(N, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[6/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+[clauses constructed] [82]
+[search time] [0.03125]
+[best clause]
+pracownik(9, robotnik, 1, null, 1, 1).
+[pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
+[atoms left] [13]
+[positive examples left] [13]
+[estimated time to finish (secs)] [0.304688]
+[select example] [5]
+[sat] [5]
+[pracownik(12, ksiegowy, 1, 1, 2, 5)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=ksiegowy, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow, 
+   K=bialystok, G=ksiegowosc.
+[literals] [7]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[13/17]
+pracownik(A, B, C, D, E, F) :-
+   B=ksiegowy.
+[2/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=ksiegowy.
+[pos cover = 2 neg cover = 0] [pos-neg] [2]
+[clause label] [[2, 0, 1, 2]]
+[clauses constructed] [2]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[13/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[13/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok.
+[8/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=ksiegowosc.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[13/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[8/9]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+[3/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow.
+[3/1]
+[clauses constructed] [11]
+[search time] [0.015625]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=ksiegowy.
+[pos cover = 2 neg cover = 0] [pos-neg] [2]
+[atoms left] [11]
+[positive examples left] [11]
+[estimated time to finish (secs)] [0.200521]
+[select example] [7]
+[sat] [7]
+[pracownik(18, kierownik, 2, 1, 0, 6)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=czarnabialostocka, 
+   K=bialystok, G=informatyka.
+[literals] [7]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[11/17]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[11/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[11/17]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), K=bialystok.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), G=informatyka.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), G=informatyka.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 2, 1]]
+[clauses constructed] [8]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), K=bialystok, G=informatyka.
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=czarnabialostocka.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok.
+[6/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=informatyka.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[11/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=informatyka, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=informatyka.
+[2/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=informatyka.
+[pos cover = 2 neg cover = 0] [pos-neg] [2]
+[clause label] [[2, 0, 2, 2]]
+[clauses constructed] [17]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[6/9]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=czarnabialostocka.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=czarnabialostocka.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=czarnabialostocka.
+[clauses constructed] [21]
+[search time] [0.0]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=informatyka.
+[pos cover = 2 neg cover = 0] [pos-neg] [2]
+[atoms left] [9]
+[positive examples left] [9]
+[estimated time to finish (secs)] [0.123047]
+[select example] [8]
+[sat] [8]
+[pracownik(19, kierownik, 2, 1, 1, 4)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), K=bialystok, 
+   G=marketing.
+[literals] [6]
+[saturation time] [0.015625]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[9/17]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[9/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[9/17]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K).
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), K=bialystok.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), G=marketing.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), G=marketing.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 2, 1]]
+[clauses constructed] [8]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok.
+[4/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=marketing.
+[3/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=marketing.
+[3/3]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[4/5]
+[clauses constructed] [14]
+[search time] [0.0]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), G=marketing.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [8]
+[positive examples left] [8]
+[estimated time to finish (secs)] [0.0972222]
+[select example] [10]
+[sat] [10]
+[pracownik(30, marketingowiec, 2, 2, 9, 4)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl, 
+   K=bialystok, G=marketing.
+[literals] [7]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[8/17]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[8/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[8/17]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), K=bialystok.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), G=marketing.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 2, 1]]
+[clauses constructed] [10]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), K=bialystok, G=marketing.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), G=marketing, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), K=bialystok, G=marketing, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok.
+[3/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=marketing.
+[2/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[8/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=marketing, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=marketing.
+[2/3]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=marketing, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/3]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+[3/4]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), G=marketing, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), K=bialystok, G=marketing, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=marketing, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=marketing, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[3/4]
+[clauses constructed] [30]
+[search time] [0.0]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [7]
+[positive examples left] [7]
+[estimated time to finish (secs)] [0.0765625]
+[select example] [11]
+[sat] [11]
+[pracownik(32, marketingowiec, 2, 2, 9, 4)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow, 
+   K=bialystok, G=marketing.
+[literals] [7]
+[saturation time] [0.015625]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[7/17]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[7/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[7/17]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K).
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), K=bialystok.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), G=marketing.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 2, 1]]
+[clauses constructed] [10]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok.
+[2/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=marketing.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[7/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/9]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow.
+[2/1]
+[clauses constructed] [17]
+[search time] [0.0]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [6]
+[positive examples left] [6]
+[estimated time to finish (secs)] [0.0596591]
+[select example] [12]
+[sat] [12]
+[pracownik(35, ekspert, 2, 1, 4, 3)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok, 
+   K=lapy, G=kontrolajakosci.
+[literals] [7]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[6/17]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[6/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[6/17]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, dzial(F, G, H, I, J, K).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, dzial(F, G, H, I, J, K), K=lapy.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, dzial(F, G, H, I, J, K), G=kontrolajakosci.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 2, 1]]
+[clauses constructed] [10]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy.
+[5/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=kontrolajakosci.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[6/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[5/8]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[3/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[3/5]
+[clauses constructed] [17]
+[search time] [0.015625]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [5]
+[positive examples left] [5]
+[estimated time to finish (secs)] [0.0520833]
+[select example] [13]
+[sat] [13]
+[pracownik(39, robotnik, 1, 1, 2, 1)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W), 
+   R=suprasl, K=lapy, G=produkcja, produkcja(S, X, T, U, Y), 
+   towar(S, Z, A1, B1, C1, D1).
+[literals] [10]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[5/17]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik.
+[3/7]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[5/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[5/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K).
+[3/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[3/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, H, I, M).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K), towar(G, L, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, H, I, M).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K), towar(G, L, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy.
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja.
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikprodukcja(L, A, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl, pracownikprodukcja(N, A, O, P, Q, R).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy.
+[4/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja.
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[5/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[4/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[4/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikprodukcja(L, A, M, N, O, P).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl, pracownikprodukcja(N, A, O, P, Q, R).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl, pracownikprodukcja(N, A, O, P, Q, R), 
+   produkcja(N, S, O, P, T).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl, pracownikprodukcja(N, A, O, P, Q, R), 
+   towar(N, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl, pracownikprodukcja(N, A, O, P, Q, R), produkcja(N, S, O, P, T).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl, pracownikprodukcja(N, A, O, P, Q, R), towar(N, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, H, I, M), towar(G, N, O, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, H, I, M), towar(G, N, O, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, M, N, R).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P), 
+   produkcja(L, Q, M, N, R).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P), 
+   towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P), 
+   produkcja(L, Q, M, N, R).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P), 
+   towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, M, N, R).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R), produkcja(N, S, O, P, T).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R), towar(N, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, M, N, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, M, N, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P), produkcja(L, Q, M, N, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P), towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikprodukcja(L, A, M, N, O, P), 
+   produkcja(L, Q, M, N, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikprodukcja(L, A, M, N, O, P), 
+   towar(L, Q, R, S, T, U).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R), produkcja(N, S, O, P, T).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R), towar(N, S, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[2/4]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
+[clauses constructed] [82]
+[search time] [0.046875]
+[best clause]
+pracownik(39, robotnik, 1, 1, 2, 1).
+[pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
+[atoms left] [4]
+[positive examples left] [4]
+[estimated time to finish (secs)] [0.0528846]
+[select example] [14]
+[sat] [14]
+[pracownik(40, robotnik, 1, 1, 1, 2)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl, 
+   K=bialystok, G=sprzedaz.
+[literals] [7]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[4/17]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik.
+[2/7]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[4/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[4/17]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K).
+[2/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[2/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=bialystok.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=sprzedaz.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok.
+[1/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz.
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[4/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz.
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/9]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+[1/4]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+[1/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=suprasl.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[1/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
+[1/4]
+[clauses constructed] [30]
+[search time] [0.0]
+[best clause]
+pracownik(40, robotnik, 1, 1, 1, 2).
+[pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
+[atoms left] [3]
+[positive examples left] [3]
+[estimated time to finish (secs)] [0.0368304]
+[select example] [15]
+[sat] [15]
+[pracownik(45, robotnik, 1, null, 2, 1)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W), 
+   R=wasilkow, K=lapy, G=produkcja, produkcja(S, X, T, U, Y), 
+   towar(S, Z, A1, B1, C1, D1).
+[literals] [10]
+[saturation time] [0.015625]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[3/17]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik.
+[1/7]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[3/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[3/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K).
+[1/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M).
+[1/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, H, I, M).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikprodukcja(G, A, H, I, J, K), towar(G, L, M, N, O, P).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K), produkcja(G, L, H, I, M).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikprodukcja(G, A, H, I, J, K), towar(G, L, M, N, O, P).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy.
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja.
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/7]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, pracownikprodukcja(L, A, M, N, O, P).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), G=produkcja, pracownikprodukcja(L, A, M, N, O, P).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, dzial(F, G, H, I, J, K), K=lapy, G=produkcja, 
+   pracownikprodukcja(L, A, M, N, O, P).
+[1/5]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 2, 1]]
+[clauses constructed] [24]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy.
+[3/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja.
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikprodukcja(L, A, M, N, O, P).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[3/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), pracownikprodukcja(N, A, O, P, Q, R).
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=wasilkow.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow.
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow.
+[clauses constructed] [39]
+[search time] [0.015625]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [2]
+[positive examples left] [2]
+[estimated time to finish (secs)] [0.025]
+[select example] [16]
+[sat] [16]
+[pracownik(49, wiceprezes, 3, 2, 0, 1)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=wiceprezes, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok, 
+   K=lapy, G=produkcja.
+[literals] [7]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[2/17]
+pracownik(A, B, C, D, E, F) :-
+   B=wiceprezes.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=wiceprezes.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 1, 1]]
+[clauses constructed] [2]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+[2/17]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[2/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy.
+[2/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja.
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/17]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja.
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/8]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R).
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+[2/5]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, G=produkcja, pracownikpersonalia(A, L, M, N, O, P, Q, R), 
+   R=bialystok.
+[2/1]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=lapy, pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[2/2]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok.
+[2/5]
+[clauses constructed] [16]
+[search time] [0.015625]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=wiceprezes.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [1]
+[positive examples left] [1]
+[estimated time to finish (secs)] [0.0126953]
+[select example] [17]
+[sat] [17]
+[pracownik(50, prezes, 4, 2, 0, 1)]
+
+[bottom clause]
+pracownik(A, B, C, D, E, F) :-
+   B=prezes, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=bialystok, 
+   K=lapy, G=produkcja.
+[literals] [7]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+pracownik(A, B, C, D, E, F).
+[1/17]
+pracownik(A, B, C, D, E, F) :-
+   B=prezes.
+[1/0]
+[-------------------------------------]
+[found clause]
+pracownik(A, B, C, D, E, F) :-
+   B=prezes.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 1, 1]]
+[clauses constructed] [2]
+[-------------------------------------]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K).
+pracownik(A, B, C, D, E, F) :-
+   pracownikpersonalia(A, G, H, I, J, K, L, M).
+[clauses constructed] [4]
+[search time] [0.015625]
+[best clause]
+pracownik(A, B, C, D, E, F) :-
+   B=prezes.
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [0]
+[positive examples left] [0]
+[estimated time to finish (secs)] [0.0]
+
+[theory]
+
+[Rule 3] [Pos cover = 1 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=augustow.
+
+[Rule 5] [Pos cover = 2 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=ksiegowy.
+
+[Rule 6] [Pos cover = 2 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   dzial(F, G, H, I, J, K), K=bialystok, G=informatyka.
+
+[Rule 7] [Pos cover = 1 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=kierownik, dzial(F, G, H, I, J, K), G=marketing.
+
+[Rule 8] [Pos cover = 1 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=suprasl.
+
+[Rule 9] [Pos cover = 1 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=marketingowiec, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+
+[Rule 10] [Pos cover = 1 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=ekspert, pracownikpersonalia(A, G, H, I, J, K, L, M), M=bialystok.
+
+[Rule 13] [Pos cover = 1 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=robotnik, pracownikpersonalia(A, G, H, I, J, K, L, M), M=wasilkow.
+
+[Rule 14] [Pos cover = 1 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=wiceprezes.
+
+[Rule 15] [Pos cover = 1 Neg cover = 0]
+pracownik(A, B, C, D, E, F) :-
+   B=prezes.
+
+[Training set performance]
+          Actual
+        +          -  
+     + 12         0         12 
+Pred 
+     -  5         17        22 
+
+       17        17        34 
+
+Accuracy = 0.852941
+[Training set summary] [[12, 0, 5, 17]]
+[time taken] [0.328125]
+[total clauses constructed] [549]
