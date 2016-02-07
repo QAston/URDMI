@@ -461,7 +461,7 @@
                          (fn [app]
                            (start-job app "Build & Run"
                                       #(let [p (:project app)
-                                             plugin (:plugin app)
+                                             plugin (:plugin p)
                                              model-diff (core/rebuild-working-dir plugin p)
                                              p (core/apply-diff p model-diff)]
                                         (core/merge-diff model-diff (run-learning p plugin (:ui-requests app))))))))
