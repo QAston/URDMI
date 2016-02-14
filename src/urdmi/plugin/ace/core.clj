@@ -26,7 +26,7 @@
 (def example-commands #{"induce(tilde)" "induce(icl)" "induce(regrules)" "induce(Algo)" "induce(bagging(BasicAlgo, n))" "induce(boosting(BasicAlgo, n))" "induce(voting(BasicAlgo, n))" "warmr" "rrl" "mrrl(N)" "nfold(Algo,n)" "nfold(Algo,n,s)" "leave_one_out_from_list(Algo,list)"})
 
 (defn get-app-name [^Project p]
-  (first (:target-rel (api/get-settings-data p settings-filename))))
+  "db")
 
 (defn relations-to-model-format [relations-map model-relation model-relation-index included-relations]
   (let [indexed-model-relaton (prolog/extract-relation-arg (get relations-map model-relation) model-relation-index)
@@ -94,7 +94,7 @@
 
 (defn- remove-old-files [plugin project]
   (let [working-dir (api/get-working-dir project)]
-    (doseq [file (fs/glob working-dir "*")]
+    (doseq [file (concat (fs/glob working-dir "*.bg") (fs/glob working-dir "*.kb") (fs/glob working-dir "*.s"))]
       (fs/delete-dir file))))
 
 (defn- build-settings-file [plugin project]

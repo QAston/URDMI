@@ -94,7 +94,7 @@
                      )
         rel-to-add (SimpleObjectProperty.)
         term-to-add (SimpleObjectProperty.)
-        select-rel-widget (gui/make-relation-and-term-select-widget unselected-relations rel-to-add term-to-add relations-colnames validation)
+        select-rel-widget (gui/make-relation-and-term-select-widget unselected-relations rel-to-add term-to-add relations-colnames nil)
         add-widget (fx/h-box {}
                              (doto select-rel-widget
                                (HBox/setHgrow Priority/ALWAYS))
@@ -158,6 +158,7 @@
                           (let [added (.getAddedSubList change)]
                             (.addAll unselected-relations added)))
                         ))))
+    (redraw-column-fn)
     widget))
 
 (defn models-format-settings-widget [target-relation target-relation-index joinable-relations joined-relations relations-colnames validation]

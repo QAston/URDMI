@@ -27,7 +27,8 @@
            (javafx.event EventHandler)))
 
 (when (core/dev?)
-  (load "plugin/aleph/core" "plugin/aleph/gui" "plugin/aleph/datamining_page" "plugin/aleph/hypothesis_page" "plugin/aleph/theory_page"))
+  (load "plugin/aleph/core" "plugin/aleph/gui" "plugin/aleph/datamining_page" "plugin/aleph/hypothesis_page" "plugin/aleph/theory_page")
+  (load "plugin/ace/core" "plugin/ace/gui" "plugin/ace/settings_page"))
 
 (def instances (atom 0))
 
@@ -206,16 +207,25 @@
       app)
     app))
 
+(declare handle-exception)
+
 (defn start-job [app name job-fn]
   (let [app (assoc app :job {:name name
-                             :task (future (let [result (job-fn)]
-                                             (if (core/thread-interruped?)
-                                               (put! (:ui-requests app)
-                                                     {:type :stop-job})
-                                               (put! (:ui-requests app)
-                                                     {:type   :job-finished
-                                                      :model-diff result}))
-                                             ))})]
+                             :task (future
+                                     (try
+                                       (let [result (job-fn)]
+
+                                         (if (core/thread-interruped?)
+                                           (put! (:ui-requests app)
+                                                 {:type :stop-job})
+                                           (put! (:ui-requests app)
+                                                 {:type       :job-finished
+                                                  :model-diff result}))
+                                         )
+                                       (catch Exception e
+                                         (handle-exception app e)
+                                         nil)
+                                       ))})]
     (fx/run<!! (main-gui/start-job! (:main-screen app) name (:ui-requests app))
                (update-main-menu-for-current-page! app))
     app))
@@ -400,8 +410,8 @@
   (fx/run<!!
     (main-gui/add-app-log-entry! (:main-screen app) (str "Job: " (:name (:job app)) " finished.")))
   (-> app
-       (apply-diff-to-pages model-diff)
-       (stop-current-job)))
+      (apply-diff-to-pages model-diff)
+      (stop-current-job)))
 
 (defmethod handle-request :log-datamining [{:keys [type message]} app]
   (fx/run<!!
@@ -448,7 +458,7 @@
   (do-with-saved-project app "build"
                          (fn [app]
                            (start-job app "Build"
-                                        #(core/rebuild-working-dir (:plugin (:project app)) (:project app))))))
+                                      #(core/rebuild-working-dir (:plugin (:project app)) (:project app))))))
 
 (defmethod handle-request :run [event app]
   (do-with-saved-project app "run"
@@ -656,8 +666,8 @@
   (let [app (init-app stage)
         app (if (core/dev?)
               (-> app
-                  (load-project (fs/file "dev-resources/projects/aleph_default/"))
-                  ;(load-project (fs/file "dev-resources/projects/ace_tilde/"))
+                  ;(load-project (fs/file "dev-resources/projects/aleph_default/"))
+                  (load-project (fs/file "dev-resources/projects/ace_tilde/"))
                   )
               app)
 
