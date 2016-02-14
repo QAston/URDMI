@@ -237,13 +237,13 @@ pracownik(A, B, C, D, E, F) :-
    B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
    zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
 [clauses constructed] [78]
-[search time] [0.015625]
+[search time] [0.046875]
 [best clause]
 pracownik(4, sprzedawca, 1, null, 2, 2).
 [pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
 [atoms left] [16]
 [positive examples left] [16]
-[estimated time to finish (secs)] [0.25]
+[estimated time to finish (secs)] [0.75]
 [select example] [2]
 [sat] [2]
 [pracownik(6, sprzedawca, 1, 1, 0, 2)]
@@ -253,7 +253,7 @@ pracownik(A, B, C, D, E, F) :-
    B=sprzedawca, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), zamowienie(R, S, A, T, U), 
    K=bialystok, G=sprzedaz, klient(S, V, W, X, Y, Z, A1, B1, C1), zamowienieszczegoly(R, D1, E1, F1).
 [literals] [9]
-[saturation time] [0.015625]
+[saturation time] [0.0]
 [reduce]
 [best label so far] [[0, 0, 0, -1e+010]/0]
 pracownik(A, B, C, D, E, F).
@@ -473,13 +473,13 @@ pracownik(A, B, C, D, E, F) :-
    B=sprzedawca, dzial(F, G, H, I, J, K), K=bialystok, G=sprzedaz, 
    zamowienie(L, M, A, N, O), zamowienieszczegoly(L, P, Q, R).
 [clauses constructed] [78]
-[search time] [0.03125]
+[search time] [0.046875]
 [best clause]
 pracownik(6, sprzedawca, 1, 1, 0, 2).
 [pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
 [atoms left] [15]
 [positive examples left] [15]
-[estimated time to finish (secs)] [0.351563]
+[estimated time to finish (secs)] [0.703125]
 [select example] [3]
 [sat] [3]
 [pracownik(8, robotnik, 1, 1, 0, 1)]
@@ -595,7 +595,7 @@ pracownik(A, B, C, D, E, F) :-
 [pos cover = 1 neg cover = 0] [pos-neg] [1]
 [atoms left] [14]
 [positive examples left] [14]
-[estimated time to finish (secs)] [0.291667]
+[estimated time to finish (secs)] [0.510417]
 [select example] [4]
 [sat] [4]
 [pracownik(9, robotnik, 1, null, 1, 1)]
@@ -847,7 +847,7 @@ pracownik(9, robotnik, 1, null, 1, 1).
 [pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
 [atoms left] [13]
 [positive examples left] [13]
-[estimated time to finish (secs)] [0.304688]
+[estimated time to finish (secs)] [0.457031]
 [select example] [5]
 [sat] [5]
 [pracownik(12, ksiegowy, 1, 1, 2, 5)]
@@ -857,7 +857,7 @@ pracownik(A, B, C, D, E, F) :-
    B=ksiegowy, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow, 
    K=bialystok, G=ksiegowosc.
 [literals] [7]
-[saturation time] [0.0]
+[saturation time] [0.015625]
 [reduce]
 [best label so far] [[0, 0, 0, -1e+010]/0]
 pracownik(A, B, C, D, E, F).
@@ -899,14 +899,14 @@ pracownik(A, B, C, D, E, F) :-
    dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=wasilkow.
 [3/1]
 [clauses constructed] [11]
-[search time] [0.015625]
+[search time] [0.0]
 [best clause]
 pracownik(A, B, C, D, E, F) :-
    B=ksiegowy.
 [pos cover = 2 neg cover = 0] [pos-neg] [2]
 [atoms left] [11]
 [positive examples left] [11]
-[estimated time to finish (secs)] [0.200521]
+[estimated time to finish (secs)] [0.257813]
 [select example] [7]
 [sat] [7]
 [pracownik(18, kierownik, 2, 1, 0, 6)]
@@ -993,14 +993,14 @@ pracownik(A, B, C, D, E, F) :-
 pracownik(A, B, C, D, E, F) :-
    dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=czarnabialostocka.
 [clauses constructed] [21]
-[search time] [0.0]
+[search time] [0.015625]
 [best clause]
 pracownik(A, B, C, D, E, F) :-
    dzial(F, G, H, I, J, K), K=bialystok, G=informatyka.
 [pos cover = 2 neg cover = 0] [pos-neg] [2]
 [atoms left] [9]
 [positive examples left] [9]
-[estimated time to finish (secs)] [0.123047]
+[estimated time to finish (secs)] [0.175781]
 [select example] [8]
 [sat] [8]
 [pracownik(19, kierownik, 2, 1, 1, 4)]
@@ -1010,7 +1010,7 @@ pracownik(A, B, C, D, E, F) :-
    B=kierownik, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, K), K=bialystok, 
    G=marketing.
 [literals] [6]
-[saturation time] [0.015625]
+[saturation time] [0.0]
 [reduce]
 [best label so far] [[0, 0, 0, -1e+010]/0]
 pracownik(A, B, C, D, E, F).
@@ -1068,7 +1068,7 @@ pracownik(A, B, C, D, E, F) :-
 [pos cover = 1 neg cover = 0] [pos-neg] [1]
 [atoms left] [8]
 [positive examples left] [8]
-[estimated time to finish (secs)] [0.0972222]
+[estimated time to finish (secs)] [0.138889]
 [select example] [10]
 [sat] [10]
 [pracownik(30, marketingowiec, 2, 2, 9, 4)]
@@ -1078,7 +1078,7 @@ pracownik(A, B, C, D, E, F) :-
    B=marketingowiec, dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl, 
    K=bialystok, G=marketing.
 [literals] [7]
-[saturation time] [0.0]
+[saturation time] [0.015625]
 [reduce]
 [best label so far] [[0, 0, 0, -1e+010]/0]
 pracownik(A, B, C, D, E, F).
@@ -1185,7 +1185,7 @@ pracownik(A, B, C, D, E, F) :-
 [pos cover = 1 neg cover = 0] [pos-neg] [1]
 [atoms left] [7]
 [positive examples left] [7]
-[estimated time to finish (secs)] [0.0765625]
+[estimated time to finish (secs)] [0.109375]
 [select example] [11]
 [sat] [11]
 [pracownik(32, marketingowiec, 2, 2, 9, 4)]
@@ -1262,7 +1262,7 @@ pracownik(A, B, C, D, E, F) :-
 [pos cover = 1 neg cover = 0] [pos-neg] [1]
 [atoms left] [6]
 [positive examples left] [6]
-[estimated time to finish (secs)] [0.0596591]
+[estimated time to finish (secs)] [0.0852273]
 [select example] [12]
 [sat] [12]
 [pracownik(35, ekspert, 2, 1, 4, 3)]
@@ -1340,7 +1340,7 @@ pracownik(A, B, C, D, E, F) :-
 [pos cover = 1 neg cover = 0] [pos-neg] [1]
 [atoms left] [5]
 [positive examples left] [5]
-[estimated time to finish (secs)] [0.0520833]
+[estimated time to finish (secs)] [0.0716146]
 [select example] [13]
 [sat] [13]
 [pracownik(39, robotnik, 1, 1, 2, 1)]
@@ -1351,7 +1351,7 @@ pracownik(A, B, C, D, E, F) :-
    R=suprasl, K=lapy, G=produkcja, produkcja(S, X, T, U, Y), 
    towar(S, Z, A1, B1, C1, D1).
 [literals] [10]
-[saturation time] [0.0]
+[saturation time] [0.015625]
 [reduce]
 [best label so far] [[0, 0, 0, -1e+010]/0]
 pracownik(A, B, C, D, E, F).
@@ -1586,13 +1586,13 @@ pracownik(A, B, C, D, E, F) :-
 pracownik(A, B, C, D, E, F) :-
    dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), pracownikprodukcja(S, A, T, U, V, W).
 [clauses constructed] [82]
-[search time] [0.046875]
+[search time] [0.015625]
 [best clause]
 pracownik(39, robotnik, 1, 1, 2, 1).
 [pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
 [atoms left] [4]
 [positive examples left] [4]
-[estimated time to finish (secs)] [0.0528846]
+[estimated time to finish (secs)] [0.0576923]
 [select example] [14]
 [sat] [14]
 [pracownik(40, robotnik, 1, 1, 1, 2)]
@@ -1700,13 +1700,13 @@ pracownik(A, B, C, D, E, F) :-
    dzial(F, G, H, I, J, K), pracownikpersonalia(A, L, M, N, O, P, Q, R), R=suprasl.
 [1/4]
 [clauses constructed] [30]
-[search time] [0.0]
+[search time] [0.015625]
 [best clause]
 pracownik(40, robotnik, 1, 1, 1, 2).
 [pos cover = 0 neg cover = 0] [pos-neg] [-1e+010]
 [atoms left] [3]
 [positive examples left] [3]
-[estimated time to finish (secs)] [0.0368304]
+[estimated time to finish (secs)] [0.0435268]
 [select example] [15]
 [sat] [15]
 [pracownik(45, robotnik, 1, null, 2, 1)]
@@ -1717,7 +1717,7 @@ pracownik(A, B, C, D, E, F) :-
    R=wasilkow, K=lapy, G=produkcja, produkcja(S, X, T, U, Y), 
    towar(S, Z, A1, B1, C1, D1).
 [literals] [10]
-[saturation time] [0.015625]
+[saturation time] [0.0]
 [reduce]
 [best label so far] [[0, 0, 0, -1e+010]/0]
 pracownik(A, B, C, D, E, F).
@@ -1847,7 +1847,7 @@ pracownik(A, B, C, D, E, F) :-
 [pos cover = 1 neg cover = 0] [pos-neg] [1]
 [atoms left] [2]
 [positive examples left] [2]
-[estimated time to finish (secs)] [0.025]
+[estimated time to finish (secs)] [0.0291667]
 [select example] [16]
 [sat] [16]
 [pracownik(49, wiceprezes, 3, 2, 0, 1)]
@@ -1924,7 +1924,7 @@ pracownik(A, B, C, D, E, F) :-
 [pos cover = 1 neg cover = 0] [pos-neg] [1]
 [atoms left] [1]
 [positive examples left] [1]
-[estimated time to finish (secs)] [0.0126953]
+[estimated time to finish (secs)] [0.0146484]
 [select example] [17]
 [sat] [17]
 [pracownik(50, prezes, 4, 2, 0, 1)]
@@ -1955,7 +1955,7 @@ pracownik(A, B, C, D, E, F) :-
 pracownik(A, B, C, D, E, F) :-
    pracownikpersonalia(A, G, H, I, J, K, L, M).
 [clauses constructed] [4]
-[search time] [0.015625]
+[search time] [0.0]
 [best clause]
 pracownik(A, B, C, D, E, F) :-
    B=prezes.
@@ -2017,5 +2017,5 @@ Pred
 
 Accuracy = 0.852941
 [Training set summary] [[12, 0, 5, 17]]
-[time taken] [0.328125]
+[time taken] [0.34375]
 [total clauses constructed] [549]

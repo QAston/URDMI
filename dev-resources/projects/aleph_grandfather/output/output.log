@@ -1,0 +1,135 @@
+
+
+A L E P H
+Version 5
+Last modified: Sun Mar 11 03:25:37 UTC 2007
+
+Manual: http://www.comlab.ox.ac.uk/oucl/groups/machlearn/Aleph/index.html
+
+[consulting pos examples] [db.f]
+[consulting neg examples] [db.n]
+[select example] [1]
+[sat] [1]
+[grandfather(1, 6)]
+[repeated literals] [3/9]
+
+[bottom clause]
+grandfather(A, B) :-
+   father(B, C), father(A, D), mother(D, B), father(C, E), 
+   mother(F, D).
+[literals] [6]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+grandfather(A, B).
+[3/3]
+grandfather(A, B) :-
+   father(B, C).
+[1/2]
+grandfather(A, B) :-
+   father(A, C).
+[3/1]
+grandfather(A, B) :-
+   mother(C, B).
+[2/1]
+grandfather(A, B) :-
+   father(A, C), mother(D, C).
+[1/0]
+[-------------------------------------]
+[found clause]
+grandfather(A, B) :-
+   father(A, C), mother(D, C).
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 3, 1]]
+[clauses constructed] [5]
+[-------------------------------------]
+grandfather(A, B) :-
+   father(A, C), mother(C, B).
+[2/0]
+[-------------------------------------]
+[found clause]
+grandfather(A, B) :-
+   father(A, C), mother(C, B).
+[pos cover = 2 neg cover = 0] [pos-neg] [2]
+[clause label] [[2, 0, 3, 2]]
+[clauses constructed] [6]
+[-------------------------------------]
+[clauses constructed] [6]
+[search time] [0.0]
+[best clause]
+grandfather(A, B) :-
+   father(A, C), mother(C, B).
+[pos cover = 2 neg cover = 0] [pos-neg] [2]
+[atoms left] [1]
+[positive examples left] [1]
+[estimated time to finish (secs)] [0.0]
+[select example] [3]
+[sat] [3]
+[grandfather(6, 8)]
+[repeated literals] [3/9]
+
+[bottom clause]
+grandfather(A, B) :-
+   father(A, C), father(C, B), mother(D, A), father(E, D), 
+   mother(F, D).
+[literals] [6]
+[saturation time] [0.0]
+[reduce]
+[best label so far] [[0, 0, 0, -1e+010]/0]
+grandfather(A, B).
+[1/3]
+grandfather(A, B) :-
+   father(A, C).
+[1/1]
+grandfather(A, B) :-
+   father(C, B).
+[1/3]
+grandfather(A, B) :-
+   mother(C, A).
+[1/2]
+grandfather(A, B) :-
+   father(A, C), father(C, B).
+[1/0]
+[-------------------------------------]
+[found clause]
+grandfather(A, B) :-
+   father(A, C), father(C, B).
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[clause label] [[1, 0, 3, 1]]
+[clauses constructed] [5]
+[-------------------------------------]
+grandfather(A, B) :-
+   father(A, C), mother(D, A).
+[clauses constructed] [6]
+[search time] [0.0]
+[best clause]
+grandfather(A, B) :-
+   father(A, C), father(C, B).
+[pos cover = 1 neg cover = 0] [pos-neg] [1]
+[atoms left] [0]
+[positive examples left] [0]
+[estimated time to finish (secs)] [0.0]
+
+[theory]
+
+[Rule 1] [Pos cover = 2 Neg cover = 0]
+grandfather(A, B) :-
+   father(A, C), mother(C, B).
+
+[Rule 2] [Pos cover = 1 Neg cover = 0]
+grandfather(A, B) :-
+   father(A, C), father(C, B).
+
+[Training set performance]
+         Actual
+       +        - 
+     + 3        0        3 
+Pred 
+     - 0        3        3 
+
+       3        3        6 
+
+Accuracy = 1
+[Training set summary] [[3, 0, 0, 3]]
+[time taken] [0.0]
+[total clauses constructed] [12]

@@ -83,10 +83,11 @@
        :columns (read-columns-definitions file parser-context arity-int)
        :data    (delay
                   (with-open [reader (io/reader file)]
-                    (let [prolog-data (doall (prolog/prolog-sentence-seq parser-context reader))]
+                    (if-let [prolog-data (doall (prolog/prolog-sentence-seq parser-context reader))]
                       (if (core/cols-clause? (first prolog-data))
                         (rest prolog-data)
                         prolog-data)
+                      []
                       )))})
     ))
 

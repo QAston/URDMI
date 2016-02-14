@@ -39,14 +39,16 @@
                   [(prolog/pretty-print-expression parser-context k) v]) (prolog/extract-relation-arg rel-asts rel-arg))))
 
 (defn get-advanced-example-data-settings [relation term ^String true-val ^String false-val]
-  [{:value         true-val
-    :value-type    :positive
-    :relation      relation
-    :relation-term term}
-   {:value         false-val
-    :value-type    :negative
-    :relation      relation
-    :relation-term term}])
+  (if (and relation term  true-val false-val)
+    [{:value         true-val
+      :value-type    :positive
+      :relation      relation
+      :relation-term term}
+     {:value         false-val
+      :value-type    :negative
+      :relation      relation
+      :relation-term term}]
+    []))
 
 (defn get-learning-examples-settings [example-data]
   (if (= :simple (:type example-data))

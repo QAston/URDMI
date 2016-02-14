@@ -1,0 +1,5 @@
+grandfather(4,7).
+grandfather(5,4).
+grandfather(6,7).
+%negative examples 
+% file appended to the generated .n file

@@ -1,0 +1,1 @@
+{:example {:type :simple, :relation ["grandfather" 3], :term 2, :true-val "1", :false-val "0", :advanced-list []}, :background {:type :all-but-example, :relation-list [["grandfather" 3] ["father" 2] ["mother" 2]]}, :program "induce"}

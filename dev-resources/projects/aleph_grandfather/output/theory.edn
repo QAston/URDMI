@@ -1,0 +1,1 @@
+{:theory ({:pos-covered 2, :neg-covered 0, :text "grandfather(A, B) :-\r\n   father(A, C), mother(C, B)."} {:pos-covered 1, :neg-covered 0, :text "grandfather(A, B) :-\r\n   father(A, C), father(C, B)."}), :training-results {:pos-egz-true 3, :neg-egz-true 0, :pos-egz-false 0, :neg-egz-false 3}}
