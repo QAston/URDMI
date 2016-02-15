@@ -1,0 +1,1 @@
+{:ace-loc "ace", :target-rel ["bongard" 2], :command "induce(icl)", :kb-format "models", :models-format {:joined-relations [[["triangle" 2] 0] [["config" 3] 0] [["in" 3] 0] [["square" 2] 0] [["circle" 2] 0]], :target-relation-index 0, :class-terms [1]}}

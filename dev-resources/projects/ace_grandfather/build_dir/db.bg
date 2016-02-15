@@ -1,0 +1,18 @@
+
+ % relation: father/2
+father(1,4).
+father(2,5).
+father(6,7).
+father(7,8).
+
+ % relation: mother/2
+mother(4,6).
+mother(5,3).
+mother(5,4).
+% background knowledge 
+% file appended to the generated .bg file
+
+%predicate to use inside model(). declaration of .kb file.
+%speficies classes for icl
+grandfather_yes :- grandfather(_, _, 1).
+grandfather_no :- grandfather(_, _, 0).

@@ -1,0 +1,251 @@
+*** ICL ***
+***********
+* Version: 4.3 - ACE 1.2.15 
+* Runtime: no 
+***********
+* Date: dd/mm/yyyy 
+* User: unknown 
+* Dir: C:\Users\QAston\Dropbox\workspace\Clojure\URDMI\dev-resources\projects\ace_grandfather\build_dir/ 
+* Node: QASTON-LAPTOP running 'Windows NT 6.2' 
+***********
+* Application: db 
+* Configuration:  
+* Knowledgebase file: C:\Users\QAston\Dropbox\workspace\Clojure\URDMI\dev-resources\projects\ace_grandfather\build_dir/db.kb -- loaded 
+* Background file: C:\Users\QAston\Dropbox\workspace\Clojure\URDMI\dev-resources\projects\ace_grandfather\build_dir/db.bg -- loaded 
+* Settings file: db.s -- loaded 
+* Language file: db.l -- loaded 
+***********
+* Total number of models :  6 
+***********
+*SETTINGS*
+ ** Common ** 
+ *  heuristic : gainratio (default) 
+ *  tilde_mode : classify (default) 
+ *  intra_literal_sharing : yes (default) 
+ *  query_batch_size : default (default) 
+ *  single_query_generation : no (default) 
+ *  inst_generation_prob : 1.0 (default) 
+ *  rmode_inst_generation_prob : 1.0 (default) 
+ *  query_sample_probability : 1.0 (default) 
+ *  query_sample_algo : smart (default) 
+ *  aggregate_refiners : no (default) 
+ *  aggregate_recursion : no (default) 
+ *  aggregate_maxconjuncts : 2 (default) 
+ *  aggregate_lookahead : no (default) 
+ *  aggregate_refinement : no (default) 
+ *  example_cache : 102400 (default) 
+ *  select_root_models : on (default) 
+ *  write_predictions : [] (default) 
+ *  compatibility : ace1.1 (default) 
+ *  max_query_len : inf (default) 
+ *  log_pid : off (default) 
+ *  nsplit_unsorted_fractions : 0 (default) 
+ *  nsplit_sorting : basic (default) 
+ *  nsplit_version : basic (default) 
+ *  nsplit_talking : off (default) 
+ *  discretize : entropy (default) 
+ *  transform_queries : once (default) 
+ *  output_dir : default (default) 
+ *  bg_file : default (default) 
+ *  kb_file : default (default) 
+ *  randomise : none (default) 
+ *  report_timings : off (default) 
+ *  default_prefix : off (default) 
+ *  default_min : 1 (default) 
+ *  default_preprocessing : off (default) 
+ *  mi_distance_maxsample : 100 (default) 
+ *  language_warnings : on (default) 
+ *  expert_implicit_language : off (default) 
+ *  granularity : 10 (default) 
+ *  leave_out : false (default) 
+ *  classes : [grandfather_yes,grandfather_no] 
+ *  use_packs : ilp (default) 
+ *  outerloop : queries (default) 
+ *  talking : 4 
+ *  load : examples 
+ ** ICL 4.3 ** 
+ *  beam_max_internal : 1 (default) 
+ *  transform : 0 (default) 
+ *  icl_heuristic_wra : no (default) 
+ *  cn2_mode : off (default) 
+ *  tt_sets : 1 (default) 
+ *  beam_size : 5 (default) 
+ *  min_accuracy : 0.0 (default) 
+ *  min_coverage : 1 (default) 
+ *  significance_level : 0 
+ *  icl_heuristic : m_estimate (default) 
+ *  language_init : global (default) 
+ *  multi_test : bayes (default) 
+ *  multi_prune : on (default) 
+ *  simplify : on (default) 
+ *  modes : off (default) 
+ *  types : off (default) 
+ *  maxbody : 10 (default) 
+ *  maxhead : 3 
+ *  bias : dlab (default) 
+ *  language : dnf (default) 
+ *  icl_multi : on 
+ ** Query ** 
+ *  log_query_sample_probability : 1.0 (default) 
+ *  log_queries : [] (default) 
+ ** Tilde ** 
+ *  write_ensemble_models : [] (default) 
+ *  tilde_maxdepth : inf (default) 
+ *  exhaustive_lookahead : 0 (default) 
+ *  query_length_bias : short (default) 
+ *  special_min : 0.0 (default) 
+ *  out_of_bag : no (default) 
+ *  roulette_wheel_selection : no (default) 
+ *  tilde_rst_optimization : no (default) 
+ *  repeat_exec_time : 1 (default) 
+ *  combination_rule : sum (default) 
+ *  show_averages : 1 (default) 
+ *  classify_mode : 0 (default) 
+ *  complexity_penalty : 1.0 (default) 
+ *  precompute : [] (default) 
+ *  resume : off (default) 
+ *  m_estimate : none (default) 
+ *  output_options : [c45,prolog] (default) 
+ *  prune_rules : false (default) 
+ *  confidence_level : 0.25 (default) 
+ *  random_test_set : 0 (default) 
+ *  random_validation_set : 0 (default) 
+ *  stopping_criterion : mincases (default) 
+ *  pruning : c45 (default) 
+ *  discretization : none (default) 
+ *  multiscore_2 : off (default) 
+ *  multiscore : off (default) 
+ *  sampling_strategy : fixed(1000) (default) 
+ *  max_querytime : 100 (default) 
+ *  accuracy : 1.0 (default) 
+ *  tilde_test_eval_model : std (default) 
+ *  minimal_cases : 2 (default) 
+ *  ftest : 0.05 (default) 
+ *  tilde_version : 3.0 (default) 
+ ** Warmr3 ** 
+ *  arff_skip_examples : 0 (default) 
+ *  warmr_version : v2_2 (default) 
+ *  jan_warmr_cache_queries : off (default) 
+ *  jan_warmr_confirm_overwrite : off (default) 
+ *  jan_warmr_maxdepth : 100 (default) 
+ *  jan_warmr_sig_constraint : A,true 
+ *  jan_warmr_incremental_base : [] (default) 
+ *  jan_warmr_output_to_memory : off (default) 
+ *  jan_warmr_output_to_disk : on (default) 
+ *  jan_warmr_make_freq_files : on (default) 
+ *  bw_regression : off (default) 
+ *  bw_disj : off (default) 
+ *  bw_cell : on (default) 
+ *  addclass : off (default) 
+ *  bias : dlab 
+ *  warmr_object_identity : off (default) 
+ *  warmr_coverage_list : off (default) 
+ *  warmr_assoc_output_options : [queries,show_query_index] (default) 
+ *  warmr_assoc : off (default) 
+ *  warmr_valid_func : std_meta (default) 
+ *  warmr_output_options : [freq_queries,freq_packs,show_query_index] (default) 
+ *  warmr_infreq_spec_level : inf (default) 
+ *  warmr_batch_size : 50000 (default) 
+ *  warmr_maxdepth : 100 (default) 
+ *  minconf : 0.01 (default) 
+ *  minfreq : 0.01 (default) 
+ ************** 
+**********
+ **********  DLAB GRAMMAR  **********
+ * dlab_template('\n\t0-len:\t[\n\t\t] \n<-- \n\t0-len:\t[\t\n\t\t\tgrandfather(1-1:[Z, X, C, V],1-1:[Z, X, C, V], _),\n\t\t\tfather(1-1:[Z, X, C, V],1-1:[Z, X, C, V]),\n\t\t\tfather(1-1:[Z, X, C, V],1-1:[Z, X, C, V]),\n\t\t\tfather(1-1:[Z, X, C, V],1-1:[Z, X, C, V]),\n\t\t\tmother(1-1:[Z, X, C, V],1-1:[Z, X, C, V]),\n\t\t\tmother(1-1:[Z, X, C, V],1-1:[Z, X, C, V]),\n\t\t\tmother(1-1:[Z, X, C, V],1-1:[Z, X, C, V])\n\t\t]\n').
+ ************************************
+
+
+     **************
+     * NEXT CLASS *
+     **************
+
+* CLASS : grandfather_yes
+* Number of negative models : 3 
+* Number of positive models : 3 
+* ===========================
+
+Converting dlab_queries... 
+
+(grandfather(X,C,_),father(X,Z),mother(Z,C)) # heur(0.75), cpu(1948.0), local(2,1,0,3), total(2,1,0,3)
+(grandfather(X,C,_),father(Z,C),father(X,Z)) # heur(0.666666666666667), cpu(3810.0), local(1,0,0,3), total(1,2,0,3)
+
+****************************************
+FINISHED : no positive models left 
+
+********** STATISTICS for ICL run *********
+* Consumed cpu (seconds, hours):  [3816.0,1.06] 
+* Stop Date:dd/mm/yyyy
+*
+* Nodes pruned for syntactic reasons: 0 
+*   + maxhead exceeded:               0 
+*   + maxbody exceeded:               0 
+*   + not range restricted:           0 
+*   + tautology:                      0 
+*   + type declarations violated:     0 
+*   + mode declarations violated:     0 
+*
+* Nodes pruned for semantic reasons:        2145 
+*   + too few positives covered:            1821 
+*   + no additional information (fairness): 40 
+*   + not possibly significant:             0 
+*   + can't become better than best:        282 
+*   + can't become better:                  2 
+*
+* Nodes kept: 479 
+*  + added to beam:     38 
+*  + not added to beam: 441 
+*
+* Nodes visited: 2624 
+* 
+***********************************
+
+
+     **************
+     * NEXT CLASS *
+     **************
+
+* CLASS : grandfather_no
+* Number of negative models : 3 
+* Number of positive models : 3 
+* ===========================
+
+Converting dlab_queries... 
+
+(grandfather(X,C,_),father(Z,X)) # heur(0.75), cpu(1936.0), local(2,1,0,3), total(2,1,0,3)
+(grandfather(X,C,_),father(C,V),father(Z,C)) # heur(0.666666666666667), cpu(3901.0), local(1,0,0,3), total(2,1,0,3)
+
+****************************************
+FINISHED : no positive models left 
+
+********** STATISTICS for ICL run *********
+* Consumed cpu (seconds, hours):  [3906.0,1.085] 
+* Stop Date:dd/mm/yyyy
+*
+* Nodes pruned for syntactic reasons: 0 
+*   + maxhead exceeded:               0 
+*   + maxbody exceeded:               0 
+*   + not range restricted:           0 
+*   + tautology:                      0 
+*   + type declarations violated:     0 
+*   + mode declarations violated:     0 
+*
+* Nodes pruned for semantic reasons:        2175 
+*   + too few positives covered:            1587 
+*   + no additional information (fairness): 40 
+*   + not possibly significant:             0 
+*   + can't become better than best:        545 
+*   + can't become better:                  3 
+*
+* Nodes kept: 449 
+*  + added to beam:     37 
+*  + not added to beam: 412 
+*
+* Nodes visited: 2624 
+* 
+***********************************
+
+% Merging seperate  dnf  theories... 
+
+**** R E G U L A R   E N D  after 7741.0 cpu seconds **** 
+

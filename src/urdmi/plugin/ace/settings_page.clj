@@ -238,10 +238,8 @@
     (.bind (.disableProperty models-format-widget) (.isNotEqualTo (ObjectExpression/objectExpression kb-selected-format) ace/knowledgebase-models))
     (gui/validate-control validation command-widget (fn [cmd]
                                                       (and cmd (not (.isEmpty cmd)))) "You must enter an ace command")
-    (doseq [prop [target-relation command-property kb-selected-format]]
-      (gui/on-changed prop
-                      (fn [obs old new]
-                        (on-update-fn))))
+    (doseq [prop [target-relation command-property kb-selected-format target-relation-index joined-relations]]
+      (gui/on-any-change prop on-update-fn))
     (gui/on-changed target-relation
                     (fn [obs old new]
                       (when @user-input

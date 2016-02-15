@@ -1,1 +1,1 @@
-{:ace-loc "ace", :target-rel ["pracownik" 7], :command "induce(tilde)", :kb-format "key", :models-format {:joined-relations [[["pracownikprodukcja" 6] 1] [["pracownikpersonalia" 8] 0]], :target-relation-index 0}}
+{:ace-loc "ace", :target-rel ["pracownik" 7], :command "induce(tilde)", :kb-format "models", :models-format {:joined-relations [[["pracownikprodukcja" 6] 1] [["pracownikpersonalia" 8] 0]], :target-relation-index 0, :class-terms [6]}}

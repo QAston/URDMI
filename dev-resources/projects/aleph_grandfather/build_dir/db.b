@@ -6,9 +6,9 @@
 :-mode(1,father(-id,+id)).
 :-mode(1,mother(+id,-id)).
 :-mode(1,mother(-id,+id)).
-:-mode(1,grandfather(+id,+id)).
-:-determination(grandfather/2,father/2).
-:-determination(grandfather/2,mother/2).
+:-mode(1,grandfather(+gfid,+id,+id)).
+:-determination(grandfather/3,father/2).
+:-determination(grandfather/3,mother/2).
 %Background relations:
 
 % relation: father/2

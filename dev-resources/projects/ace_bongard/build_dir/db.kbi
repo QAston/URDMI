@@ -1,0 +1,1 @@
+example_predicates([bongard/1,triangle/1,config/2,in/2,square/1,circle/1]).

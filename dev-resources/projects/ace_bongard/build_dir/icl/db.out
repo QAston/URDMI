@@ -1,0 +1,126 @@
+/** -------------------------------------------------
+ ** Algorithm:   ICL
+ ** Output type: out
+ ** Date:        2/14/2016 21:37:41
+ ** ACE version: 1.2.15
+ ** Hardware:    QASTON-LAPTOP running 'Windows NT 6.2'
+ ** -------------------------------------------------
+ ** Settings:
+ **
+ ** Common ** 
+ *  heuristic : gainratio (default) 
+ *  tilde_mode : classify (default) 
+ *  intra_literal_sharing : yes (default) 
+ *  query_batch_size : default (default) 
+ *  single_query_generation : no (default) 
+ *  inst_generation_prob : 1.0 (default) 
+ *  rmode_inst_generation_prob : 1.0 (default) 
+ *  query_sample_probability : 1.0 (default) 
+ *  query_sample_algo : smart (default) 
+ *  aggregate_refiners : no (default) 
+ *  aggregate_recursion : no (default) 
+ *  aggregate_maxconjuncts : 2 (default) 
+ *  aggregate_lookahead : no (default) 
+ *  aggregate_refinement : no (default) 
+ *  example_cache : 102400 (default) 
+ *  select_root_models : on (default) 
+ *  write_predictions : [] (default) 
+ *  compatibility : ace1.1 (default) 
+ *  max_query_len : inf (default) 
+ *  log_pid : off (default) 
+ *  nsplit_unsorted_fractions : 0 (default) 
+ *  nsplit_sorting : basic (default) 
+ *  nsplit_version : basic (default) 
+ *  nsplit_talking : off (default) 
+ *  discretize : entropy (default) 
+ *  transform_queries : once (default) 
+ *  output_dir : default (default) 
+ *  bg_file : default (default) 
+ *  kb_file : default (default) 
+ *  randomise : none (default) 
+ *  report_timings : off (default) 
+ *  default_prefix : off (default) 
+ *  default_min : 1 (default) 
+ *  default_preprocessing : off (default) 
+ *  mi_distance_maxsample : 100 (default) 
+ *  language_warnings : on (default) 
+ *  expert_implicit_language : off (default) 
+ *  granularity : 10 (default) 
+ *  leave_out : false (default) 
+ *  classes : [good,wrong] 
+ *  use_packs : ilp (default) 
+ *  outerloop : queries (default) 
+ *  talking : 4 
+ *  load : examples 
+ ** ICL 4.3 ** 
+ *  beam_max_internal : 1 (default) 
+ *  transform : 0 (default) 
+ *  icl_heuristic_wra : no (default) 
+ *  cn2_mode : off (default) 
+ *  tt_sets : 1 (default) 
+ *  beam_size : 5 (default) 
+ *  min_accuracy : 0.0 (default) 
+ *  min_coverage : 1 (default) 
+ *  significance_level : 0 
+ *  icl_heuristic : m_estimate (default) 
+ *  language_init : global (default) 
+ *  multi_test : bayes (default) 
+ *  multi_prune : on (default) 
+ *  simplify : on (default) 
+ *  modes : off (default) 
+ *  types : off (default) 
+ *  maxbody : 5 
+ *  maxhead : 3 
+ *  bias : dlab (default) 
+ *  language : dnf (default) 
+ *  icl_multi : off (default) 
+ ************** 
+ ** Language:
+ **
+ **********  DLAB GRAMMAR  **********
+ * dlab_template('len-len:[0-len:[sort(X), sort(Y), size(X), size(Y), direction(X), direction(Y), relation1(X,Y), relation1(Y,X), relation2(X,Y), relation2(Y,X), relation3(X,Y), relation3(Y,X)] ] <-- len-len:[ 1-len:[sort(X), sort(Y)], 0-len:[size(X), size(Y), direction(X), direction(Y),relation1(X,Y), relation1(Y,X), relation2(X,Y), relation2(Y,X), relation3(X,Y), relation3(Y,X) ]]').
+ * dlab_variable(sort,1-1,[circle,triangle,rectangle,polygon,object]).
+ * dlab_variable(size,1-1,[large,small]).
+ * dlab_variable(direction,1-1,[down,up]).
+ * dlab_variable(relation1,1-1,[left,right]).
+ * dlab_variable(relation2,1-1,[under,above]).
+ * dlab_variable(relation3,1-1,[in]).
+ ************************************
+ **/
+
+Average discretization time: 0.0
+Average induction time: 0.86
+
+Model:
+    Complexity: 0.0 nodes, 0.0 literals
+    C4.5 error estimate: 0.0, relative: 0.0
+Training:
+    Number of examples: 392
+
+    REAL\PRED | good      wrong     
+    ----------------------------------------------
+    good      | 128       0         | 128
+    wrong     | 23        241       | 264
+    ----------------------------------------------
+              | 151       241       | 392
+
+    Accuracy: 0.941326530612245 (stderr: 0.0118699257018632, default: 0.673469387755102)
+    Cramer's coefficient: 0.879676659623668
+    Class: good: TP = 1.0, FP = 0.0871212121212121
+Testing:
+    No examples available.
+
+
+Theory:
+=======
+
+**********
+* Class  : good 
+* Status : finished 
+* Type   : dnf 
+**********
+rule((triangle(A),triangle(B),in(A,B)),[type(dnf),cpu(26.0),heur(0.983965014577259),local(82,46,0,264),total(82,46,0,264)])
+rule((triangle(C),object(D),in(C,D)),[type(dnf),cpu(54.0),heur(0.747062461348176),local(24,22,7,257),total(106,22,7,257)])
+rule((circle(E),in(F,E),\+object(F)),[type(dnf),cpu(86.0),heur(0.566326530612245),local(22,0,16,248),total(35,93,16,248)])
+
+
